@@ -1,0 +1,84 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, computed_field
+from functools import lru_cache
+from typing import List
+from pathlib import Path
+
+# Get the path to the .env file (in project root, one level up from backend)
+ENV_FILE_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
+
+
+def clean_database_url(url: str) -> str:
+    """Clean database URL for asyncpg compatibility."""
+    # Remove sslmode and channel_binding params which asyncpg doesn't support
+    if "?" in url:
+        base_url, params = url.split("?", 1)
+        param_pairs = params.split("&")
+        supported_params = [p for p in param_pairs if not p.startswith("sslmode=") and not p.startswith("channel_binding=")]
+        if supported_params:
+            return base_url + "?" + "&".join(supported_params)
+        return base_url
+    return url
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    # Database - raw URL from environment
+    database_url_raw: str = Field(..., validation_alias="DATABASE_URL")
+
+    @computed_field
+    @property
+    def database_url(self) -> str:
+        """Return cleaned database URL for asyncpg."""
+        return clean_database_url(self.database_url_raw)
+
+    # PrimeTag API
+    primetag_api_base_url: str = Field(
+        default="https://api.primetag.com",
+        validation_alias="PRIMETAG_API_BASE_URL"
+    )
+    primetag_api_key: str = Field(..., validation_alias="PRIMETAG_API_KEY")
+
+    # OpenAI
+    openai_api_key: str = Field(..., validation_alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4o-2024-08-06")
+
+    # Cache settings
+    cache_ttl_seconds: int = Field(default=900)  # 15 minutes
+    influencer_cache_hours: int = Field(default=24)
+
+    # Search defaults
+    default_min_credibility: float = Field(
+        default=70.0,
+        validation_alias="DEFAULT_MIN_CREDIBILITY"
+    )
+    default_min_spain_audience: float = Field(
+        default=60.0,
+        validation_alias="DEFAULT_MIN_SPAIN_AUDIENCE"
+    )
+    default_result_limit: int = Field(default=10)
+
+    # App settings
+    debug: bool = Field(default=False, validation_alias="DEBUG")
+    cors_origins: str = Field(
+        default="http://localhost:3000",
+        validation_alias="CORS_ORIGINS"
+    )
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS origins from comma-separated string."""
+        return [origin.strip() for origin in self.cors_origins.split(",")]
+
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE_PATH),
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
