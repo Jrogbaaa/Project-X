@@ -66,21 +66,40 @@ Errors are learning opportunities. When something breaks:
 
 This is an **Influencer Discovery Tool** for talent agents to find influencers for brand partnerships.
 
+### How It Works
+
+**Input:** Users paste their brand brief into the search bar. This can include:
+- Brand name and campaign details
+- Creative concept and tone (e.g., "documentary style", "authentic")
+- Target themes (e.g., "dedication", "rising stars")
+- Niche requirements (e.g., "padel" with exclusion of "soccer")
+- Size preferences (e.g., "prefer 100K-2M followers")
+
+**Output:** Ranked list of influencers scored on 8 factors:
+1. Credibility (audience authenticity)
+2. Engagement (interaction rate)
+3. Audience Match (demographics)
+4. Growth (follower trajectory)
+5. Geography (Spain focus)
+6. **Brand Affinity** (audience overlap with brand)
+7. **Creative Fit** (tone/theme alignment)
+8. **Niche Match** (content category alignment)
+
 ### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Frontend (Next.js 14 + TypeScript + Tailwind)                              │
-│   • SearchBar - Natural language input                                      │
+│ Frontend (Next.js 16 + TypeScript + Tailwind)                              │
+│   • SearchBar - Paste brand briefs or natural language queries             │
 │   • FilterPanel - Configurable thresholds (credibility, engagement, etc.)  │
-│   • ResultsGrid - Influencer cards with metrics                            │
+│   • ResultsGrid - Influencer cards with 8-factor score breakdowns          │
 │   • Export buttons (CSV/Excel)                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ Backend API (FastAPI + SQLAlchemy Async)                                   │
-│   /search       - Execute natural language search                          │
+│   /search       - Execute brief parsing + intelligent matching             │
 │   /search/{id}  - Retrieve previous search                                 │
 │   /influencers  - Get influencer details                                   │
 │   /exports      - Download CSV/Excel                                       │
@@ -96,7 +115,7 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 
 ### Key Flows
 
-1. **Natural language search** → LLM parsing → PrimeTag API → Filter → Rank → Display
+1. **Paste brief** → LLM extracts brand/creative/niche context → PrimeTag API → Filter → 8-factor ranking → Display
 2. **Export search results** to CSV/Excel
 3. **Save searches** for later reference
 4. **Search history** tracking
@@ -105,18 +124,20 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 
 | Service | File | Purpose |
 |---------|------|---------|
-| PrimeTag Client | `primetag_client.py` | API integration for influencer data |
+| PrimeTag Client | `primetag_client.py` | API integration for influencer data (metrics, interests, brand mentions) |
 | Search Service | `search_service.py` | Main search orchestration |
 | Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, etc.) |
-| Ranking Service | `ranking_service.py` | Multi-factor weighted scoring algorithm |
+| Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
 | Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) |
 | Export Service | `export_service.py` | CSV/Excel export generation |
+| Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for GENRE—see directive) |
+| Import Service | `import_influencers.py` | Import enriched CSV into database with interests/country parsing |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
 | Module | File | Purpose |
 |--------|------|---------|
-| Query Parser | `query_parser.py` | GPT-4o natural language parsing with structured JSON output |
+| Query Parser | `query_parser.py` | GPT-4o extracts brand, creative concept, tone, themes, niches, size preferences from briefs |
 
 ### API Endpoints
 
@@ -137,12 +158,12 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| SearchBar | `search/SearchBar.tsx` | Natural language search input |
+| SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries (expandable textarea) |
 | FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds |
 | ResultsGrid | `results/ResultsGrid.tsx` | Grid layout for influencer cards |
 | InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics |
 | AudienceChart | `results/AudienceChart.tsx` | Pie/bar charts for demographics |
-| ScoreBreakdown | `results/ScoreBreakdown.tsx` | Visual breakdown of ranking factors |
+| ScoreBreakdown | `results/ScoreBreakdown.tsx` | Visual breakdown of all 8 ranking factors |
 
 ### Database Schema
 

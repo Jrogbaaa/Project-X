@@ -80,19 +80,25 @@ export function SearchBar({ onResults, filters, onLoadingChange }: SearchBarProp
             />
           </div>
 
-          {/* Input Field */}
-          <input
-            type="text"
+          {/* Input Field - Supports pasting full briefs */}
+          <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSearch();
+              }
+            }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder='e.g., "5 female influencers for IKEA with high engagement"'
-            className="w-full h-[60px] pl-14 pr-32 text-base bg-transparent text-light-primary
-                       rounded-2xl focus:outline-none transition-all duration-300
+            placeholder="Paste your brand brief or describe your campaign..."
+            className="w-full min-h-[60px] max-h-[200px] pl-14 pr-32 py-4 text-base bg-transparent text-light-primary
+                       rounded-2xl focus:outline-none transition-all duration-300 resize-none
                        placeholder:text-light-tertiary/60"
             disabled={searchMutation.isPending}
+            rows={1}
+            style={{ height: query.length > 100 ? 'auto' : '60px' }}
           />
 
           {/* Search Button */}

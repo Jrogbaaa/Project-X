@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 
@@ -17,11 +17,32 @@ class AudienceGeography(BaseModel):
 
 class ScoreComponents(BaseModel):
     """Individual score components for ranking transparency."""
+    # Original 5 factors
     credibility: float = Field(ge=0, le=1)
     engagement: float = Field(ge=0, le=1)
     audience_match: float = Field(ge=0, le=1)
     growth: float = Field(ge=0, le=1)
     geography: float = Field(ge=0, le=1)
+
+    # New brand/creative matching factors
+    brand_affinity: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Audience overlap with target brand (0.5 = neutral/no brand specified)"
+    )
+    creative_fit: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Alignment with campaign creative concept (0.5 = neutral/no concept specified)"
+    )
+    niche_match: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Content niche alignment with campaign topics (0.5 = neutral)"
+    )
 
 
 class InfluencerData(BaseModel):
@@ -54,6 +75,16 @@ class InfluencerData(BaseModel):
     audience_age_distribution: Dict[str, float] = Field(default_factory=dict)
     audience_geography: Dict[str, float] = Field(default_factory=dict)
     female_audience_age_distribution: Optional[Dict[str, float]] = None
+
+    # Content/niche data (for creative matching)
+    interests: List[str] = Field(
+        default_factory=list,
+        description="Influencer's stated interests/categories"
+    )
+    brand_mentions: List[str] = Field(
+        default_factory=list,
+        description="Brands the influencer has mentioned/partnered with"
+    )
 
     # Metadata
     platform_type: str = "instagram"

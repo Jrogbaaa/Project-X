@@ -46,6 +46,11 @@ class Influencer(Base):
     audience_geography = Column(JSONB, nullable=True)  # {"ES": 65, "MX": 10, ...}
     female_audience_age_distribution = Column(JSONB, nullable=True)
 
+    # Content/niche data (for creative matching)
+    interests = Column(JSONB, nullable=True)  # ["Sports", "Soccer", "Tennis"]
+    brand_mentions = Column(JSONB, nullable=True)  # ["nike", "adidas"]
+    country = Column(String(100), nullable=True)  # "Spain"
+
     # Full API response for debugging
     primetag_raw_response = Column(JSONB, nullable=True)
 
@@ -63,6 +68,8 @@ class Influencer(Base):
         Index("idx_influencers_engagement", "engagement_rate"),
         Index("idx_influencers_growth", "follower_growth_rate_6m"),
         Index("idx_influencers_cache_expiry", "cache_expires_at"),
+        Index("idx_influencers_country", "country"),
+        Index("idx_influencers_interests", "interests", postgresql_using="gin"),
     )
 
     def to_dict(self) -> dict:
@@ -88,5 +95,8 @@ class Influencer(Base):
             "audience_genders": self.audience_genders or {},
             "audience_age_distribution": self.audience_age_distribution or {},
             "audience_geography": self.audience_geography or {},
+            "interests": self.interests or [],
+            "brand_mentions": self.brand_mentions or [],
+            "country": self.country,
             "cached_at": self.cached_at.isoformat() if self.cached_at else None,
         }

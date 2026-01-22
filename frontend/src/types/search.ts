@@ -11,6 +11,9 @@ export interface RankingWeights {
   audience_match: number;
   growth: number;
   geography: number;
+  brand_affinity: number;
+  creative_fit: number;
+  niche_match: number;
 }
 
 export interface SearchRequest {
@@ -43,6 +46,9 @@ export interface ScoreComponents {
   audience_match: number;
   growth: number;
   geography: number;
+  brand_affinity: number;
+  creative_fit: number;
+  niche_match: number;
 }
 
 export interface InfluencerData {

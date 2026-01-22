@@ -25,6 +25,7 @@ Contains:
 | `search-workflow.md` | Search flow documentation | Search logic changes |
 | `ranking-criteria.md` | Ranking algorithm docs | Weights/scoring changes |
 | `api-integration.md` | PrimeTag API guide | API client changes |
+| `enrichment-pipeline.md` | Instagram profile scraping | Enrichment approach changes |
 | `documentation.md` | This file | Documentation standards change |
 
 **Format:** Each directive should have:
@@ -113,6 +114,7 @@ This command:
 | API routes | `AGENTS.md`, `docs/API.md` |
 | LLM integration | `directives/search-workflow.md` |
 | PrimeTag client | `directives/api-integration.md` |
+| Instagram enrichment | `directives/enrichment-pipeline.md` |
 | Frontend components | `AGENTS.md` |
 | Database models | `AGENTS.md` |
 | Ranking algorithm | `directives/ranking-criteria.md` |

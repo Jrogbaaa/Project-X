@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from uuid import UUID
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.dialects.postgresql import insert
 
 from app.models.influencer import Influencer
@@ -22,20 +23,48 @@ class CacheService:
         min_credibility: float = 0,
         min_spain_pct: float = 0,
         min_engagement: Optional[float] = None,
-        limit: int = 100
+        limit: int = 100,
+        include_partial_data: bool = True
     ) -> List[Influencer]:
-        """Find cached influencers matching basic criteria."""
+        """
+        Find cached influencers matching basic criteria.
+        
+        Args:
+            min_credibility: Minimum credibility score (0-100)
+            min_spain_pct: Minimum Spain audience percentage
+            min_engagement: Minimum engagement rate
+            limit: Maximum results
+            include_partial_data: If True, include profiles without full metrics
+        """
         now = datetime.utcnow()
 
         # Build query conditions
         conditions = [
             Influencer.cache_expires_at > now,  # Not expired
-            Influencer.credibility_score >= min_credibility,
         ]
+
+        # Handle credibility filter - allow NULL for imported data without metrics
+        if include_partial_data:
+            conditions.append(
+                or_(
+                    Influencer.credibility_score >= min_credibility,
+                    Influencer.credibility_score.is_(None)
+                )
+            )
+        else:
+            conditions.append(Influencer.credibility_score >= min_credibility)
 
         # Add engagement filter if specified
         if min_engagement is not None:
-            conditions.append(Influencer.engagement_rate >= min_engagement)
+            if include_partial_data:
+                conditions.append(
+                    or_(
+                        Influencer.engagement_rate >= min_engagement,
+                        Influencer.engagement_rate.is_(None)
+                    )
+                )
+            else:
+                conditions.append(Influencer.engagement_rate >= min_engagement)
 
         query = (
             select(Influencer)
@@ -47,13 +76,147 @@ class CacheService:
         influencers = result.scalars().all()
 
         # Filter by Spain percentage (requires checking JSONB)
+        # For imported data without audience_geography, check country field
         filtered = []
         for inf in influencers:
             spain_pct = (inf.audience_geography or {}).get("ES", 0)
-            if spain_pct >= min_spain_pct:
+            # If no audience data but country is Spain, assume 100% Spain
+            if spain_pct == 0 and inf.country and inf.country.lower() == "spain":
+                spain_pct = 100
+            if spain_pct >= min_spain_pct or include_partial_data:
                 filtered.append(inf)
 
         return filtered
+
+    async def find_by_interests(
+        self,
+        interests: List[str],
+        exclude_interests: Optional[List[str]] = None,
+        country: Optional[str] = None,
+        limit: int = 100
+    ) -> List[Influencer]:
+        """
+        Find influencers by matching interests/niches.
+        
+        Args:
+            interests: List of interests to match (e.g., ["Soccer", "Sports"])
+            exclude_interests: List of interests to exclude
+            country: Filter by country
+            limit: Maximum results
+        """
+        now = datetime.utcnow()
+        
+        conditions = [
+            Influencer.cache_expires_at > now,
+            Influencer.interests.isnot(None),
+        ]
+        
+        # Filter by country if specified
+        if country:
+            conditions.append(
+                func.lower(Influencer.country) == country.lower()
+            )
+        
+        query = (
+            select(Influencer)
+            .where(and_(*conditions))
+            .limit(limit * 3)  # Fetch more to filter in Python
+        )
+        
+        result = await self.db.execute(query)
+        influencers = list(result.scalars().all())
+        
+        # Score and filter by interests in Python for flexibility
+        scored = []
+        for inf in influencers:
+            inf_interests = inf.interests or []
+            inf_interests_lower = [i.lower() for i in inf_interests]
+            inf_bio = (inf.bio or "").lower()
+            
+            # Calculate match score
+            score = 0
+            for interest in interests:
+                interest_lower = interest.lower()
+                if interest_lower in inf_interests_lower:
+                    score += 2  # Direct match
+                elif interest_lower in inf_bio:
+                    score += 1  # Bio mention
+            
+            # Apply exclusion penalty
+            exclude_penalty = 0
+            if exclude_interests:
+                for exclude in exclude_interests:
+                    exclude_lower = exclude.lower()
+                    if exclude_lower in inf_interests_lower:
+                        exclude_penalty += 3  # Heavy penalty for excluded interest
+                    elif exclude_lower in inf_bio:
+                        exclude_penalty += 1
+            
+            final_score = score - exclude_penalty
+            
+            if final_score > 0:
+                scored.append((inf, final_score))
+        
+        # Sort by score and return top results
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [inf for inf, _ in scored[:limit]]
+
+    async def search_by_keywords(
+        self,
+        keywords: List[str],
+        limit: int = 100
+    ) -> List[Influencer]:
+        """
+        Search influencers by keywords in bio and interests.
+        
+        Args:
+            keywords: Keywords to search for
+            limit: Maximum results
+        """
+        now = datetime.utcnow()
+        
+        conditions = [
+            Influencer.cache_expires_at > now,
+        ]
+        
+        # Build keyword search conditions
+        keyword_conditions = []
+        for keyword in keywords:
+            keyword_lower = keyword.lower()
+            # Search in bio
+            keyword_conditions.append(
+                func.lower(Influencer.bio).contains(keyword_lower)
+            )
+            # Search in interests JSONB (cast to text for LIKE search)
+            keyword_conditions.append(
+                func.lower(Influencer.interests.cast(sa.Text())).contains(keyword_lower)
+            )
+        
+        if keyword_conditions:
+            conditions.append(or_(*keyword_conditions))
+        
+        query = (
+            select(Influencer)
+            .where(and_(*conditions))
+            .limit(limit)
+        )
+        
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_all_active(self, limit: int = 1000) -> List[Influencer]:
+        """Get all non-expired influencers."""
+        now = datetime.utcnow()
+        
+        query = (
+            select(Influencer)
+            .where(Influencer.cache_expires_at > now)
+            .order_by(Influencer.follower_count.desc().nullslast())
+            .limit(limit)
+        )
+        
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
 
     async def exists(self, username: str, platform_type: str = "instagram") -> bool:
         """Check if an influencer exists in cache and is not expired."""
@@ -131,6 +294,10 @@ class CacheService:
             existing.audience_genders = metrics.get('audience_genders') or existing.audience_genders
             existing.audience_age_distribution = metrics.get('audience_age_distribution') or existing.audience_age_distribution
             existing.audience_geography = metrics.get('audience_geography') or existing.audience_geography
+            # Update new fields
+            existing.interests = metrics.get('interests') or existing.interests
+            existing.brand_mentions = metrics.get('brand_mentions') or existing.brand_mentions
+            existing.country = metrics.get('country') or existing.country
             existing.cached_at = now
             existing.cache_expires_at = expires_at
             existing.updated_at = now
@@ -159,6 +326,9 @@ class CacheService:
                 audience_genders=metrics.get('audience_genders'),
                 audience_age_distribution=metrics.get('audience_age_distribution'),
                 audience_geography=metrics.get('audience_geography'),
+                interests=metrics.get('interests'),
+                brand_mentions=metrics.get('brand_mentions'),
+                country=metrics.get('country'),
                 cached_at=now,
                 cache_expires_at=expires_at,
             )

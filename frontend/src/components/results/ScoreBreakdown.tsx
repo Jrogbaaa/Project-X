@@ -43,14 +43,35 @@ const SCORE_CONFIG: Record<keyof ScoreComponents, {
     color: 'bg-[#14b8a6]',
     bgColor: 'bg-[#14b8a6]/20',
   },
+  brand_affinity: {
+    label: 'Brand Affinity',
+    description: 'Audience overlap with target brand',
+    color: 'bg-[#f97316]',
+    bgColor: 'bg-[#f97316]/20',
+  },
+  creative_fit: {
+    label: 'Creative Fit',
+    description: 'Alignment with campaign concept',
+    color: 'bg-[#8b5cf6]',
+    bgColor: 'bg-[#8b5cf6]/20',
+  },
+  niche_match: {
+    label: 'Niche Match',
+    description: 'Content category alignment',
+    color: 'bg-[#06b6d4]',
+    bgColor: 'bg-[#06b6d4]/20',
+  },
 };
 
 const WEIGHT_LABELS: Record<keyof ScoreComponents, string> = {
-  credibility: '25%',
-  engagement: '30%',
-  audience_match: '25%',
-  growth: '10%',
+  credibility: '15%',
+  engagement: '20%',
+  audience_match: '15%',
+  growth: '5%',
   geography: '10%',
+  brand_affinity: '15%',
+  creative_fit: '15%',
+  niche_match: '5%',
 };
 
 export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
@@ -121,9 +142,12 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
 
       {/* Summary */}
       <div className="pt-3 border-t border-dark-border/50">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
           <span className="text-xs text-light-tertiary">
-            Default weights: Engagement 30% · Credibility 25% · Audience 25% · Growth 10% · Geography 10%
+            Default weights: Engagement 20% · Credibility 15% · Audience 15% · Brand Affinity 15% · Creative Fit 15%
+          </span>
+          <span className="text-xs text-light-tertiary">
+            Geography 10% · Growth 5% · Niche 5%
           </span>
         </div>
       </div>

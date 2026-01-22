@@ -33,17 +33,67 @@ class FilterConfig(BaseModel):
 
 
 class RankingWeights(BaseModel):
-    """Configurable ranking weights."""
-    credibility: float = Field(default=0.25, ge=0, le=1)
-    engagement: float = Field(default=0.30, ge=0, le=1)
-    audience_match: float = Field(default=0.25, ge=0, le=1)
-    growth: float = Field(default=0.10, ge=0, le=1)
+    """Configurable ranking weights for influencer scoring.
+
+    When brand/creative info is provided, all 8 factors are used.
+    When not provided, brand_affinity, creative_fit, niche_match default to neutral (0.5)
+    and their weights are effectively redistributed.
+    """
+    # Original factors
+    credibility: float = Field(default=0.15, ge=0, le=1)
+    engagement: float = Field(default=0.20, ge=0, le=1)
+    audience_match: float = Field(default=0.15, ge=0, le=1)
+    growth: float = Field(default=0.05, ge=0, le=1)
     geography: float = Field(default=0.10, ge=0, le=1)
+
+    # New brand/creative matching factors
+    brand_affinity: float = Field(
+        default=0.15,
+        ge=0,
+        le=1,
+        description="Weight for audience overlap with target brand"
+    )
+    creative_fit: float = Field(
+        default=0.15,
+        ge=0,
+        le=1,
+        description="Weight for alignment with creative concept"
+    )
+    niche_match: float = Field(
+        default=0.05,
+        ge=0,
+        le=1,
+        description="Weight for content niche alignment"
+    )
 
     def validate_sum(self) -> bool:
         """Check if weights sum to 1.0."""
-        total = self.credibility + self.engagement + self.audience_match + self.growth + self.geography
+        total = (
+            self.credibility + self.engagement + self.audience_match +
+            self.growth + self.geography + self.brand_affinity +
+            self.creative_fit + self.niche_match
+        )
         return abs(total - 1.0) < 0.01  # Allow small floating point error
+
+    def get_normalized_weights(self) -> "RankingWeights":
+        """Return weights normalized to sum to 1.0."""
+        total = (
+            self.credibility + self.engagement + self.audience_match +
+            self.growth + self.geography + self.brand_affinity +
+            self.creative_fit + self.niche_match
+        )
+        if total == 0:
+            return self
+        return RankingWeights(
+            credibility=self.credibility / total,
+            engagement=self.engagement / total,
+            audience_match=self.audience_match / total,
+            growth=self.growth / total,
+            geography=self.geography / total,
+            brand_affinity=self.brand_affinity / total,
+            creative_fit=self.creative_fit / total,
+            niche_match=self.niche_match / total,
+        )
 
 
 class SearchRequest(BaseModel):

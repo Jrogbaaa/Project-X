@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from enum import Enum
 
 
@@ -21,7 +21,10 @@ class AudienceAgeRange(str, Enum):
 
 
 class ParsedSearchQuery(BaseModel):
-    """Structured output from LLM query parsing."""
+    """Structured output from LLM query parsing.
+
+    Extracts brand info, creative concept, and search criteria from natural language briefs.
+    """
 
     # Extracted count
     target_count: int = Field(
@@ -42,24 +45,66 @@ class ParsedSearchQuery(BaseModel):
         description="Desired gender of the influencer's audience"
     )
 
-    # Brand context
+    # ========== Brand Context ==========
     brand_name: Optional[str] = Field(
         default=None,
         description="Brand name mentioned in query"
     )
 
-    brand_category: Optional[str] = Field(
+    brand_handle: Optional[str] = Field(
         default=None,
-        description="Inferred brand category (e.g., 'home_furniture', 'fashion', 'tech')"
+        description="Brand's social media handle (e.g., '@nike', '@adidas') for audience overlap analysis"
     )
 
-    # Content preferences
+    brand_category: Optional[str] = Field(
+        default=None,
+        description="Inferred brand category (e.g., 'home_furniture', 'fashion', 'sports', 'tech')"
+    )
+
+    # ========== Creative Concept ==========
+    creative_concept: Optional[str] = Field(
+        default=None,
+        description="The campaign creative brief or concept description"
+    )
+
+    creative_tone: List[str] = Field(
+        default_factory=list,
+        description="Tone/style keywords: authentic, humorous, luxury, edgy, casual, documentary, inspirational, gritty"
+    )
+
+    creative_themes: List[str] = Field(
+        default_factory=list,
+        description="Key themes in the creative concept: dedication, family, adventure, innovation, rising stars, etc."
+    )
+
+    # ========== Niche/Topic Targeting ==========
+    campaign_topics: List[str] = Field(
+        default_factory=list,
+        description="Specific topics/niches for the campaign (e.g., 'padel', 'tennis', 'skincare')"
+    )
+
+    exclude_niches: List[str] = Field(
+        default_factory=list,
+        description="Niches to avoid (e.g., for padel campaign, exclude 'soccer', 'football')"
+    )
+
     content_themes: List[str] = Field(
         default_factory=list,
         description="Relevant content themes (e.g., 'interior_design', 'lifestyle')"
     )
 
-    # Audience requirements
+    # ========== Size Preferences ==========
+    preferred_follower_min: Optional[int] = Field(
+        default=None,
+        description="Minimum preferred follower count (anti-celebrity bias)"
+    )
+
+    preferred_follower_max: Optional[int] = Field(
+        default=None,
+        description="Maximum preferred follower count (anti-celebrity bias)"
+    )
+
+    # ========== Audience Requirements ==========
     target_age_ranges: List[AudienceAgeRange] = Field(
         default_factory=list,
         description="Preferred audience age ranges"
@@ -72,7 +117,7 @@ class ParsedSearchQuery(BaseModel):
         description="Minimum percentage of Spanish audience"
     )
 
-    # Quality filters
+    # ========== Quality Filters ==========
     min_credibility_score: float = Field(
         default=70.0,
         ge=0,
@@ -87,19 +132,19 @@ class ParsedSearchQuery(BaseModel):
         description="Minimum engagement rate percentage"
     )
 
-    # Ranking weight adjustments
+    # ========== Ranking ==========
     suggested_ranking_weights: Optional[Dict[str, float]] = Field(
         default=None,
         description="Suggested ranking weight adjustments based on query context"
     )
 
-    # Search keywords for PrimeTag API
+    # ========== Search ==========
     search_keywords: List[str] = Field(
         default_factory=list,
         description="Keywords to use for PrimeTag username search"
     )
 
-    # Confidence
+    # ========== Meta ==========
     parsing_confidence: float = Field(
         default=1.0,
         ge=0,
@@ -111,3 +156,24 @@ class ParsedSearchQuery(BaseModel):
         default="",
         description="Brief explanation of parsing decisions"
     )
+
+    def has_brand_context(self) -> bool:
+        """Check if brand info was provided for affinity scoring."""
+        return bool(self.brand_name or self.brand_handle)
+
+    def has_creative_context(self) -> bool:
+        """Check if creative concept was provided for fit scoring."""
+        return bool(self.creative_concept or self.creative_tone or self.creative_themes)
+
+    def has_niche_context(self) -> bool:
+        """Check if niche targeting was specified."""
+        return bool(self.campaign_topics or self.exclude_niches)
+
+    def get_follower_range(self) -> Optional[Tuple[int, int]]:
+        """Get preferred follower range if specified."""
+        if self.preferred_follower_min is not None or self.preferred_follower_max is not None:
+            return (
+                self.preferred_follower_min or 0,
+                self.preferred_follower_max or 999_999_999
+            )
+        return None

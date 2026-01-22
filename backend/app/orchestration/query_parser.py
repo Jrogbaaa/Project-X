@@ -9,30 +9,58 @@ from app.core.exceptions import LLMParsingError
 
 SYSTEM_PROMPT = """You are a search query parser for an influencer discovery platform focused on the Spanish market.
 
-Your job is to extract structured search parameters from natural language queries from talent agents looking for influencers for brand partnerships.
+Your job is to extract structured search parameters from natural language brand briefs and queries. Talent agents paste in campaign briefs containing brand info, creative concepts, and search criteria.
 
-Key guidelines:
-1. Default to Spanish audience focus (min 60% Spain audience)
-2. Default credibility threshold is 70%
-3. If a brand is mentioned, infer the category and relevant content themes
-4. If no count is specified, default to 5 influencers
-5. Consider the brand context when suggesting ranking weights:
-   - Fashion/beauty brands: higher engagement weight
-   - B2B/professional brands: higher credibility weight
-   - Viral campaigns: higher growth weight
-   - Local businesses: higher geography weight
+## Extraction Guidelines
+
+### Brand Information
+1. Extract brand_name (e.g., "Adidas", "Nike", "IKEA")
+2. Infer brand_handle - the brand's social media handle (e.g., "@adidas", "@nike", "@ikea")
+3. Infer brand_category from the brand name
 
 Brand category mappings:
 - IKEA, furniture stores -> home_furniture
 - Zara, H&M, fashion brands -> fashion
+- Nike, Adidas, Puma -> sports_apparel
 - L'Oreal, beauty brands -> beauty
 - Tech companies -> technology
 - Food/restaurant brands -> food_lifestyle
 - Fitness brands -> health_fitness
 - Travel brands -> travel_lifestyle
 
-For the search_keywords field, provide keywords that would help find relevant influencer usernames or content themes. Think about:
-- Related niches (e.g., "interior" for IKEA, "moda" for fashion)
+### Creative Concept Extraction
+Extract the creative/campaign concept if described:
+1. creative_concept: The full campaign idea or creative brief
+2. creative_tone: Style keywords like "authentic", "humorous", "luxury", "edgy", "casual", "documentary", "inspirational", "gritty", "polished", "raw"
+3. creative_themes: Key values/themes like "dedication", "family", "adventure", "innovation", "rising stars", "everyday heroes", "transformation"
+
+### Niche/Topic Targeting
+1. campaign_topics: Specific niches relevant to the campaign (e.g., "padel", "tennis", "skincare", "cooking")
+2. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
+
+### Size Preferences (Anti-Celebrity Bias)
+If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:
+- preferred_follower_min: Minimum follower count (e.g., 100000 for "100K+")
+- preferred_follower_max: Maximum follower count (e.g., 2000000 to avoid mega-celebrities)
+
+### Default Settings
+1. Default to Spanish audience focus (min 60% Spain audience)
+2. Default credibility threshold is 70%
+3. If no count is specified, default to 5 influencers
+
+### Ranking Weight Suggestions
+Consider the context when suggesting ranking weights:
+- Fashion/beauty brands: higher engagement weight
+- B2B/professional brands: higher credibility weight
+- Viral campaigns: higher growth weight
+- Local businesses: higher geography weight
+- When brand_handle is provided: higher brand_affinity weight
+- When creative_concept is provided: higher creative_fit weight
+- When campaign_topics specified: higher niche_match weight
+
+### Search Keywords
+Provide keywords that would help find relevant influencer usernames:
+- Niche-specific terms (e.g., "padel", "tenis" for racket sports)
 - Spanish terms if relevant (e.g., "decoracion", "hogar")
 - Content types (e.g., "lifestyle", "diy")
 
@@ -61,19 +89,60 @@ RESPONSE_FORMAT = {
                     "enum": ["male", "female", "any", None],
                     "description": "Desired gender of the influencer's audience"
                 },
+                # Brand context
                 "brand_name": {
                     "type": ["string", "null"],
                     "description": "Brand name mentioned in query"
                 },
+                "brand_handle": {
+                    "type": ["string", "null"],
+                    "description": "Brand's social media handle (e.g., @nike, @adidas)"
+                },
                 "brand_category": {
                     "type": ["string", "null"],
                     "description": "Inferred brand category"
+                },
+                # Creative concept
+                "creative_concept": {
+                    "type": ["string", "null"],
+                    "description": "The campaign creative brief or concept"
+                },
+                "creative_tone": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Tone keywords: authentic, humorous, luxury, edgy, casual, documentary, etc."
+                },
+                "creative_themes": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Key themes: dedication, family, adventure, innovation, etc."
+                },
+                # Niche targeting
+                "campaign_topics": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Specific niches for the campaign (padel, skincare, cooking)"
+                },
+                "exclude_niches": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Niches to avoid (e.g., soccer for padel campaign)"
                 },
                 "content_themes": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Relevant content themes"
                 },
+                # Size preferences
+                "preferred_follower_min": {
+                    "type": ["integer", "null"],
+                    "description": "Minimum preferred follower count"
+                },
+                "preferred_follower_max": {
+                    "type": ["integer", "null"],
+                    "description": "Maximum preferred follower count (anti-celebrity)"
+                },
+                # Audience
                 "target_age_ranges": {
                     "type": "array",
                     "items": {
@@ -86,6 +155,7 @@ RESPONSE_FORMAT = {
                     "type": "number",
                     "description": "Minimum percentage of Spanish audience (0-100)"
                 },
+                # Quality
                 "min_credibility_score": {
                     "type": "number",
                     "description": "Minimum credibility score (0-100)"
@@ -94,6 +164,7 @@ RESPONSE_FORMAT = {
                     "type": ["number", "null"],
                     "description": "Minimum engagement rate percentage"
                 },
+                # Ranking
                 "suggested_ranking_weights": {
                     "type": ["object", "null"],
                     "properties": {
@@ -101,16 +172,22 @@ RESPONSE_FORMAT = {
                         "engagement": {"type": "number"},
                         "audience_match": {"type": "number"},
                         "growth": {"type": "number"},
-                        "geography": {"type": "number"}
+                        "geography": {"type": "number"},
+                        "brand_affinity": {"type": "number"},
+                        "creative_fit": {"type": "number"},
+                        "niche_match": {"type": "number"}
                     },
+                    "required": ["credibility", "engagement", "audience_match", "growth", "geography", "brand_affinity", "creative_fit", "niche_match"],
                     "additionalProperties": False,
                     "description": "Suggested ranking weight adjustments"
                 },
+                # Search
                 "search_keywords": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Keywords for PrimeTag username search"
                 },
+                # Meta
                 "parsing_confidence": {
                     "type": "number",
                     "description": "Confidence in parsing accuracy (0-1)"
@@ -125,8 +202,16 @@ RESPONSE_FORMAT = {
                 "influencer_gender",
                 "target_audience_gender",
                 "brand_name",
+                "brand_handle",
                 "brand_category",
+                "creative_concept",
+                "creative_tone",
+                "creative_themes",
+                "campaign_topics",
+                "exclude_niches",
                 "content_themes",
+                "preferred_follower_min",
+                "preferred_follower_max",
                 "target_age_ranges",
                 "min_spain_audience_pct",
                 "min_credibility_score",
@@ -168,18 +253,45 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
 
         # Convert to Pydantic model with validation
         return ParsedSearchQuery(
+            # Count and gender
             target_count=parsed_data.get("target_count", 5),
             influencer_gender=GenderFilter(parsed_data.get("influencer_gender", "any")),
             target_audience_gender=GenderFilter(parsed_data["target_audience_gender"]) if parsed_data.get("target_audience_gender") else None,
+
+            # Brand context
             brand_name=parsed_data.get("brand_name"),
+            brand_handle=parsed_data.get("brand_handle"),
             brand_category=parsed_data.get("brand_category"),
+
+            # Creative concept
+            creative_concept=parsed_data.get("creative_concept"),
+            creative_tone=parsed_data.get("creative_tone", []),
+            creative_themes=parsed_data.get("creative_themes", []),
+
+            # Niche targeting
+            campaign_topics=parsed_data.get("campaign_topics", []),
+            exclude_niches=parsed_data.get("exclude_niches", []),
             content_themes=parsed_data.get("content_themes", []),
+
+            # Size preferences
+            preferred_follower_min=parsed_data.get("preferred_follower_min"),
+            preferred_follower_max=parsed_data.get("preferred_follower_max"),
+
+            # Audience
             target_age_ranges=parsed_data.get("target_age_ranges", []),
             min_spain_audience_pct=parsed_data.get("min_spain_audience_pct", 60.0),
+
+            # Quality
             min_credibility_score=parsed_data.get("min_credibility_score", 70.0),
             min_engagement_rate=parsed_data.get("min_engagement_rate"),
+
+            # Ranking
             suggested_ranking_weights=parsed_data.get("suggested_ranking_weights"),
+
+            # Search
             search_keywords=parsed_data.get("search_keywords", []),
+
+            # Meta
             parsing_confidence=parsed_data.get("parsing_confidence", 1.0),
             reasoning=parsed_data.get("reasoning", ""),
         )

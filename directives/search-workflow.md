@@ -1,24 +1,45 @@
 # Search Workflow Directive
 
 ## Goal
-Process natural language queries to find and rank influencers for brand partnerships.
+Process brand briefs and natural language queries to find and intelligently rank influencers based on brand affinity, creative fit, and niche match—not just generic popularity metrics.
 
 ## Input
-- Natural language query from user (e.g., "5 female influencers for IKEA")
+- **Brand brief** pasted by user (can be multi-line, detailed campaign description)
+- Example: "Find 5 Spanish influencers for Adidas padel campaign. Creative concept: 'Rising Stars' series featuring up-and-coming athletes in authentic training moments, documentary style. Prefer mid-tier influencers (100K-2M followers)."
 - Optional filter overrides (credibility, engagement, geography thresholds)
 - Optional ranking weight overrides
 
 ## Process Flow
 
-### Step 1: Query Parsing (Orchestration Layer)
+### Step 1: Brief Parsing (Orchestration Layer)
 **Script:** `backend/app/orchestration/query_parser.py`
 
-Parse the natural language query using GPT-4o to extract:
+Parse the brand brief using GPT-4o to extract:
+
+**Basic:**
 - Target count (default: 5)
 - Influencer gender preference
 - Target audience gender
-- Brand name and category
-- Content themes
+
+**Brand Context:**
+- Brand name (e.g., "Adidas")
+- Brand handle (e.g., "@adidas") for audience overlap
+- Brand category (e.g., "sports_apparel")
+
+**Creative Concept:**
+- Creative concept description
+- Creative tone (e.g., ["authentic", "documentary"])
+- Creative themes (e.g., ["dedication", "rising stars", "training"])
+
+**Niche Targeting:**
+- Campaign topics (e.g., ["padel", "racket sports"])
+- Exclude niches (e.g., ["soccer", "football"]) - important for precision
+
+**Size Preferences:**
+- Preferred follower min (e.g., 100000)
+- Preferred follower max (e.g., 2000000) - anti-celebrity bias
+
+**Standard:**
 - Minimum thresholds (credibility, Spain audience %)
 - Search keywords for PrimeTag API
 
@@ -60,12 +81,34 @@ Apply filters in order:
 ### Step 5: Ranking (Execution Layer)
 **Script:** `backend/app/services/ranking_service.py`
 
-Calculate weighted relevance score:
+Calculate weighted relevance score using **8 factors**:
+
 ```
-score = 0.25 × credibility + 0.30 × engagement + 0.25 × audience_match + 0.10 × growth + 0.10 × geography
+score = (
+    0.15 × credibility +
+    0.20 × engagement +
+    0.15 × audience_match +
+    0.05 × growth +
+    0.10 × geography +
+    0.15 × brand_affinity +     # NEW: audience overlap with brand
+    0.15 × creative_fit +       # NEW: tone/theme alignment
+    0.05 × niche_match          # NEW: content niche match
+) × size_multiplier             # Anti-celebrity bias if size preference specified
 ```
 
-LLM may adjust weights based on brand context.
+**New Scoring Factors:**
+
+| Factor | Source | Calculation |
+|--------|--------|-------------|
+| Brand Affinity | Audience overlap or `brand_mentions` | 0.5 (neutral) if no brand, 0.75 if mentioned brand before |
+| Creative Fit | `interests`, `bio`, `brand_mentions` | Theme match (40%) + Tone match (30%) + Experience (30%) |
+| Niche Match | `interests`, `bio` | Boost for `campaign_topics`, penalty for `exclude_niches` |
+
+**Size Multiplier (Anti-Celebrity Bias):**
+- If `preferred_follower_max` specified and influencer exceeds it, apply penalty
+- Example: 50M followers with 2M max → multiplier = 0.04
+
+LLM adjusts weights based on brief context (more brand info → higher brand_affinity weight).
 
 ### Step 6: Persistence (Execution Layer)
 **Script:** `backend/app/services/search_service.py`
@@ -77,11 +120,11 @@ Save to database:
 
 ## Output
 - Search ID (UUID)
-- Parsed query details
+- Parsed query details (including extracted brand/creative/niche context)
 - Ranked list of influencers with:
-  - Relevance score
-  - Individual score components
-  - Full influencer data
+  - Relevance score (0-1)
+  - All 8 score components for transparency
+  - Full influencer data (including `interests`, `brand_mentions`)
 
 ## Edge Cases
 
@@ -128,17 +171,30 @@ result = await service.execute_search(SearchRequest(
 ### Query Parser (LLM Integration)
 **File:** `backend/app/orchestration/query_parser.py`
 
-Uses GPT-4o with structured JSON response format:
+Uses GPT-4o with structured JSON response format to extract brand/creative/niche context:
 ```python
 from app.orchestration.query_parser import parse_search_query
 
-parsed = await parse_search_query("5 female influencers for IKEA")
+brief = """
+Find 5 Spanish influencers for Adidas padel campaign. 
+Creative concept: 'Rising Stars' series - authentic documentary style,
+focus on dedication. Prefer 100K-2M followers.
+"""
+parsed = await parse_search_query(brief)
+
 # Returns ParsedSearchQuery:
 # - target_count: 5
-# - influencer_gender: "female"
-# - brand_name: "IKEA"
-# - brand_category: "home_furniture"
-# - keywords: ["home", "decor", "interior"]
+# - brand_name: "Adidas"
+# - brand_handle: "@adidas"
+# - brand_category: "sports_apparel"
+# - creative_concept: "Rising Stars series..."
+# - creative_tone: ["authentic", "documentary"]
+# - creative_themes: ["dedication", "rising stars"]
+# - campaign_topics: ["padel", "racket sports"]
+# - exclude_niches: ["soccer", "football"]
+# - preferred_follower_min: 100000
+# - preferred_follower_max: 2000000
+# - search_keywords: ["padel", "tenis", "raqueta"]
 # - parsing_confidence: 0.95
 ```
 
@@ -148,11 +204,16 @@ parsed = await parse_search_query("5 female influencers for IKEA")
 - `SearchRequest` - Query, filters, ranking weights
 - `SearchResponse` - Full response with parsed query, results
 - `FilterConfig` - Configurable thresholds
-- `RankingWeights` - Weight distribution
+- `RankingWeights` - 8 weight factors (including brand_affinity, creative_fit, niche_match)
 
 **File:** `backend/app/schemas/llm.py`
 
-- `ParsedSearchQuery` - LLM output structure
+- `ParsedSearchQuery` - LLM output with brand/creative/niche context
+
+**File:** `backend/app/schemas/influencer.py`
+
+- `ScoreComponents` - All 8 scoring factors
+- `InfluencerData` - Including `interests` and `brand_mentions` for matching
 
 ### Database Models
 - `backend/app/models/influencer.py` - Influencer cache
@@ -160,6 +221,6 @@ parsed = await parse_search_query("5 female influencers for IKEA")
 
 ### Frontend Components
 - `frontend/src/lib/api.ts` - `searchInfluencers()` function
-- `frontend/src/components/search/SearchBar.tsx` - Natural language input
+- `frontend/src/components/search/SearchBar.tsx` - **Brief-pasting textarea** (expandable)
 - `frontend/src/components/search/FilterPanel.tsx` - Threshold sliders
-- `frontend/src/components/results/ResultsGrid.tsx` - Results display
+- `frontend/src/components/results/ResultsGrid.tsx` - Results with 8-factor score display

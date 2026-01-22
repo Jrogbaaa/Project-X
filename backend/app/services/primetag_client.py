@@ -196,6 +196,18 @@ class PrimeTagClient:
         if followers_data:
             credibility_score = followers_data.audience_credibility_percentage
 
+        # Extract interests/categories for niche matching
+        interests = detail.interests or []
+
+        # Extract brand mentions for creative fit scoring
+        brand_mention_usernames = []
+        if detail.brand_mentions:
+            for mention in detail.brand_mentions:
+                if hasattr(mention, 'username') and mention.username:
+                    brand_mention_usernames.append(mention.username)
+                elif isinstance(mention, dict) and mention.get('username'):
+                    brand_mention_usernames.append(mention['username'])
+
         return {
             "credibility_score": credibility_score,
             "engagement_rate": detail.avg_engagement_rate,
@@ -212,6 +224,9 @@ class PrimeTagClient:
             "profile_picture_url": detail.profile_pic,
             "profile_url": detail.profile_url,
             "is_verified": detail.is_verified,
+            # New fields for brand/creative matching
+            "interests": interests,
+            "brand_mentions": brand_mention_usernames,
         }
 
     async def autocomplete(self, query: str) -> List[MediaKitSummary]:

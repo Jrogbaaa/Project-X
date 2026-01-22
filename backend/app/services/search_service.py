@@ -1,6 +1,7 @@
 import asyncio
+import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Set
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,8 @@ from app.models.search import Search, SearchResult
 from app.models.influencer import Influencer
 from app.core.exceptions import SearchError
 
+logger = logging.getLogger(__name__)
+
 
 class SearchService:
     """Main service for orchestrating influencer searches."""
@@ -29,87 +32,108 @@ class SearchService:
 
     async def execute_search(self, request: SearchRequest) -> SearchResponse:
         """
-        Main search orchestration flow:
+        Main search orchestration flow (local-first):
         1. Parse natural language query with LLM
-        2. Check cache for matching influencers
-        3. Search PrimeTag API if needed
-        4. Fetch detailed metrics for candidates
-        5. Apply filters
-        6. Rank results
+        2. Search local database by interests/niche
+        3. Fall back to generic cache search
+        4. Search PrimeTag API only if local results insufficient
+        5. Apply filters (lenient for partial data)
+        6. Rank results using 8-factor scoring
         7. Save search and return
         """
         try:
             # Step 1: Parse query with LLM
+            logger.info(f"Parsing query: {request.query[:100]}...")
             parsed_query = await parse_search_query(request.query)
+            logger.info(f"Parsed query - topics: {parsed_query.campaign_topics}, keywords: {parsed_query.search_keywords}")
 
             # Merge with request filters if provided
             filters_applied = self._merge_filters(parsed_query, request.filters)
 
-            # Step 2: Check cache first
-            cached_influencers = await self.cache_service.find_matching(
-                min_credibility=filters_applied.min_credibility_score,
-                min_spain_pct=filters_applied.min_spain_audience_pct,
-                min_engagement=filters_applied.min_engagement_rate,
-                limit=100
-            )
+            # Track candidates
+            candidates: List[Influencer] = []
+            seen_usernames: Set[str] = set()
+            target_candidates = parsed_query.target_count * 5  # Get 5x for filtering headroom
 
-            # Step 3: Search PrimeTag if cache insufficient
-            candidates = list(cached_influencers)
-            target_candidates = parsed_query.target_count * 3  # Get 3x for filtering headroom
+            # Step 2: Search local DB by interests/niche (PRIMARY SOURCE)
+            if parsed_query.campaign_topics:
+                logger.info(f"Searching by interests: {parsed_query.campaign_topics}")
+                interest_matches = await self.cache_service.find_by_interests(
+                    interests=parsed_query.campaign_topics,
+                    exclude_interests=parsed_query.exclude_niches,
+                    country="Spain",  # Default to Spain
+                    limit=target_candidates
+                )
+                for inf in interest_matches:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                logger.info(f"Found {len(interest_matches)} matches by interests")
 
+            # Step 3: Search by keywords in bio
             if len(candidates) < target_candidates and parsed_query.search_keywords:
-                # Search for more candidates using keywords
-                search_tasks = []
-                for keyword in parsed_query.search_keywords[:5]:  # Limit API calls
-                    search_tasks.append(self._search_keyword(keyword))
+                logger.info(f"Searching by keywords: {parsed_query.search_keywords}")
+                keyword_matches = await self.cache_service.search_by_keywords(
+                    keywords=parsed_query.search_keywords[:5],
+                    limit=target_candidates
+                )
+                for inf in keyword_matches:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                logger.info(f"Found {len(keyword_matches)} matches by keywords")
 
-                search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+            # Step 4: Fall back to generic cache search (includes partial data)
+            if len(candidates) < target_candidates:
+                logger.info("Falling back to generic cache search")
+                cached_influencers = await self.cache_service.find_matching(
+                    min_credibility=filters_applied.min_credibility_score,
+                    min_spain_pct=filters_applied.min_spain_audience_pct,
+                    min_engagement=filters_applied.min_engagement_rate,
+                    limit=target_candidates,
+                    include_partial_data=True  # Include imported profiles without full metrics
+                )
+                for inf in cached_influencers:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                logger.info(f"Total candidates after cache: {len(candidates)}")
 
-                # Collect unique usernames
-                seen_usernames = {c.username for c in candidates}
-                new_summaries = []
-
-                for result in search_results:
-                    if isinstance(result, Exception):
-                        continue
-                    for summary in result:
-                        if summary.username not in seen_usernames:
-                            seen_usernames.add(summary.username)
-                            new_summaries.append(summary)
-
-                # Step 4: Fetch detailed metrics for new candidates
-                if new_summaries:
-                    detail_tasks = []
-                    for summary in new_summaries[:30]:  # Limit detail fetches
-                        detail_tasks.append(self._fetch_and_cache(summary))
-
-                    detail_results = await asyncio.gather(*detail_tasks, return_exceptions=True)
-
-                    for result in detail_results:
-                        if isinstance(result, Influencer):
-                            candidates.append(result)
+            # Step 5: Search PrimeTag API ONLY if local results still insufficient
+            if len(candidates) < target_candidates and parsed_query.search_keywords:
+                logger.info(f"Local results insufficient ({len(candidates)}), trying PrimeTag API")
+                await self._search_primetag_api(
+                    parsed_query=parsed_query,
+                    candidates=candidates,
+                    seen_usernames=seen_usernames,
+                    target_candidates=target_candidates
+                )
+                logger.info(f"Total candidates after PrimeTag: {len(candidates)}")
 
             total_candidates = len(candidates)
 
-            # Step 5: Apply filters
+            # Step 6: Apply filters (lenient for partial data)
             filtered = self.filter_service.apply_filters(
                 candidates,
                 parsed_query,
-                filters_applied
+                filters_applied,
+                lenient_mode=True  # Don't filter out profiles missing metrics
             )
             total_after_filter = len(filtered)
+            logger.info(f"After filtering: {total_after_filter} candidates")
 
-            # Step 6: Rank results
+            # Step 7: Rank results using 8-factor scoring
             ranked = self.ranking_service.rank_influencers(
                 filtered,
                 parsed_query,
                 request.ranking_weights
             )
 
-            # Step 7: Limit to requested count
+            # Step 8: Limit to requested count
             final_results = ranked[:request.limit]
+            logger.info(f"Final results: {len(final_results)}")
 
-            # Step 8: Save search to database
+            # Step 9: Save search to database
             search = await self._save_search(
                 request=request,
                 parsed_query=parsed_query,
@@ -131,7 +155,48 @@ class SearchService:
             )
 
         except Exception as e:
+            logger.error(f"Search failed: {str(e)}", exc_info=True)
             raise SearchError(f"Search failed: {str(e)}")
+
+    async def _search_primetag_api(
+        self,
+        parsed_query: ParsedSearchQuery,
+        candidates: List[Influencer],
+        seen_usernames: Set[str],
+        target_candidates: int
+    ):
+        """Search PrimeTag API for additional candidates."""
+        try:
+            # Search for more candidates using keywords
+            search_tasks = []
+            for keyword in parsed_query.search_keywords[:5]:  # Limit API calls
+                search_tasks.append(self._search_keyword(keyword))
+
+            search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+
+            # Collect unique usernames
+            new_summaries = []
+            for result in search_results:
+                if isinstance(result, Exception):
+                    continue
+                for summary in result:
+                    if summary.username not in seen_usernames:
+                        seen_usernames.add(summary.username)
+                        new_summaries.append(summary)
+
+            # Fetch detailed metrics for new candidates
+            if new_summaries:
+                detail_tasks = []
+                for summary in new_summaries[:30]:  # Limit detail fetches
+                    detail_tasks.append(self._fetch_and_cache(summary))
+
+                detail_results = await asyncio.gather(*detail_tasks, return_exceptions=True)
+
+                for result in detail_results:
+                    if isinstance(result, Influencer):
+                        candidates.append(result)
+        except Exception as e:
+            logger.warning(f"PrimeTag API search failed: {e}")
 
     async def _search_keyword(self, keyword: str) -> List:
         """Search PrimeTag for a keyword."""

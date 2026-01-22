@@ -17,9 +17,9 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
 
   const exampleSearches = [
-    '5 female influencers for IKEA',
-    '10 lifestyle creators with high engagement',
-    'Micro-influencers in the beauty niche',
+    'Adidas padel campaign, documentary style',
+    '10 lifestyle creators for IKEA',
+    'Nike running, authentic tone, 100K-2M followers',
   ];
 
   return (
@@ -65,9 +65,13 @@ export default function Home() {
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-hero text-light-primary mb-4 animate-fade-in">
             Discover
           </h1>
-          <p className="text-light-secondary text-lg sm:text-xl mb-10 max-w-2xl mx-auto animate-fade-in"
+          <p className="text-light-secondary text-lg sm:text-xl mb-4 max-w-2xl mx-auto animate-fade-in"
              style={{ animationDelay: '100ms' }}>
-            Find the perfect influencers for your brand using natural language
+            Paste your brand brief and find perfectly matched influencers
+          </p>
+          <p className="text-light-tertiary text-sm mb-10 max-w-xl mx-auto animate-fade-in"
+             style={{ animationDelay: '150ms' }}>
+            Include brand name, creative concept, tone, and target audience — our AI extracts everything and scores influencers on brand affinity, creative fit, and niche match.
           </p>
 
           {/* Search Bar */}
@@ -146,17 +150,22 @@ export default function Home() {
           {/* Empty State */}
           {!searchResults && !isLoading && (
             <div className="text-center py-16">
-              <div className="max-w-md mx-auto">
+              <div className="max-w-lg mx-auto">
                 <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-dark-secondary border border-dark-border flex items-center justify-center">
                   <Sparkles className="w-8 h-8 text-accent-gold/50" />
                 </div>
                 <h3 className="font-serif text-xl text-light-primary mb-2">
                   Ready to discover
                 </h3>
-                <p className="text-light-secondary text-sm leading-relaxed">
-                  Enter a natural language query above to find influencers that match your brand&apos;s needs.
-                  Our AI understands context, demographics, and engagement patterns.
+                <p className="text-light-secondary text-sm leading-relaxed mb-6">
+                  Paste your brand brief above. Our AI extracts brand context, creative concepts, and campaign requirements to find the best-matched influencers.
                 </p>
+                <div className="bg-dark-secondary/50 rounded-xl p-4 text-left border border-dark-border/50">
+                  <p className="text-xs text-light-tertiary mb-2 uppercase tracking-wider">Example brief:</p>
+                  <p className="text-sm text-light-secondary italic">
+                    &quot;Find 5 Spanish influencers for Adidas padel campaign. Creative concept: &apos;Rising Stars&apos; series featuring up-and-coming athletes in authentic training moments, documentary style. Prefer mid-tier influencers (100K-2M followers).&quot;
+                  </p>
+                </div>
               </div>
             </div>
           )}
