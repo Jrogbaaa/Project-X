@@ -112,6 +112,42 @@ else:
 
 **Note:** Returns 0.5 (neutral) if no brand context provided in query.
 
+#### Brand Conflict Detection (NEW)
+
+Brand affinity scoring now includes **conflict detection** to penalize influencers with competitor associations.
+
+**Conflict Types:**
+
+| Type | Detection | Penalty | Score Range |
+|------|-----------|---------|-------------|
+| **Competitor Ambassador** | Username in `brand_intelligence.yaml` ambassador list for competitor | 95% penalty | 0.05 |
+| **High Severity Mention** | `brand_mentions` contains competitor handle (sports/fashion) | 75% penalty | 0.25 |
+| **Medium Severity Mention** | `brand_mentions` contains competitor (retail/food) | 65% penalty | 0.35 |
+| **Low Severity Mention** | `brand_mentions` contains competitor (other) | 55% penalty | 0.45 |
+
+**Example: Nike Campaign**
+
+| Influencer | brand_mentions | Ambassador Status | Affinity Score |
+|------------|---------------|-------------------|----------------|
+| @cristiano | ["nike"] | Nike Ambassador | **0.75** (boost) |
+| @leomessi | ["adidas"] | Adidas Ambassador | **0.05** (conflict!) |
+| @padel_star | [] | None | 0.50 (neutral) |
+| @fitness_guru | ["puma", "reebok"] | None | **0.25** (competitor) |
+
+**Saturation Detection:**
+
+When an influencer is already an ambassador for the target brand (not a competitor), they receive a "saturation warning" instead of a conflict penalty:
+
+| Relationship | Score | Warning |
+|--------------|-------|---------|
+| Lifetime deal | 0.35 | "Already Adidas ambassador (too obvious)" |
+| Ambassador | 0.40 | "Already Adidas ambassador since 2023" |
+| Sponsored | 0.45 | "Previously sponsored by Adidas" |
+
+This helps find **fresh talent** rather than the brand's existing, obvious partners.
+
+**Data Source:** `/backend/app/data/brand_intelligence.yaml`
+
 ### 7. Creative Fit Score (Default Weight: 0.15)
 **Source:** `interests`, `bio`, `brand_mentions`
 
@@ -146,11 +182,43 @@ creative_fit = (theme_score * 0.4) + (tone_score * 0.3) + (experience_score * 0.
 **Note:** Returns 0.5 (neutral) if no creative concept provided in query.
 
 ### 8. Niche Match Score (Default Weight: 0.05)
-**Source:** `interests`, `bio`
+**Source:** `interests`, `bio`, niche taxonomy
 
 **Purpose:** Ensures influencer's content niche aligns with campaign topics, and penalizes irrelevant niches.
 
-**Calculation:**
+#### Enhanced Niche Taxonomy (NEW - The Messi/Padel Solution)
+
+When a `campaign_niche` is specified (e.g., "padel"), the system uses a niche taxonomy to detect:
+1. **Exact matches** - Influencer IS in the campaign niche
+2. **Related niches** - Adjacent/similar niches (tennis for padel)
+3. **Conflicting niches** - Wrong niche entirely (football for padel)
+
+**Score Ranges:**
+
+| Match Type | Score | Example |
+|------------|-------|---------|
+| Exact match | 0.95 | Padel player for padel campaign |
+| Related niche | 0.70 | Tennis player for padel campaign |
+| No clear niche | 0.50 | Generic lifestyle influencer |
+| Conflicting niche | 0.20 | Football player for padel campaign |
+| Celebrity mismatch | 0.15 | Mega-celebrity (>5M followers) in wrong niche |
+
+**Example: Adidas Padel Campaign**
+
+| Influencer | Niche | Followers | Niche Score | Why |
+|------------|-------|-----------|-------------|-----|
+| @alegalan96 | padel | 743K | **0.95** | Exact match - actual padel player |
+| @tenisplayer | tennis | 500K | **0.70** | Related niche - racket sport |
+| @lifestyle_spain | lifestyle | 200K | 0.50 | Neutral - no specific niche |
+| @leomessi | football | 500M | **0.15** | Conflicting niche + celebrity penalty |
+
+**This solves the Messi/Padel problem:** Even though Messi is an Adidas ambassador, he scores poorly for a **padel** campaign because:
+1. His niche (football) conflicts with the campaign niche (padel)
+2. He's a mega-celebrity (>5M followers) with no niche match
+
+**Data Source:** `/backend/app/data/niche_taxonomy.yaml`
+
+**Fallback Calculation (when no campaign_niche specified):**
 ```python
 # Positive matching for campaign_topics
 topic_matches = count matches in interests/bio
@@ -161,8 +229,6 @@ if any exclude_niche in interests/bio:
     penalty = exclusions / total_excludes * 0.4
     score = max(0.1, topic_score - penalty)
 ```
-
-**Example:** For a padel campaign with `exclude_niches: ["soccer", "football"]`, a famous soccer player would be penalized even if they have high engagement.
 
 ---
 

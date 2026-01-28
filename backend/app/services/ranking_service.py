@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from app.schemas.llm import ParsedSearchQuery, GenderFilter, AudienceAgeRange
 from app.schemas.influencer import ScoreComponents, RankedInfluencer, InfluencerData
 from app.schemas.search import RankingWeights
+from app.services.brand_intelligence_service import get_brand_intelligence_service
 
 
 @dataclass
@@ -14,6 +15,10 @@ class RankingResult:
     relevance_score: float
     scores: ScoreComponents
     raw_data: dict
+    # Warning fields for brand conflicts/saturation
+    brand_warning_type: Optional[str] = None  # "competitor_conflict", "saturation"
+    brand_warning_message: Optional[str] = None
+    niche_warning: Optional[str] = None  # For celebrity/niche mismatch
 
 
 # Tone keywords for creative fit matching
@@ -71,7 +76,9 @@ class RankingService:
 
         ranked = []
         for inf in influencers:
-            scores = self._calculate_scores(inf, parsed_query, brand_overlap_data)
+            # Calculate scores - now returns tuple with warnings
+            scores, brand_warning_type, brand_warning_message, niche_warning = \
+                self._calculate_scores(inf, parsed_query, brand_overlap_data)
 
             # Calculate weighted relevance score with all 8 factors
             relevance_score = (
@@ -118,6 +125,10 @@ class RankingService:
                 audience_geography=raw_data.get('audience_geography') or {},
                 interests=raw_data.get('interests') or [],
                 brand_mentions=raw_data.get('brand_mentions') or [],
+                # Add warning fields
+                brand_warning_type=brand_warning_type,
+                brand_warning_message=brand_warning_message,
+                niche_warning=niche_warning,
             )
 
             ranked.append(RankedInfluencer(
@@ -174,8 +185,13 @@ class RankingService:
         influencer: Any,
         parsed_query: ParsedSearchQuery,
         brand_overlap_data: Optional[Dict[str, Dict[str, float]]] = None
-    ) -> ScoreComponents:
-        """Calculate normalized scores for each factor (0-1 scale)."""
+    ) -> Tuple[ScoreComponents, Optional[str], Optional[str], Optional[str]]:
+        """
+        Calculate normalized scores for each factor (0-1 scale).
+
+        Returns:
+            Tuple of (ScoreComponents, brand_warning_type, brand_warning_message, niche_warning)
+        """
 
         # ===== ORIGINAL 5 FACTORS =====
 
@@ -207,8 +223,8 @@ class RankingService:
 
         # ===== NEW BRAND/CREATIVE FACTORS =====
 
-        # Brand Affinity: audience overlap with target brand
-        brand_affinity = self._calculate_brand_affinity(
+        # Brand Affinity: audience overlap with target brand + conflict detection
+        brand_affinity, brand_warning_type, brand_warning_message = self._calculate_brand_affinity(
             influencer,
             parsed_query.brand_handle,
             brand_overlap_data
@@ -222,13 +238,15 @@ class RankingService:
         )
 
         # Niche Match: content niche alignment with campaign topics
-        niche_match = self._calculate_niche_match(
+        # Now uses brand intelligence service for better matching
+        niche_match, niche_warning = self._calculate_niche_match(
             influencer,
             parsed_query.campaign_topics,
-            parsed_query.exclude_niches
+            parsed_query.exclude_niches,
+            parsed_query.campaign_niche if hasattr(parsed_query, 'campaign_niche') else None
         )
 
-        return ScoreComponents(
+        scores = ScoreComponents(
             credibility=round(credibility, 4),
             engagement=round(engagement, 4),
             audience_match=round(audience_match, 4),
@@ -238,6 +256,8 @@ class RankingService:
             creative_fit=round(creative_fit, 4),
             niche_match=round(niche_match, 4)
         )
+
+        return scores, brand_warning_type, brand_warning_message, niche_warning
 
     def _calculate_audience_match(
         self,
@@ -300,9 +320,15 @@ class RankingService:
         influencer: Any,
         brand_handle: Optional[str],
         overlap_data: Optional[Dict[str, Dict[str, float]]]
-    ) -> float:
+    ) -> Tuple[float, Optional[str], Optional[str]]:
         """
-        Calculate brand affinity score based on audience overlap with target brand.
+        Calculate brand affinity score with conflict detection and saturation warnings.
+
+        NEW LOGIC:
+        - Check for competitor ambassador conflicts (Messi for Nike = 0.05)
+        - Check for competitor brand mentions (0.25-0.45 depending on severity)
+        - Check for brand saturation (already ambassador = 0.35-0.45)
+        - Then apply original boost logic for positive signals
 
         Args:
             influencer: Influencer data
@@ -310,37 +336,34 @@ class RankingService:
             overlap_data: Pre-fetched overlap data {username: {brand: overlap_pct}}
 
         Returns:
-            Score from 0-1 (0.5 = neutral/no brand specified)
+            Tuple of (score, warning_type, warning_message):
+            - score: 0.05-1.0 (lower = worse fit)
+            - warning_type: "competitor_conflict", "saturation", or None
+            - warning_message: Human-readable warning or None
         """
         # Return neutral if no brand context provided
         if not brand_handle:
-            return 0.5
+            return 0.5, None, None
 
-        # Normalize brand handle (remove @ if present)
-        brand_handle = brand_handle.lstrip('@').lower()
-
-        # If we have overlap data, use it
-        if overlap_data:
-            username = self._get_value(influencer, 'username', '').lower()
-            influencer_overlaps = overlap_data.get(username, {})
-            overlap_pct = influencer_overlaps.get(brand_handle, 0)
-
-            # Normalize: 0-50% overlap maps to 0-1 score (50%+ is exceptional)
-            return min(overlap_pct / 0.50, 1.0)
-
-        # Fallback: Check if influencer has mentioned this brand before
+        # Get influencer data
+        username = self._get_value(influencer, 'username', '').lower()
         brand_mentions = self._get_value(influencer, 'brand_mentions', [])
-        if brand_mentions:
-            # Check if brand is in mentions
-            brand_mentioned = any(
-                brand_handle in str(mention).lower()
-                for mention in brand_mentions
-            )
-            if brand_mentioned:
-                return 0.75  # Boost for prior brand relationship
 
-        # No overlap data available, return neutral
-        return 0.5
+        # Get influencer overlap data if available
+        influencer_overlap = None
+        if overlap_data:
+            influencer_overlap = overlap_data.get(username, {})
+
+        # Use brand intelligence service for comprehensive scoring
+        brand_intel = get_brand_intelligence_service()
+        score, warning_type, warning_message = brand_intel.calculate_brand_affinity_score(
+            influencer_username=username,
+            influencer_brand_mentions=brand_mentions,
+            target_brand=brand_handle,
+            overlap_data=influencer_overlap
+        )
+
+        return score, warning_type, warning_message
 
     def _calculate_creative_fit(
         self,
@@ -414,52 +437,118 @@ class RankingService:
         self,
         influencer: Any,
         campaign_topics: List[str],
-        exclude_niches: List[str]
-    ) -> float:
+        exclude_niches: List[str],
+        campaign_niche: Optional[str] = None
+    ) -> Tuple[float, Optional[str]]:
         """
         Calculate content niche alignment with campaign topics.
 
-        Positive matching for campaign_topics, penalty for exclude_niches.
+        NEW LOGIC (Messi/Padel problem):
+        - Uses brand intelligence service for niche taxonomy
+        - Detects conflicting niches (football influencer for padel campaign)
+        - Applies celebrity penalty for large accounts in wrong niche
 
         Returns:
-            Score from 0-1 (0.5 = neutral/no niche targeting)
+            Tuple of (score, warning_message):
+            - score: 0.15-0.95 based on niche relevance
+            - warning: Human-readable warning if mismatch detected
         """
-        # Return neutral if no niche targeting
+        interests = self._get_value(influencer, 'interests', [])
+        bio = self._get_value(influencer, 'bio', '') or ''
+        follower_count = self._get_value(influencer, 'follower_count', 0)
+
+        warning = None
+
+        # If we have a campaign niche, use the brand intelligence service
+        if campaign_niche:
+            brand_intel = get_brand_intelligence_service()
+            relevance = brand_intel.check_niche_relevance(
+                influencer_interests=interests,
+                influencer_bio=bio,
+                campaign_niche=campaign_niche,
+                follower_count=follower_count
+            )
+
+            if relevance.match_type == "conflicting" or relevance.is_celebrity_mismatch:
+                warning = relevance.details
+
+            # Blend with topic matching for comprehensive score
+            niche_score = relevance.score
+
+            # If also have campaign_topics, blend the scores
+            if campaign_topics:
+                topic_score = self._calculate_topic_match(influencer, campaign_topics)
+                # Weight niche matching more heavily (70/30)
+                final_score = (niche_score * 0.7) + (topic_score * 0.3)
+            else:
+                final_score = niche_score
+
+            # Apply exclude_niches penalty
+            if exclude_niches:
+                exclusion_penalty = self._calculate_exclusion_penalty(influencer, exclude_niches)
+                final_score = max(0.1, final_score - exclusion_penalty)
+
+            return min(max(final_score, 0), 1.0), warning
+
+        # Fallback to original topic-based matching if no campaign_niche
         if not campaign_topics and not exclude_niches:
+            return 0.5, None
+
+        score = self._calculate_topic_match(influencer, campaign_topics) if campaign_topics else 0.5
+
+        # Penalty for excluded niches
+        if exclude_niches:
+            exclusion_penalty = self._calculate_exclusion_penalty(influencer, exclude_niches)
+            score = max(0.1, score - exclusion_penalty)
+
+        return min(max(score, 0), 1.0), warning
+
+    def _calculate_topic_match(
+        self,
+        influencer: Any,
+        campaign_topics: List[str]
+    ) -> float:
+        """Calculate simple topic keyword matching score."""
+        if not campaign_topics:
             return 0.5
 
         interests = self._get_value(influencer, 'interests', [])
         bio = self._get_value(influencer, 'bio', '') or ''
-        bio_lower = bio.lower()
 
-        # Normalize interests
         interests_lower = [str(i).lower() for i in interests]
-        interests_text = ' '.join(interests_lower)
-        searchable_text = f"{bio_lower} {interests_text}"
+        searchable_text = f"{bio.lower()} {' '.join(interests_lower)}"
 
-        score = 0.5  # Start neutral
+        matches = sum(
+            1 for topic in campaign_topics
+            if topic.lower() in searchable_text
+        )
+        topic_score = matches / len(campaign_topics)
+        return 0.5 + (topic_score * 0.5)  # Scale to 0.5-1.0
 
-        # Positive matching for campaign topics
-        if campaign_topics:
-            matches = sum(
-                1 for topic in campaign_topics
-                if topic.lower() in searchable_text
-            )
-            topic_score = matches / len(campaign_topics)
-            score = 0.5 + (topic_score * 0.5)  # Scale to 0.5-1.0
+    def _calculate_exclusion_penalty(
+        self,
+        influencer: Any,
+        exclude_niches: List[str]
+    ) -> float:
+        """Calculate penalty for excluded niches."""
+        if not exclude_niches:
+            return 0.0
 
-        # Penalty for excluded niches
-        if exclude_niches:
-            exclusions = sum(
-                1 for niche in exclude_niches
-                if niche.lower() in searchable_text
-            )
-            if exclusions > 0:
-                # Penalize heavily for excluded niches (can drop below 0.5)
-                penalty = (exclusions / len(exclude_niches)) * 0.4
-                score = max(0.1, score - penalty)
+        interests = self._get_value(influencer, 'interests', [])
+        bio = self._get_value(influencer, 'bio', '') or ''
 
-        return min(max(score, 0), 1.0)
+        interests_lower = [str(i).lower() for i in interests]
+        searchable_text = f"{bio.lower()} {' '.join(interests_lower)}"
+
+        exclusions = sum(
+            1 for niche in exclude_niches
+            if niche.lower() in searchable_text
+        )
+
+        if exclusions > 0:
+            return (exclusions / len(exclude_niches)) * 0.4
+
+        return 0.0
 
     def _calculate_size_penalty(
         self,

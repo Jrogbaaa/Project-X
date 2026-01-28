@@ -100,8 +100,14 @@ function FilterSlider({
   );
 }
 
+// Age bracket options
+const AGE_BRACKETS = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
+
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
-  const handleChange = (key: keyof FilterConfig, value: number | undefined) => {
+  const handleChange = <K extends keyof FilterConfig>(
+    key: K,
+    value: FilterConfig[K]
+  ) => {
     onChange({
       ...filters,
       [key]: value,
@@ -115,11 +121,21 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
     });
   };
 
+  const toggleAgeRange = (range: string) => {
+    const current = filters.target_age_ranges ?? [];
+    const updated = current.includes(range)
+      ? current.filter((r) => r !== range)
+      : [...current, range];
+    handleChange('target_age_ranges', updated.length ? updated : undefined);
+  };
+
   const hasChanges =
     filters.min_credibility_score !== 70 ||
     filters.min_spain_audience_pct !== 60 ||
     filters.min_engagement_rate !== undefined ||
-    filters.min_follower_growth_rate !== undefined;
+    filters.min_follower_growth_rate !== undefined ||
+    filters.target_audience_gender !== undefined ||
+    (filters.target_age_ranges && filters.target_age_ranges.length > 0);
 
   return (
     <div className="glass rounded-xl border border-dark-border/50 p-6 max-w-3xl mx-auto">
@@ -192,6 +208,78 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
             v !== undefined ? `${v > 0 ? '+' : ''}${v}%` : 'Any'
           }
         />
+
+        {/* Gender Audience Filter */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-light-secondary">
+            Target Audience Gender
+          </label>
+          <div className="flex gap-2">
+            {(['any', 'female', 'male'] as const).map((gender) => (
+              <button
+                key={gender}
+                onClick={() =>
+                  handleChange(
+                    'target_audience_gender',
+                    gender === 'any' ? undefined : gender
+                  )
+                }
+                className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                  (filters.target_audience_gender === gender) ||
+                  (gender === 'any' && !filters.target_audience_gender)
+                    ? 'bg-accent-gold text-dark-primary font-medium'
+                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-border'
+                }`}
+              >
+                {gender === 'any' ? 'Any' : gender === 'female' ? 'Female' : 'Male'}
+              </button>
+            ))}
+          </div>
+          {filters.target_audience_gender && (
+            <FilterSlider
+              label={`Min ${filters.target_audience_gender === 'female' ? 'Female' : 'Male'} %`}
+              value={filters.min_target_gender_pct ?? 50}
+              min={50}
+              max={90}
+              step={5}
+              defaultValue={50}
+              onChange={(value) => handleChange('min_target_gender_pct', value)}
+            />
+          )}
+        </div>
+
+        {/* Age Bracket Filter */}
+        <div className="space-y-3 sm:col-span-2">
+          <label className="text-sm font-medium text-light-secondary">
+            Target Age Brackets
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {AGE_BRACKETS.map((range) => (
+              <button
+                key={range}
+                onClick={() => toggleAgeRange(range)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                  filters.target_age_ranges?.includes(range)
+                    ? 'bg-accent-gold text-dark-primary font-medium'
+                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-border'
+                }`}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+          {filters.target_age_ranges && filters.target_age_ranges.length > 0 && (
+            <FilterSlider
+              label="Min Combined Age %"
+              value={filters.min_target_age_pct ?? 30}
+              min={20}
+              max={80}
+              step={5}
+              defaultValue={30}
+              onChange={(value) => handleChange('min_target_age_pct', value)}
+            />
+          )}
+        </div>
       </div>
 
       {/* Active Filters Summary */}
@@ -213,6 +301,17 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
             <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
               Growth ≥ {filters.min_follower_growth_rate > 0 ? '+' : ''}
               {filters.min_follower_growth_rate}%
+            </span>
+          )}
+          {filters.target_audience_gender && (
+            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+              {filters.target_audience_gender === 'female' ? 'Female' : 'Male'} audience ≥{' '}
+              {filters.min_target_gender_pct ?? 50}%
+            </span>
+          )}
+          {filters.target_age_ranges && filters.target_age_ranges.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+              Ages: {filters.target_age_ranges.join(', ')}
             </span>
           )}
         </div>

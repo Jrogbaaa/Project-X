@@ -3,6 +3,17 @@ export interface FilterConfig {
   min_engagement_rate?: number;
   min_spain_audience_pct: number;
   min_follower_growth_rate?: number;
+
+  // Gender audience filter
+  target_audience_gender?: 'male' | 'female' | null;
+  min_target_gender_pct?: number;
+
+  // Age bracket filter
+  target_age_ranges?: string[];
+  min_target_age_pct?: number;
+
+  // Brand conflict filter
+  exclude_competitor_ambassadors?: boolean;
 }
 
 export interface RankingWeights {
@@ -73,6 +84,11 @@ export interface InfluencerData {
   audience_geography: Record<string, number>;
   platform_type?: string;
   cached_at?: string | null;
+
+  // Brand/Niche warnings (populated during ranking)
+  brand_warning_type?: 'competitor_conflict' | 'saturation' | null;
+  brand_warning_message?: string | null;
+  niche_warning?: string | null;
 }
 
 export interface RankedInfluencer {

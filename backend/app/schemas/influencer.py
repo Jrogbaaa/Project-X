@@ -86,6 +86,20 @@ class InfluencerData(BaseModel):
         description="Brands the influencer has mentioned/partnered with"
     )
 
+    # Brand/Niche warnings (populated during ranking)
+    brand_warning_type: Optional[str] = Field(
+        default=None,
+        description="Type of brand warning: 'competitor_conflict' or 'saturation'"
+    )
+    brand_warning_message: Optional[str] = Field(
+        default=None,
+        description="Human-readable brand warning (e.g., 'Known ambassador for competitor: Adidas')"
+    )
+    niche_warning: Optional[str] = Field(
+        default=None,
+        description="Niche mismatch warning (e.g., 'Conflicting niche: football conflicts with padel')"
+    )
+
     # Metadata
     platform_type: str = "instagram"
     username_encrypted: Optional[str] = None

@@ -1,6 +1,7 @@
 from typing import List, Any, Optional
 from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.search import FilterConfig
+from app.services.brand_intelligence_service import get_brand_intelligence_service
 
 
 class FilterService:
@@ -66,6 +67,18 @@ class FilterService:
                 inf for inf in filtered
                 if self._matches_audience_gender(inf, parsed_query.target_audience_gender)
             ]
+
+        # Filter out competitor ambassadors if brand context provided
+        # This is a hard exclusion - known ambassadors of competitor brands are removed
+        if parsed_query.brand_handle or parsed_query.brand_name:
+            target_brand = parsed_query.brand_handle or parsed_query.brand_name
+            exclude_ambassadors = getattr(config, 'exclude_competitor_ambassadors', True)
+
+            if exclude_ambassadors:
+                filtered = [
+                    inf for inf in filtered
+                    if not self._is_competitor_ambassador(inf, target_brand)
+                ]
 
         return filtered
 
@@ -171,3 +184,55 @@ class FilterService:
             return male_pct >= 50  # Majority male audience
 
         return True
+
+    def _is_competitor_ambassador(self, influencer, target_brand: str) -> bool:
+        """
+        Check if influencer is a known ambassador for a competitor brand.
+
+        This is used for HARD EXCLUSION - known competitor ambassadors
+        (like Messi for Nike campaigns) are completely removed from results.
+
+        Args:
+            influencer: Influencer data
+            target_brand: Target brand key or handle
+
+        Returns:
+            True if influencer should be EXCLUDED (is competitor ambassador)
+        """
+        username = self._get_username(influencer)
+        if not username:
+            return False  # Can't check, allow through
+
+        brand_intel = get_brand_intelligence_service()
+
+        # Check if influencer is a known ambassador for any brand
+        ambassador_brands = brand_intel.get_ambassador_brands(username)
+        if not ambassador_brands:
+            return False  # Not a known ambassador, allow through
+
+        # Get competitor brands for the target
+        competitors = brand_intel.get_competitors(target_brand)
+        if not competitors:
+            return False  # Unknown target brand, allow through
+
+        # Check if any of influencer's ambassador relationships are competitors
+        ambassador_brand_keys = {b['brand_key'] for b in ambassador_brands}
+        is_competitor = bool(ambassador_brand_keys & competitors)
+
+        return is_competitor
+
+    def _get_username(self, influencer) -> Optional[str]:
+        """Extract username from influencer object."""
+        if hasattr(influencer, 'username'):
+            return influencer.username
+        if isinstance(influencer, dict):
+            return influencer.get('username')
+        return None
+
+    def _get_brand_mentions(self, influencer) -> List[str]:
+        """Extract brand mentions from influencer object."""
+        if hasattr(influencer, 'brand_mentions'):
+            return influencer.brand_mentions or []
+        if isinstance(influencer, dict):
+            return influencer.get('brand_mentions', []) or []
+        return []

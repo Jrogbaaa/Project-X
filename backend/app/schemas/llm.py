@@ -78,6 +78,11 @@ class ParsedSearchQuery(BaseModel):
     )
 
     # ========== Niche/Topic Targeting ==========
+    campaign_niche: Optional[str] = Field(
+        default=None,
+        description="Primary campaign niche for relevance scoring (e.g., 'padel', 'tennis', 'fitness'). Used for niche taxonomy matching."
+    )
+
     campaign_topics: List[str] = Field(
         default_factory=list,
         description="Specific topics/niches for the campaign (e.g., 'padel', 'tennis', 'skincare')"
