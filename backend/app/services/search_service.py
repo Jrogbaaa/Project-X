@@ -106,18 +106,11 @@ class SearchService:
                         candidates.append(inf)
                 logger.info(f"Total candidates after cache: {len(candidates)}")
 
-            # Step 5: Search PrimeTag API if still insufficient
-            if len(candidates) < target_candidates and parsed_query.search_keywords:
-                logger.info(f"Local results insufficient ({len(candidates)}), trying PrimeTag API")
-                await self._search_primetag_api(
-                    parsed_query=parsed_query,
-                    candidates=candidates,
-                    seen_usernames=seen_usernames,
-                    target_candidates=target_candidates
-                )
-                logger.info(f"Total candidates after PrimeTag: {len(candidates)}")
+            # NOTE: PrimeTag API discovery removed - using local database only
+            # PrimeTag is still used for verification (Step 6) to fetch metrics
 
             total_candidates = len(candidates)
+            logger.info(f"Total candidates from local DB: {total_candidates}")
 
             # ============================================================
             # Step 6: VERIFICATION GATE - Verify ALL candidates via Primetag
@@ -152,8 +145,12 @@ class SearchService:
                 request.ranking_weights
             )
 
-            # Step 9: Limit to requested count
-            final_results = ranked[:request.limit]
+            # Step 9: Limit to requested count with gender-split logic
+            final_results = self._apply_gender_split_limit(
+                ranked,
+                parsed_query,
+                request.limit
+            )
             logger.info(f"Final results: {len(final_results)}")
 
             # Step 10: Save search to database
@@ -382,6 +379,100 @@ class SearchService:
 
         return verified, failed
 
+    def _apply_gender_split_limit(
+        self,
+        ranked: List[RankedInfluencer],
+        parsed_query: ParsedSearchQuery,
+        request_limit: int
+    ) -> List[RankedInfluencer]:
+        """
+        Apply result limiting with gender-split logic.
+
+        If parsed_query has target_male_count and/or target_female_count,
+        return separate counts for each gender (with 3x headroom).
+        Otherwise, return up to request_limit results (default 20).
+
+        Args:
+            ranked: Ranked list of influencers
+            parsed_query: Parsed query with potential gender counts
+            request_limit: Maximum results from request
+
+        Returns:
+            Final list of influencers respecting gender split
+        """
+        male_count = parsed_query.target_male_count
+        female_count = parsed_query.target_female_count
+
+        # If gender-specific counts are set, split results
+        if male_count is not None or female_count is not None:
+            males = []
+            females = []
+            others = []
+
+            for inf in ranked:
+                # Determine gender from audience_genders or influencer data
+                gender = self._infer_influencer_gender(inf)
+                if gender == "male":
+                    males.append(inf)
+                elif gender == "female":
+                    females.append(inf)
+                else:
+                    others.append(inf)
+
+            # Apply 3x headroom to requested counts
+            male_limit = (male_count or 0) * 3 if male_count else 0
+            female_limit = (female_count or 0) * 3 if female_count else 0
+
+            # Take up to the limit for each gender
+            selected_males = males[:male_limit] if male_limit > 0 else []
+            selected_females = females[:female_limit] if female_limit > 0 else []
+
+            # Combine and maintain ranking order
+            combined = selected_males + selected_females
+
+            # Sort by relevance score to maintain overall ranking
+            combined.sort(key=lambda x: x.relevance_score, reverse=True)
+
+            # Re-assign rank positions
+            for i, inf in enumerate(combined):
+                inf.rank_position = i + 1
+
+            logger.info(f"Gender split: {len(selected_males)} males, {len(selected_females)} females")
+            return combined
+
+        # Default: return up to request_limit
+        return ranked[:request_limit]
+
+    def _infer_influencer_gender(self, influencer: RankedInfluencer) -> Optional[str]:
+        """
+        Infer influencer's gender from available data.
+
+        Uses audience_genders as a heuristic - influencers typically have
+        opposite-gender audience majority (e.g., female influencer -> male audience).
+        Falls back to None if cannot determine.
+        """
+        if not influencer.raw_data:
+            return None
+
+        # Check if we have audience gender data
+        audience_genders = influencer.raw_data.audience_genders
+        if not audience_genders:
+            return None
+
+        male_pct = audience_genders.get("male", 0)
+        female_pct = audience_genders.get("female", 0)
+
+        # Heuristic: influencers often have opposite-gender audience majority
+        # Female influencers typically have majority male audience
+        # Male influencers typically have majority female audience
+        if male_pct > 60:
+            return "female"  # Likely female influencer with male audience
+        elif female_pct > 60:
+            return "male"  # Likely male influencer with female audience
+
+        # If audience is balanced, cannot determine
+        return None
+
     async def _get_brand_context(self, brand_name: Optional[str]) -> Optional[BrandContext]:
         """
         Look up brand context from the database.
@@ -441,6 +532,8 @@ class SearchService:
             target_count=parsed_query.target_count,
             influencer_gender=parsed_query.influencer_gender,
             target_audience_gender=parsed_query.target_audience_gender,
+            target_male_count=parsed_query.target_male_count,
+            target_female_count=parsed_query.target_female_count,
             brand_name=parsed_query.brand_name,
             brand_handle=parsed_query.brand_handle,
             brand_category=brand_category,

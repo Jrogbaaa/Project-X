@@ -43,6 +43,13 @@ If the brief indicates preference for mid-tier influencers or avoiding mega-cele
 - preferred_follower_min: Minimum follower count (e.g., 100000 for "100K+")
 - preferred_follower_max: Maximum follower count (e.g., 2000000 to avoid mega-celebrities)
 
+### Gender-Specific Counts
+When the brief specifies separate male and female requirements (e.g., "3 male, 3 female influencers" or "we need 5 women and 5 men"):
+- target_male_count: Number of male influencers specifically requested
+- target_female_count: Number of female influencers specifically requested
+- These allow returning a split list (e.g., 10 males + 10 females = 20 results with 3x headroom)
+- Only set these if EXPLICIT gender counts are mentioned; do NOT set if just "10 influencers"
+
 ### Default Settings
 1. Default to Spanish audience focus (min 60% Spain audience)
 2. Default credibility threshold is 70%
@@ -88,6 +95,15 @@ RESPONSE_FORMAT = {
                     "type": ["string", "null"],
                     "enum": ["male", "female", "any", None],
                     "description": "Desired gender of the influencer's audience"
+                },
+                # Gender-specific counts
+                "target_male_count": {
+                    "type": ["integer", "null"],
+                    "description": "Number of male influencers specifically requested (e.g., '3 male influencers' -> 3). Only set if explicitly mentioned."
+                },
+                "target_female_count": {
+                    "type": ["integer", "null"],
+                    "description": "Number of female influencers specifically requested (e.g., '3 female influencers' -> 3). Only set if explicitly mentioned."
                 },
                 # Brand context
                 "brand_name": {
@@ -201,6 +217,8 @@ RESPONSE_FORMAT = {
                 "target_count",
                 "influencer_gender",
                 "target_audience_gender",
+                "target_male_count",
+                "target_female_count",
                 "brand_name",
                 "brand_handle",
                 "brand_category",
@@ -257,6 +275,10 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             target_count=parsed_data.get("target_count", 5),
             influencer_gender=GenderFilter(parsed_data.get("influencer_gender", "any")),
             target_audience_gender=GenderFilter(parsed_data["target_audience_gender"]) if parsed_data.get("target_audience_gender") else None,
+
+            # Gender-specific counts
+            target_male_count=parsed_data.get("target_male_count"),
+            target_female_count=parsed_data.get("target_female_count"),
 
             # Brand context
             brand_name=parsed_data.get("brand_name"),

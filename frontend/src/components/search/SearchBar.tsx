@@ -47,7 +47,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
     searchMutation.mutate({
       query: searchQuery.trim(),
       filters,
-      limit: 10,
+      limit: 20,
     });
   }, [filters, searchMutation]);
 

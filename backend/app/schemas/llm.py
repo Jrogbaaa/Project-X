@@ -45,6 +45,21 @@ class ParsedSearchQuery(BaseModel):
         description="Desired gender of the influencer's audience"
     )
 
+    # Gender-specific result counts (when brief requests e.g. "3 male, 3 female")
+    target_male_count: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Number of male influencers requested (e.g., '3 male influencers' -> 3)"
+    )
+
+    target_female_count: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Number of female influencers requested (e.g., '3 female influencers' -> 3)"
+    )
+
     # ========== Brand Context ==========
     brand_name: Optional[str] = Field(
         default=None,

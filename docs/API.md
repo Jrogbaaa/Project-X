@@ -11,6 +11,8 @@ This API powers an intelligent influencer discovery platform. Users can paste br
 - **8-Factor Scoring**: Credibility, engagement, audience match, growth, geography, brand affinity, creative fit, niche match
 - **Anti-Celebrity Bias**: Optionally prefer mid-tier influencers over mega-celebrities
 - **Creative Concept Matching**: Score influencers based on alignment with campaign tone and themes
+- **Gender-Split Results**: Request specific counts per gender (e.g., "3 male, 3 female")
+- **Local-First Search**: Searches cached database first, uses PrimeTag API only for metric verification
 
 ## Authentication
 
@@ -64,6 +66,8 @@ Execute an influencer search by pasting a brand brief or natural language query.
     "target_count": 5,
     "influencer_gender": "any",
     "target_audience_gender": null,
+    "target_male_count": null,
+    "target_female_count": null,
     "brand_name": "Adidas",
     "brand_handle": "@adidas",
     "brand_category": "sports_apparel",
@@ -597,6 +601,11 @@ All endpoints return errors in the following format:
   influencer_gender?: string;     // "male", "female", "any"
   target_audience_gender?: string;
   
+  // Gender-specific counts (for split results)
+  target_male_count?: number;     // Specific number of male influencers requested
+  target_female_count?: number;   // Specific number of female influencers requested
+  // When set, returns 3x the requested count per gender (e.g., 3 male + 3 female = 18 results)
+  
   // Brand context
   brand_name?: string;            // e.g., "Adidas"
   brand_handle?: string;          // e.g., "@adidas" for audience overlap
@@ -687,6 +696,18 @@ curl -X POST http://localhost:8000/search/ \
   }'
 ```
 
+### Gender-Split Search
+Request specific counts of male and female influencers:
+```bash
+curl -X POST http://localhost:8000/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "3 male and 3 female influencers for Nike campaign, athletic lifestyle content"
+  }'
+```
+
+The LLM will extract `target_male_count: 3` and `target_female_count: 3`, returning up to 9 males + 9 females (3x headroom for each gender).
+
 ### Export Results
 ```bash
 # CSV
@@ -695,3 +716,21 @@ curl -O http://localhost:8000/exports/{search_id}/csv
 # Excel
 curl -O http://localhost:8000/exports/{search_id}/excel
 ```
+
+---
+
+## Search Behavior
+
+### Local-First Discovery
+The search service prioritizes the local database for candidate discovery:
+1. **Step 1**: Search local cache by interests/niches matching the brief
+2. **Step 2**: Search local cache by keywords in bio/interests
+3. **Step 3**: Fall back to generic cache query if needed
+4. **Step 4**: Verify ALL candidates via PrimeTag API to fetch fresh metrics
+
+PrimeTag API is used **only for verification** (fetching Spain %, credibility, engagement rate, demographics) - not for discovering new influencers. This ensures fast searches and reduces API costs.
+
+### Default Result Limit
+- Default: **20 results** returned
+- Maximum: 50 results
+- When gender-specific counts are requested: returns 3x the requested count per gender
