@@ -7,7 +7,11 @@ from app.core.database import Base
 
 
 class Influencer(Base):
-    """Cached influencer data from PrimeTag."""
+    """Cached influencer data from PrimeTag.
+    
+    Stores discovery data (interests, brand_mentions, country) for matching briefs,
+    plus cached PrimeTag metrics for verification and display.
+    """
 
     __tablename__ = "influencers"
 
@@ -16,43 +20,36 @@ class Influencer(Base):
     # PrimeTag identifiers
     platform_type = Column(String(20), nullable=False, default="instagram")
     username = Column(String(100), nullable=False)
-    username_encrypted = Column(String(255), nullable=True)
 
-    # Basic profile info
+    # Basic profile info (cached from PrimeTag)
     display_name = Column(String(255), nullable=True)
     profile_picture_url = Column(Text, nullable=True)
     bio = Column(Text, nullable=True)
-    profile_url = Column(Text, nullable=True)
     is_verified = Column(Boolean, default=False)
 
-    # Core metrics
+    # Core metrics (cached from PrimeTag)
     follower_count = Column(BigInteger, nullable=True)
-    following_count = Column(Integer, nullable=True)
-    post_count = Column(Integer, nullable=True)
 
-    # Quality metrics
+    # Quality metrics (cached from PrimeTag) - used for verification
     credibility_score = Column(Float, nullable=True)  # audience_credibility_percentage
     engagement_rate = Column(Float, nullable=True)  # avg_engagement_rate (as decimal, e.g., 0.0345)
     follower_growth_rate_6m = Column(Float, nullable=True)  # followers_last_6_month_evolution
 
-    # Engagement stats
+    # Engagement stats (cached from PrimeTag)
     avg_likes = Column(Integer, nullable=True)
     avg_comments = Column(Integer, nullable=True)
     avg_views = Column(Integer, nullable=True)
 
-    # Audience demographics (stored as JSONB for flexibility)
+    # Audience demographics (cached from PrimeTag) - used for verification
     audience_genders = Column(JSONB, nullable=True)  # {"male": 45.2, "female": 54.8}
     audience_age_distribution = Column(JSONB, nullable=True)  # {"13-17": 5, "18-24": 30, ...}
     audience_geography = Column(JSONB, nullable=True)  # {"ES": 65, "MX": 10, ...}
     female_audience_age_distribution = Column(JSONB, nullable=True)
 
-    # Content/niche data (for creative matching)
+    # Discovery data (for matching briefs to influencers)
     interests = Column(JSONB, nullable=True)  # ["Sports", "Soccer", "Tennis"]
     brand_mentions = Column(JSONB, nullable=True)  # ["nike", "adidas"]
     country = Column(String(100), nullable=True)  # "Spain"
-
-    # Full API response for debugging
-    primetag_raw_response = Column(JSONB, nullable=True)
 
     # Cache metadata
     cached_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -82,11 +79,8 @@ class Influencer(Base):
             "display_name": self.display_name,
             "profile_picture_url": self.profile_picture_url,
             "bio": self.bio,
-            "profile_url": self.profile_url,
             "is_verified": self.is_verified,
             "follower_count": self.follower_count,
-            "following_count": self.following_count,
-            "post_count": self.post_count,
             "credibility_score": self.credibility_score,
             "engagement_rate": self.engagement_rate,
             "follower_growth_rate_6m": self.follower_growth_rate_6m,

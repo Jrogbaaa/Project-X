@@ -256,11 +256,8 @@ Get detailed information about a cached influencer.
   "display_name": "Display Name",
   "profile_picture_url": "https://...",
   "bio": "Bio text",
-  "profile_url": "https://instagram.com/...",
   "is_verified": true,
   "follower_count": 150000,
-  "following_count": 500,
-  "post_count": 1200,
   "credibility_score": 92.0,
   "engagement_rate": 0.035,
   "follower_growth_rate_6m": 0.15,
@@ -270,6 +267,9 @@ Get detailed information about a cached influencer.
   "audience_genders": {"male": 35, "female": 65},
   "audience_age_distribution": {"18-24": 25, "25-34": 45, "35-44": 20},
   "audience_geography": {"ES": 70, "MX": 10, "AR": 5},
+  "interests": ["fitness", "lifestyle"],
+  "brand_mentions": ["nike", "head"],
+  "country": "Spain",
   "cached_at": "2025-01-20T12:00:00Z",
   "cache_expires_at": "2025-01-21T12:00:00Z"
 }

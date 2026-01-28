@@ -46,21 +46,22 @@ class ScoreComponents(BaseModel):
 
 
 class InfluencerData(BaseModel):
-    """Complete influencer data from PrimeTag."""
+    """Complete influencer data from PrimeTag.
+    
+    Contains cached metrics for verification (Spain %, gender %, age %, credibility, ER)
+    and discovery data (interests, brand_mentions) for matching briefs.
+    """
     id: Optional[str] = None
     username: str
     display_name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     bio: Optional[str] = None
-    profile_url: Optional[str] = None
     is_verified: bool = False
 
-    # Metrics
+    # Core metrics
     follower_count: int = 0
-    following_count: int = 0
-    post_count: int = 0
 
-    # Quality metrics
+    # Quality metrics (for verification)
     credibility_score: Optional[float] = None
     engagement_rate: Optional[float] = None
     follower_growth_rate_6m: Optional[float] = None
@@ -70,13 +71,13 @@ class InfluencerData(BaseModel):
     avg_comments: int = 0
     avg_views: Optional[int] = None
 
-    # Audience demographics
+    # Audience demographics (for verification)
     audience_genders: Dict[str, float] = Field(default_factory=dict)
     audience_age_distribution: Dict[str, float] = Field(default_factory=dict)
     audience_geography: Dict[str, float] = Field(default_factory=dict)
     female_audience_age_distribution: Optional[Dict[str, float]] = None
 
-    # Content/niche data (for creative matching)
+    # Discovery data (for matching briefs)
     interests: List[str] = Field(
         default_factory=list,
         description="Influencer's stated interests/categories"
@@ -102,7 +103,6 @@ class InfluencerData(BaseModel):
 
     # Metadata
     platform_type: str = "instagram"
-    username_encrypted: Optional[str] = None
     cached_at: Optional[datetime] = None
 
     class Config:

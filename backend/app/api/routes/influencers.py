@@ -27,11 +27,8 @@ async def get_influencer(
         display_name=influencer.display_name,
         profile_picture_url=influencer.profile_picture_url,
         bio=influencer.bio,
-        profile_url=influencer.profile_url,
         is_verified=influencer.is_verified or False,
         follower_count=influencer.follower_count or 0,
-        following_count=influencer.following_count or 0,
-        post_count=influencer.post_count or 0,
         credibility_score=influencer.credibility_score,
         engagement_rate=influencer.engagement_rate,
         follower_growth_rate_6m=influencer.follower_growth_rate_6m,
@@ -41,6 +38,8 @@ async def get_influencer(
         audience_genders=influencer.audience_genders or {},
         audience_age_distribution=influencer.audience_age_distribution or {},
         audience_geography=influencer.audience_geography or {},
+        interests=influencer.interests or [],
+        brand_mentions=influencer.brand_mentions or [],
         platform_type=influencer.platform_type or "instagram",
         cached_at=influencer.cached_at
     )
@@ -68,11 +67,8 @@ async def get_influencer_by_username(
         display_name=influencer.display_name,
         profile_picture_url=influencer.profile_picture_url,
         bio=influencer.bio,
-        profile_url=influencer.profile_url,
         is_verified=influencer.is_verified or False,
         follower_count=influencer.follower_count or 0,
-        following_count=influencer.following_count or 0,
-        post_count=influencer.post_count or 0,
         credibility_score=influencer.credibility_score,
         engagement_rate=influencer.engagement_rate,
         follower_growth_rate_6m=influencer.follower_growth_rate_6m,
@@ -82,6 +78,8 @@ async def get_influencer_by_username(
         audience_genders=influencer.audience_genders or {},
         audience_age_distribution=influencer.audience_age_distribution or {},
         audience_geography=influencer.audience_geography or {},
+        interests=influencer.interests or [],
+        brand_mentions=influencer.brand_mentions or [],
         platform_type=influencer.platform_type or "instagram",
         cached_at=influencer.cached_at
     )

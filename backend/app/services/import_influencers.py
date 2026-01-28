@@ -246,9 +246,6 @@ async def import_influencers(
                         "cache_expires_at": datetime.now(timezone.utc) + timedelta(days=365 * 10),
                     }
                     
-                    # Add profile URL
-                    profile_data["profile_url"] = f"https://instagram.com/{username}"
-                    
                     if dry_run:
                         logger.debug(f"Would import: {username} with interests: {interests}")
                         stats["imported"] += 1

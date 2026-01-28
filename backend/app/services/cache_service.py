@@ -282,7 +282,6 @@ class CacheService:
             existing.display_name = metrics.get('display_name') or existing.display_name
             existing.profile_picture_url = metrics.get('profile_picture_url') or existing.profile_picture_url
             existing.bio = metrics.get('bio') or existing.bio
-            existing.profile_url = metrics.get('profile_url') or existing.profile_url
             existing.is_verified = metrics.get('is_verified', existing.is_verified)
             existing.follower_count = metrics.get('follower_count') or existing.follower_count
             existing.credibility_score = metrics.get('credibility_score')
@@ -310,11 +309,9 @@ class CacheService:
             influencer = Influencer(
                 platform_type=platform_type,
                 username=username,
-                username_encrypted=getattr(summary, 'external_social_profile_id', None),
                 display_name=metrics.get('display_name'),
                 profile_picture_url=metrics.get('profile_picture_url'),
                 bio=metrics.get('bio'),
-                profile_url=metrics.get('profile_url'),
                 is_verified=metrics.get('is_verified', False),
                 follower_count=metrics.get('follower_count'),
                 credibility_score=metrics.get('credibility_score'),

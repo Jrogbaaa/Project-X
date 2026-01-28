@@ -29,7 +29,8 @@ class ExportService:
         ("Female Audience %", "female_pct"),
         ("Avg Likes", "avg_likes"),
         ("Avg Comments", "avg_comments"),
-        ("Profile URL", "profile_url"),
+        ("Interests", "interests"),
+        ("Profile URL", "profile_url"),  # Derived from username
     ]
 
     def __init__(self, db: AsyncSession):
@@ -155,7 +156,8 @@ class ExportService:
                 'female_pct': genders.get('female', genders.get('Female', 0)),
                 'avg_likes': influencer.avg_likes,
                 'avg_comments': influencer.avg_comments,
-                'profile_url': influencer.profile_url or f"https://instagram.com/{influencer.username}",
+                'interests': ', '.join(influencer.interests or []),
+                'profile_url': f"https://instagram.com/{influencer.username}",  # Derived from username
             })
 
         return results
