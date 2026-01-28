@@ -1,0 +1,621 @@
+# Niche Taxonomy for Influencer Matching
+# Defines relationships between content niches for relevance scoring
+#
+# Each niche has:
+# - keywords: Terms that indicate this niche in bio/interests
+# - related_niches: Other niches that are similar/adjacent (moderate match)
+# - conflicting_niches: Niches that are explicitly NOT this niche (penalty)
+# - parent_category: Broader category for fallback matching
+#
+# Scoring logic:
+# - exact_match (keywords found): 0.95
+# - related_match: 0.70
+# - no_match (neutral): 0.50
+# - conflicting_match: 0.20
+#
+# Last updated: 2025-01-28
+
+niches:
+  # ==================== RACKET SPORTS ====================
+  padel:
+    keywords:
+      - "padel"
+      - "pádel"
+      - "padel player"
+      - "jugador de padel"
+      - "world padel tour"
+      - "premier padel"
+      - "padelero"
+      - "raqueta padel"
+      - "pista de padel"
+    related_niches:
+      - tennis
+      - racket_sports
+      - fitness
+    conflicting_niches:
+      - football
+      - soccer
+      - basketball
+      - golf
+      - motorsport
+    parent_category: "sports"
+
+  tennis:
+    keywords:
+      - "tennis"
+      - "tenis"
+      - "tennis player"
+      - "atp"
+      - "wta"
+      - "grand slam"
+      - "raqueta"
+    related_niches:
+      - padel
+      - racket_sports
+      - fitness
+    conflicting_niches:
+      - football
+      - soccer
+      - basketball
+    parent_category: "sports"
+
+  racket_sports:
+    keywords:
+      - "racket"
+      - "raqueta"
+      - "badminton"
+      - "squash"
+    related_niches:
+      - padel
+      - tennis
+      - fitness
+    conflicting_niches: []
+    parent_category: "sports"
+
+  # ==================== TEAM SPORTS ====================
+  football:
+    keywords:
+      - "football"
+      - "fútbol"
+      - "futbol"
+      - "soccer"
+      - "la liga"
+      - "champions league"
+      - "premier league"
+      - "footballer"
+      - "futbolista"
+      - "gol"
+      - "balón"
+    related_niches:
+      - sports
+      - fitness
+    conflicting_niches:
+      - padel
+      - tennis
+      - golf
+      - motorsport
+      - cycling
+    parent_category: "sports"
+
+  basketball:
+    keywords:
+      - "basketball"
+      - "baloncesto"
+      - "nba"
+      - "acb"
+      - "euroleague"
+      - "hoops"
+      - "canasta"
+    related_niches:
+      - sports
+      - fitness
+    conflicting_niches:
+      - padel
+      - tennis
+      - golf
+      - football
+    parent_category: "sports"
+
+  # ==================== INDIVIDUAL SPORTS ====================
+  golf:
+    keywords:
+      - "golf"
+      - "golfer"
+      - "golfista"
+      - "pga"
+      - "lpga"
+      - "handicap"
+      - "green"
+      - "birdie"
+    related_niches:
+      - sports
+    conflicting_niches:
+      - football
+      - basketball
+      - padel
+    parent_category: "sports"
+
+  running:
+    keywords:
+      - "running"
+      - "runner"
+      - "correr"
+      - "marathon"
+      - "maratón"
+      - "trail running"
+      - "ultrarunning"
+      - "5k"
+      - "10k"
+    related_niches:
+      - fitness
+      - triathlon
+      - sports
+    conflicting_niches: []
+    parent_category: "sports"
+
+  cycling:
+    keywords:
+      - "cycling"
+      - "ciclismo"
+      - "cyclist"
+      - "ciclista"
+      - "tour de france"
+      - "vuelta"
+      - "giro"
+      - "bike"
+      - "bici"
+    related_niches:
+      - fitness
+      - triathlon
+      - sports
+    conflicting_niches:
+      - motorsport
+    parent_category: "sports"
+
+  swimming:
+    keywords:
+      - "swimming"
+      - "natación"
+      - "swimmer"
+      - "nadador"
+      - "pool"
+      - "piscina"
+    related_niches:
+      - fitness
+      - triathlon
+      - sports
+    conflicting_niches: []
+    parent_category: "sports"
+
+  triathlon:
+    keywords:
+      - "triathlon"
+      - "triatlón"
+      - "ironman"
+      - "triathlete"
+      - "triatleta"
+    related_niches:
+      - running
+      - cycling
+      - swimming
+      - fitness
+    conflicting_niches: []
+    parent_category: "sports"
+
+  motorsport:
+    keywords:
+      - "motorsport"
+      - "formula 1"
+      - "f1"
+      - "motogp"
+      - "rally"
+      - "karting"
+      - "racing"
+      - "piloto"
+    related_niches:
+      - automotive
+    conflicting_niches:
+      - football
+      - cycling
+    parent_category: "sports"
+
+  # ==================== FITNESS & WELLNESS ====================
+  fitness:
+    keywords:
+      - "fitness"
+      - "gym"
+      - "workout"
+      - "training"
+      - "entrenamiento"
+      - "gimnasio"
+      - "muscle"
+      - "fit"
+      - "ejercicio"
+    related_niches:
+      - health
+      - wellness
+      - sports
+      - nutrition
+      - crossfit
+    conflicting_niches: []
+    parent_category: "health_wellness"
+
+  crossfit:
+    keywords:
+      - "crossfit"
+      - "wod"
+      - "functional fitness"
+      - "box"
+      - "kettlebell"
+    related_niches:
+      - fitness
+      - weightlifting
+    conflicting_niches: []
+    parent_category: "health_wellness"
+
+  yoga:
+    keywords:
+      - "yoga"
+      - "yogui"
+      - "meditation"
+      - "meditación"
+      - "mindfulness"
+      - "namaste"
+      - "asana"
+    related_niches:
+      - wellness
+      - fitness
+      - health
+    conflicting_niches: []
+    parent_category: "health_wellness"
+
+  wellness:
+    keywords:
+      - "wellness"
+      - "bienestar"
+      - "self-care"
+      - "mental health"
+      - "salud mental"
+      - "holistic"
+    related_niches:
+      - health
+      - yoga
+      - nutrition
+    conflicting_niches: []
+    parent_category: "health_wellness"
+
+  nutrition:
+    keywords:
+      - "nutrition"
+      - "nutrición"
+      - "diet"
+      - "dieta"
+      - "healthy eating"
+      - "alimentación"
+      - "macros"
+      - "meal prep"
+    related_niches:
+      - health
+      - fitness
+      - wellness
+    conflicting_niches: []
+    parent_category: "health_wellness"
+
+  # ==================== FASHION & BEAUTY ====================
+  fashion:
+    keywords:
+      - "fashion"
+      - "moda"
+      - "style"
+      - "estilo"
+      - "outfit"
+      - "look"
+      - "ootd"
+      - "fashionista"
+      - "streetstyle"
+    related_niches:
+      - luxury
+      - beauty
+      - lifestyle
+    conflicting_niches: []
+    parent_category: "fashion_beauty"
+
+  luxury:
+    keywords:
+      - "luxury"
+      - "lujo"
+      - "premium"
+      - "high-end"
+      - "exclusive"
+      - "exclusivo"
+      - "designer"
+    related_niches:
+      - fashion
+      - lifestyle
+      - travel
+    conflicting_niches: []
+    parent_category: "fashion_beauty"
+
+  beauty:
+    keywords:
+      - "beauty"
+      - "belleza"
+      - "makeup"
+      - "maquillaje"
+      - "skincare"
+      - "cosmetics"
+      - "cosméticos"
+      - "tutorial"
+    related_niches:
+      - fashion
+      - lifestyle
+    conflicting_niches: []
+    parent_category: "fashion_beauty"
+
+  # ==================== LIFESTYLE ====================
+  lifestyle:
+    keywords:
+      - "lifestyle"
+      - "estilo de vida"
+      - "daily life"
+      - "vida cotidiana"
+      - "content creator"
+      - "creador de contenido"
+    related_niches:
+      - fashion
+      - travel
+      - food
+    conflicting_niches: []
+    parent_category: "lifestyle"
+
+  travel:
+    keywords:
+      - "travel"
+      - "viajes"
+      - "traveler"
+      - "viajero"
+      - "wanderlust"
+      - "adventure"
+      - "aventura"
+      - "explore"
+    related_niches:
+      - lifestyle
+      - photography
+    conflicting_niches: []
+    parent_category: "lifestyle"
+
+  food:
+    keywords:
+      - "food"
+      - "comida"
+      - "foodie"
+      - "chef"
+      - "cooking"
+      - "cocina"
+      - "gastronomía"
+      - "recipe"
+      - "receta"
+      - "restaurant"
+    related_niches:
+      - lifestyle
+      - nutrition
+    conflicting_niches: []
+    parent_category: "lifestyle"
+
+  # ==================== ENTERTAINMENT ====================
+  music:
+    keywords:
+      - "music"
+      - "música"
+      - "musician"
+      - "músico"
+      - "singer"
+      - "cantante"
+      - "dj"
+      - "producer"
+      - "band"
+    related_niches:
+      - entertainment
+      - nightlife
+    conflicting_niches: []
+    parent_category: "entertainment"
+
+  gaming:
+    keywords:
+      - "gaming"
+      - "gamer"
+      - "videogames"
+      - "videojuegos"
+      - "esports"
+      - "twitch"
+      - "streamer"
+      - "playstation"
+      - "xbox"
+    related_niches:
+      - tech
+      - entertainment
+    conflicting_niches: []
+    parent_category: "entertainment"
+
+  comedy:
+    keywords:
+      - "comedy"
+      - "comedia"
+      - "humor"
+      - "funny"
+      - "memes"
+      - "comedian"
+      - "cómico"
+    related_niches:
+      - entertainment
+    conflicting_niches: []
+    parent_category: "entertainment"
+
+  # ==================== PARENTING & FAMILY ====================
+  parenting:
+    keywords:
+      - "parenting"
+      - "maternidad"
+      - "paternidad"
+      - "mom"
+      - "mamá"
+      - "dad"
+      - "papá"
+      - "family"
+      - "familia"
+      - "kids"
+      - "niños"
+      - "baby"
+      - "bebé"
+    related_niches:
+      - lifestyle
+      - family
+    conflicting_niches:
+      - nightlife
+    parent_category: "family"
+
+  # ==================== BUSINESS & TECH ====================
+  tech:
+    keywords:
+      - "tech"
+      - "tecnología"
+      - "technology"
+      - "gadgets"
+      - "innovation"
+      - "startup"
+      - "developer"
+      - "software"
+    related_niches:
+      - business
+      - gaming
+    conflicting_niches: []
+    parent_category: "business"
+
+  business:
+    keywords:
+      - "business"
+      - "negocios"
+      - "entrepreneur"
+      - "emprendedor"
+      - "startup"
+      - "ceo"
+      - "leadership"
+      - "liderazgo"
+    related_niches:
+      - tech
+      - finance
+    conflicting_niches: []
+    parent_category: "business"
+
+  finance:
+    keywords:
+      - "finance"
+      - "finanzas"
+      - "investing"
+      - "inversión"
+      - "crypto"
+      - "trading"
+      - "money"
+      - "dinero"
+    related_niches:
+      - business
+    conflicting_niches: []
+    parent_category: "business"
+
+  # ==================== AUTOMOTIVE ====================
+  automotive:
+    keywords:
+      - "cars"
+      - "coches"
+      - "automotive"
+      - "motor"
+      - "car enthusiast"
+      - "supercar"
+      - "tuning"
+    related_niches:
+      - motorsport
+      - luxury
+    conflicting_niches: []
+    parent_category: "automotive"
+
+# Parent categories for fallback matching
+categories:
+  sports:
+    description: "All sports-related niches"
+    niches:
+      - padel
+      - tennis
+      - football
+      - basketball
+      - golf
+      - running
+      - cycling
+      - swimming
+      - triathlon
+      - motorsport
+
+  health_wellness:
+    description: "Health, fitness and wellness"
+    niches:
+      - fitness
+      - crossfit
+      - yoga
+      - wellness
+      - nutrition
+
+  fashion_beauty:
+    description: "Fashion and beauty"
+    niches:
+      - fashion
+      - luxury
+      - beauty
+
+  lifestyle:
+    description: "General lifestyle content"
+    niches:
+      - lifestyle
+      - travel
+      - food
+
+  entertainment:
+    description: "Entertainment and media"
+    niches:
+      - music
+      - gaming
+      - comedy
+
+  family:
+    description: "Family and parenting"
+    niches:
+      - parenting
+
+  business:
+    description: "Business and professional"
+    niches:
+      - tech
+      - business
+      - finance
+
+  automotive:
+    description: "Cars and vehicles"
+    niches:
+      - automotive
+      - motorsport
+
+# Special handling rules
+rules:
+  # Large celebrity penalty: If influencer has >5M followers and doesn't match campaign niche exactly
+  celebrity_threshold: 5000000
+  celebrity_mismatch_penalty: 0.15
+
+  # If influencer is in a conflicting niche, apply heavy penalty
+  conflicting_niche_penalty: 0.20
+
+  # Related niche gets partial credit
+  related_niche_score: 0.70
+
+  # Exact match gets high score
+  exact_match_score: 0.95
+
+  # Neutral (no clear niche data)
+  neutral_score: 0.50

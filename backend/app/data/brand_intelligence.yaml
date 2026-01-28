@@ -1,0 +1,442 @@
+# Brand Intelligence Database for Spanish Market
+# This file contains brand competitor mappings and known ambassador relationships
+# Used for conflict detection and saturation warnings in influencer matching
+#
+# Last updated: 2025-01-28
+# Maintenance: Review ambassador relationships quarterly
+
+brands:
+  # ==================== SPORTS APPAREL ====================
+  adidas:
+    name: "Adidas"
+    category: "sports_apparel"
+    instagram_handles: ["adidas", "adidasoriginals", "adidasfootball", "adidas_es", "adidaspadel"]
+    competitors: [nike, puma, reebok, new_balance, under_armour, asics]
+    ambassadors:
+      - username: "leomessi"
+        status: "active"
+        relationship: "lifetime_deal"
+        niche: "football"
+        since: "2006"
+        notes: "Lifetime contract since 2017, ~$20-27M annually"
+      - username: "paulpogba"
+        status: "active"
+        relationship: "ambassador"
+        niche: "football"
+      - username: "alegalan96"
+        status: "active"
+        relationship: "sponsored"
+        niche: "padel"
+        notes: "Top Spanish padel player, Adidas Padel"
+    conflict_severity: "high"
+
+  nike:
+    name: "Nike"
+    category: "sports_apparel"
+    instagram_handles: ["nike", "nikefootball", "nikerunning", "nikesportswear", "nike_es"]
+    competitors: [adidas, puma, reebok, new_balance, under_armour, asics]
+    ambassadors:
+      - username: "cristiano"
+        status: "active"
+        relationship: "lifetime_deal"
+        niche: "football"
+        since: "2003"
+        notes: "Lifetime contract since 2016, ~$1B total value"
+      - username: "rafaelnadal"
+        status: "active"
+        relationship: "ambassador"
+        niche: "tennis"
+    conflict_severity: "high"
+
+  puma:
+    name: "Puma"
+    category: "sports_apparel"
+    instagram_handles: ["puma", "pumafootball", "pumarunning"]
+    competitors: [adidas, nike, reebok, new_balance, under_armour]
+    ambassadors:
+      - username: "neymarjr"
+        status: "active"
+        relationship: "ambassador"
+        niche: "football"
+    conflict_severity: "high"
+
+  reebok:
+    name: "Reebok"
+    category: "sports_apparel"
+    instagram_handles: ["reebok", "reebokcrossfit"]
+    competitors: [adidas, nike, puma, new_balance, under_armour]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  new_balance:
+    name: "New Balance"
+    category: "sports_apparel"
+    instagram_handles: ["newbalance", "nbfootball", "newbalance_es"]
+    competitors: [adidas, nike, puma, reebok, under_armour]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  under_armour:
+    name: "Under Armour"
+    category: "sports_apparel"
+    instagram_handles: ["underarmour", "underarmourspain"]
+    competitors: [adidas, nike, puma, reebok, new_balance]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  # ==================== PADEL BRANDS ====================
+  head_padel:
+    name: "Head Padel"
+    category: "padel_equipment"
+    instagram_handles: ["headpadel", "head_tennis"]
+    competitors: [bullpadel, nox_padel, adidas_padel, babolat_padel]
+    ambassadors:
+      - username: "arturocoello__"
+        status: "active"
+        relationship: "sponsored"
+        niche: "padel"
+        notes: "703K followers, top Spanish player"
+    conflict_severity: "high"
+
+  bullpadel:
+    name: "Bullpadel"
+    category: "padel_equipment"
+    instagram_handles: ["bullpadel", "bullpadeloficial"]
+    competitors: [head_padel, nox_padel, adidas_padel, babolat_padel]
+    ambassadors:
+      - username: "navarro_paquito"
+        status: "active"
+        relationship: "ambassador"
+        niche: "padel"
+        notes: "1M+ total followers across platforms"
+    conflict_severity: "high"
+
+  nox_padel:
+    name: "NOX Padel"
+    category: "padel_equipment"
+    instagram_handles: ["naboronapadel", "noxpadel"]
+    competitors: [head_padel, bullpadel, adidas_padel, babolat_padel]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  # ==================== FASHION ====================
+  zara:
+    name: "Zara"
+    category: "fashion"
+    instagram_handles: ["zara", "zaraofficial"]
+    competitors: [mango, hm, pull_and_bear, bershka, stradivarius, primark, uniqlo]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  mango:
+    name: "Mango"
+    category: "fashion"
+    instagram_handles: ["mango", "mangofashion"]
+    competitors: [zara, hm, pull_and_bear, bershka, stradivarius]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  hm:
+    name: "H&M"
+    category: "fashion"
+    instagram_handles: ["hm", "hm_espana"]
+    competitors: [zara, mango, pull_and_bear, bershka, primark, uniqlo]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  pull_and_bear:
+    name: "Pull & Bear"
+    category: "fashion"
+    instagram_handles: ["pullandbear"]
+    competitors: [zara, mango, hm, bershka, stradivarius]
+    ambassadors: []
+    conflict_severity: "low"
+
+  bershka:
+    name: "Bershka"
+    category: "fashion"
+    instagram_handles: ["bershka"]
+    competitors: [zara, mango, hm, pull_and_bear, stradivarius]
+    ambassadors: []
+    conflict_severity: "low"
+
+  stradivarius:
+    name: "Stradivarius"
+    category: "fashion"
+    instagram_handles: ["staboradivarius"]
+    competitors: [zara, mango, bershka, pull_and_bear]
+    ambassadors: []
+    conflict_severity: "low"
+
+  # ==================== BEAUTY ====================
+  loreal:
+    name: "L'Oreal"
+    category: "beauty"
+    instagram_handles: ["loreal", "labororealparis", "lorealparis_es"]
+    competitors: [maybelline, garnier, revlon, rimmel, nyx]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  maybelline:
+    name: "Maybelline"
+    category: "beauty"
+    instagram_handles: ["maybelline", "maybelline_es"]
+    competitors: [loreal, garnier, revlon, rimmel, nyx]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  sephora:
+    name: "Sephora"
+    category: "beauty_retail"
+    instagram_handles: ["sephora", "sephoraespana"]
+    competitors: [primor, douglas, kiko]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  primor:
+    name: "Primor"
+    category: "beauty_retail"
+    instagram_handles: ["primaborr", "primor_perfumerias"]
+    competitors: [sephora, douglas, kiko]
+    ambassadors: []
+    conflict_severity: "low"
+
+  # ==================== RETAIL ====================
+  el_corte_ingles:
+    name: "El Corte Ingles"
+    category: "retail"
+    instagram_handles: ["elcorteingles"]
+    competitors: [amazon_es, carrefour, mediamarkt]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  mercadona:
+    name: "Mercadona"
+    category: "grocery_retail"
+    instagram_handles: ["mercadona"]
+    competitors: [carrefour, lidl, aldi, dia, eroski]
+    ambassadors: []
+    conflict_severity: "low"
+
+  carrefour:
+    name: "Carrefour"
+    category: "grocery_retail"
+    instagram_handles: ["carrefour", "carrefourespana"]
+    competitors: [mercadona, lidl, aldi, dia, eroski]
+    ambassadors: []
+    conflict_severity: "low"
+
+  lidl:
+    name: "Lidl"
+    category: "grocery_retail"
+    instagram_handles: ["lidl", "lidlespana"]
+    competitors: [mercadona, carrefour, aldi, dia]
+    ambassadors: []
+    conflict_severity: "low"
+
+  # ==================== AUTOMOTIVE ====================
+  seat:
+    name: "SEAT"
+    category: "automotive"
+    instagram_handles: ["seat", "seatofficial", "seat_es"]
+    competitors: [cupra, volkswagen, renault, peugeot, citroen, ford, toyota, hyundai]
+    ambassadors: []
+    conflict_severity: "high"
+
+  cupra:
+    name: "Cupra"
+    category: "automotive"
+    instagram_handles: ["cupraofficial"]
+    competitors: [seat, volkswagen, bmw, audi, mercedes]
+    ambassadors: []
+    conflict_severity: "high"
+
+  renault:
+    name: "Renault"
+    category: "automotive"
+    instagram_handles: ["renault", "renault_es"]
+    competitors: [seat, peugeot, citroen, ford, volkswagen, toyota]
+    ambassadors: []
+    conflict_severity: "high"
+
+  # ==================== TELECOM ====================
+  movistar:
+    name: "Movistar"
+    category: "telecom"
+    instagram_handles: ["movistar_es", "movistar"]
+    competitors: [vodafone, orange, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+
+  vodafone:
+    name: "Vodafone"
+    category: "telecom"
+    instagram_handles: ["vodafone_es", "vodafone"]
+    competitors: [movistar, orange, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+
+  orange:
+    name: "Orange"
+    category: "telecom"
+    instagram_handles: ["orange_es", "orange"]
+    competitors: [movistar, vodafone, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+
+  # ==================== BANKING ====================
+  santander:
+    name: "Banco Santander"
+    category: "banking"
+    instagram_handles: ["santander", "bancosantander"]
+    competitors: [bbva, caixabank, sabadell, ing_espana]
+    ambassadors: []
+    conflict_severity: "high"
+
+  bbva:
+    name: "BBVA"
+    category: "banking"
+    instagram_handles: ["bbva", "bbva_espana"]
+    competitors: [santander, caixabank, sabadell, ing_espana]
+    ambassadors: []
+    conflict_severity: "high"
+
+  caixabank:
+    name: "CaixaBank"
+    category: "banking"
+    instagram_handles: ["caixabank"]
+    competitors: [santander, bbva, sabadell, ing_espana]
+    ambassadors: []
+    conflict_severity: "high"
+
+  # ==================== BEVERAGES ====================
+  mahou:
+    name: "Mahou"
+    category: "beverages"
+    instagram_handles: ["maaborhou", "mahousanmiguel"]
+    competitors: [estrella_galicia, cruzcampo, san_miguel, heineken_es]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  estrella_galicia:
+    name: "Estrella Galicia"
+    category: "beverages"
+    instagram_handles: ["estrellagalicia"]
+    competitors: [mahou, cruzcampo, san_miguel, heineken_es]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  cocacola:
+    name: "Coca-Cola"
+    category: "beverages"
+    instagram_handles: ["cocacola", "cocacola_esp"]
+    competitors: [pepsi, fanta, sprite]
+    ambassadors: []
+    conflict_severity: "high"
+
+  pepsi:
+    name: "Pepsi"
+    category: "beverages"
+    instagram_handles: ["pepsi", "pepsi_es"]
+    competitors: [cocacola]
+    ambassadors: []
+    conflict_severity: "high"
+
+  redbull:
+    name: "Red Bull"
+    category: "energy_drinks"
+    instagram_handles: ["redbull", "redbullespana"]
+    competitors: [monster_energy, burn]
+    ambassadors: []
+    conflict_severity: "high"
+
+  monster_energy:
+    name: "Monster Energy"
+    category: "energy_drinks"
+    instagram_handles: ["monsterenergy"]
+    competitors: [redbull, burn]
+    ambassadors: []
+    conflict_severity: "high"
+
+# Category-level competitor groups (fallback when brand not found)
+category_competitors:
+  sports_apparel:
+    - adidas
+    - nike
+    - puma
+    - reebok
+    - under_armour
+    - new_balance
+    - asics
+    - fila
+
+  padel_equipment:
+    - head_padel
+    - bullpadel
+    - nox_padel
+    - adidas_padel
+    - babolat_padel
+    - wilson_padel
+
+  fashion:
+    - zara
+    - hm
+    - mango
+    - pull_and_bear
+    - bershka
+    - stradivarius
+    - primark
+    - uniqlo
+
+  beauty:
+    - loreal
+    - maybelline
+    - garnier
+    - revlon
+    - nyx
+    - mac
+
+  beauty_retail:
+    - sephora
+    - primor
+    - douglas
+    - kiko
+
+  automotive:
+    - seat
+    - cupra
+    - volkswagen
+    - renault
+    - peugeot
+    - citroen
+    - ford
+    - toyota
+    - bmw
+    - mercedes
+    - audi
+
+  telecom:
+    - movistar
+    - vodafone
+    - orange
+    - yoigo
+    - masmovil
+
+  banking:
+    - santander
+    - bbva
+    - caixabank
+    - sabadell
+    - ing_espana
+
+  beverages:
+    - cocacola
+    - pepsi
+    - mahou
+    - estrella_galicia
+    - cruzcampo
+
+  energy_drinks:
+    - redbull
+    - monster_energy
+    - burn
