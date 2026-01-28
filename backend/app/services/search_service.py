@@ -10,6 +10,7 @@ from app.services.primetag_client import PrimeTagClient
 from app.services.filter_service import FilterService
 from app.services.ranking_service import RankingService
 from app.services.cache_service import CacheService
+from app.services.brand_context_service import BrandContextService, BrandContext
 from app.schemas.search import SearchRequest, SearchResponse, FilterConfig, RankingWeights, VerificationStats
 from app.schemas.llm import ParsedSearchQuery
 from app.schemas.influencer import RankedInfluencer
@@ -29,6 +30,7 @@ class SearchService:
         self.filter_service = FilterService()
         self.ranking_service = RankingService()
         self.cache_service = CacheService(db)
+        self.brand_context_service = BrandContextService(db)
 
     async def execute_search(self, request: SearchRequest) -> SearchResponse:
         """
@@ -45,6 +47,12 @@ class SearchService:
             logger.info(f"Parsing query: {request.query[:100]}...")
             parsed_query = await parse_search_query(request.query)
             logger.info(f"Parsed query - topics: {parsed_query.campaign_topics}, keywords: {parsed_query.search_keywords}")
+
+            # Step 1b: Enrich with brand context from database
+            brand_context = await self._get_brand_context(parsed_query.brand_name)
+            if brand_context:
+                parsed_query = self._enrich_with_brand_context(parsed_query, brand_context)
+                logger.info(f"Enriched with brand context: {brand_context.name} ({brand_context.category})")
 
             # Merge with request filters if provided
             filters_applied = self._merge_filters(parsed_query, request.filters)
@@ -373,6 +381,86 @@ class SearchService:
                 failed += 1
 
         return verified, failed
+
+    async def _get_brand_context(self, brand_name: Optional[str]) -> Optional[BrandContext]:
+        """
+        Look up brand context from the database.
+        
+        Args:
+            brand_name: Brand name from parsed query
+            
+        Returns:
+            BrandContext if found, None otherwise
+        """
+        if not brand_name:
+            return None
+        
+        try:
+            return await self.brand_context_service.find_brand_context(brand_name)
+        except Exception as e:
+            logger.warning(f"Failed to get brand context for '{brand_name}': {e}")
+            return None
+
+    def _enrich_with_brand_context(
+        self,
+        parsed_query: ParsedSearchQuery,
+        brand_context: BrandContext
+    ) -> ParsedSearchQuery:
+        """
+        Enrich parsed query with brand context from database.
+        
+        Adds:
+        - Category-based keywords to search_keywords
+        - Category info to brand_category if not set
+        
+        Args:
+            parsed_query: The parsed search query
+            brand_context: Brand context from database
+            
+        Returns:
+            Enriched ParsedSearchQuery
+        """
+        # Create a copy of the keywords to avoid modifying the original
+        enriched_keywords = list(parsed_query.search_keywords)
+        
+        # Add brand-specific keywords
+        if brand_context.suggested_keywords:
+            for kw in brand_context.suggested_keywords:
+                if kw.lower() not in [k.lower() for k in enriched_keywords]:
+                    enriched_keywords.append(kw)
+        
+        # Limit to 10 keywords
+        enriched_keywords = enriched_keywords[:10]
+        
+        # Update brand category if not set
+        brand_category = parsed_query.brand_category or brand_context.category
+        
+        # Create updated query with enriched data
+        # Note: ParsedSearchQuery is a Pydantic model, so we create a new instance
+        return ParsedSearchQuery(
+            target_count=parsed_query.target_count,
+            influencer_gender=parsed_query.influencer_gender,
+            target_audience_gender=parsed_query.target_audience_gender,
+            brand_name=parsed_query.brand_name,
+            brand_handle=parsed_query.brand_handle,
+            brand_category=brand_category,
+            creative_concept=parsed_query.creative_concept,
+            creative_tone=parsed_query.creative_tone,
+            creative_themes=parsed_query.creative_themes,
+            campaign_topics=parsed_query.campaign_topics,
+            exclude_niches=parsed_query.exclude_niches,
+            content_themes=parsed_query.content_themes,
+            preferred_follower_min=parsed_query.preferred_follower_min,
+            preferred_follower_max=parsed_query.preferred_follower_max,
+            target_age_ranges=parsed_query.target_age_ranges,
+            min_spain_audience_pct=parsed_query.min_spain_audience_pct,
+            min_credibility_score=parsed_query.min_credibility_score,
+            min_engagement_rate=parsed_query.min_engagement_rate,
+            suggested_ranking_weights=parsed_query.suggested_ranking_weights,
+            search_keywords=enriched_keywords,
+            parsing_confidence=parsed_query.parsing_confidence,
+            reasoning=parsed_query.reasoning + f" [Brand context: {brand_context.category}]" if brand_context.category else parsed_query.reasoning,
+        )
 
     def _merge_filters(
         self,

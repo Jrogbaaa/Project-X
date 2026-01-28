@@ -311,6 +311,112 @@ Download search results as Excel file.
 
 ---
 
+### Brands
+
+The brand knowledge base provides context for search matching. Contains 210+ Spanish brands across 39 categories.
+
+#### List Brands
+`GET /brands/`
+
+List all brands in the knowledge base.
+
+**Query Parameters:**
+- `category` (string, optional): Filter by category (e.g., "fashion", "food_beverage")
+- `limit` (int, optional, default=100, max=1000): Maximum results
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid-string",
+    "name": "Zara",
+    "description": null,
+    "category": "fashion",
+    "subcategory": "fast_fashion",
+    "industry": null,
+    "headquarters": "A Coruña",
+    "website": null,
+    "instagram_handle": null,
+    "source": "kantar_brandz_manual",
+    "source_rank": 1,
+    "brand_value_eur": 33900000000
+  }
+]
+```
+
+---
+
+#### List Categories
+`GET /brands/categories`
+
+Get all brand categories with counts.
+
+**Response:**
+```json
+[
+  {"category": "food_beverage", "count": 56},
+  {"category": "fashion", "count": 34},
+  {"category": "retail", "count": 12}
+]
+```
+
+---
+
+#### Search Brands
+`GET /brands/search`
+
+Search brands by name.
+
+**Query Parameters:**
+- `q` (string, required): Search query
+- `category` (string, optional): Filter by category
+- `limit` (int, optional, default=20, max=100): Maximum results
+
+**Response:** Same as List Brands
+
+---
+
+#### Get Brand Count
+`GET /brands/count`
+
+Get total count of brands in database.
+
+**Response:**
+```json
+{"count": 210}
+```
+
+---
+
+#### Import Brands
+`POST /brands/import`
+
+Trigger brand import from all configured sources.
+
+**Response:**
+```json
+{
+  "created": 0,
+  "updated": 210,
+  "errors": 0,
+  "total_brands": 210
+}
+```
+
+---
+
+#### Get Brand
+`GET /brands/{brand_id}`
+
+Get a specific brand by ID.
+
+**Path Parameters:**
+- `brand_id` (UUID, required): The brand ID
+
+**Response:** Single brand object (same as List Brands item)
+
+---
+
 ### Health
 
 #### Health Check

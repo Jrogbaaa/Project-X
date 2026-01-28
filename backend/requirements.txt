@@ -26,3 +26,9 @@ python-dotenv==1.0.1
 
 # Utilities
 python-dateutil==2.8.2
+
+# YAML parsing
+pyyaml==6.0.1
+
+# HTML parsing for web scraping
+beautifulsoup4==4.12.3
