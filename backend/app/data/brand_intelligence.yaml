@@ -4,6 +4,7 @@
 #
 # Last updated: 2025-01-28
 # Maintenance: Review ambassador relationships quarterly
+# Source: Comprehensive Spanish market research (Jan 2025)
 
 brands:
   # ==================== SPORTS APPAREL ====================
@@ -11,7 +12,7 @@ brands:
     name: "Adidas"
     category: "sports_apparel"
     instagram_handles: ["adidas", "adidasoriginals", "adidasfootball", "adidas_es", "adidaspadel"]
-    competitors: [nike, puma, reebok, new_balance, under_armour, asics]
+    competitors: [nike, puma, reebok, new_balance, under_armour, asics, joma, kelme]
     ambassadors:
       - username: "leomessi"
         status: "active"
@@ -34,7 +35,7 @@ brands:
     name: "Nike"
     category: "sports_apparel"
     instagram_handles: ["nike", "nikefootball", "nikerunning", "nikesportswear", "nike_es"]
-    competitors: [adidas, puma, reebok, new_balance, under_armour, asics]
+    competitors: [adidas, puma, reebok, new_balance, under_armour, asics, joma, kelme]
     ambassadors:
       - username: "cristiano"
         status: "active"
@@ -52,7 +53,7 @@ brands:
     name: "Puma"
     category: "sports_apparel"
     instagram_handles: ["puma", "pumafootball", "pumarunning"]
-    competitors: [adidas, nike, reebok, new_balance, under_armour]
+    competitors: [adidas, nike, reebok, new_balance, under_armour, joma, kelme]
     ambassadors:
       - username: "neymarjr"
         status: "active"
@@ -84,12 +85,39 @@ brands:
     ambassadors: []
     conflict_severity: "medium"
 
+  joma:
+    name: "Joma"
+    category: "sports_apparel"
+    instagram_handles: ["jaboroma", "jomasport"]
+    competitors: [adidas, nike, puma, kelme, munich]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spanish sports brand, major sponsor in Spanish football"
+
+  kelme:
+    name: "Kelme"
+    category: "sports_apparel"
+    instagram_handles: ["kelme"]
+    competitors: [adidas, nike, puma, joma, munich]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spanish sports brand since 1970s"
+
+  munich:
+    name: "Munich"
+    category: "sports_footwear"
+    instagram_handles: ["munichsports"]
+    competitors: [adidas, nike, puma, joma, kelme]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Barcelona-based retro sports footwear"
+
   # ==================== PADEL BRANDS ====================
   head_padel:
     name: "Head Padel"
     category: "padel_equipment"
     instagram_handles: ["headpadel", "head_tennis"]
-    competitors: [bullpadel, nox_padel, adidas_padel, babolat_padel]
+    competitors: [bullpadel, nox_padel, adidas_padel, babolat_padel, siux]
     ambassadors:
       - username: "arturocoello__"
         status: "active"
@@ -102,7 +130,7 @@ brands:
     name: "Bullpadel"
     category: "padel_equipment"
     instagram_handles: ["bullpadel", "bullpadeloficial"]
-    competitors: [head_padel, nox_padel, adidas_padel, babolat_padel]
+    competitors: [head_padel, nox_padel, adidas_padel, babolat_padel, siux]
     ambassadors:
       - username: "navarro_paquito"
         status: "active"
@@ -115,26 +143,44 @@ brands:
     name: "NOX Padel"
     category: "padel_equipment"
     instagram_handles: ["naboronapadel", "noxpadel"]
-    competitors: [head_padel, bullpadel, adidas_padel, babolat_padel]
+    competitors: [head_padel, bullpadel, adidas_padel, babolat_padel, siux]
     ambassadors: []
     conflict_severity: "medium"
 
-  # ==================== FASHION ====================
+  siux:
+    name: "Siux"
+    category: "padel_equipment"
+    instagram_handles: ["siuxpadel"]
+    competitors: [head_padel, bullpadel, nox_padel, adidas_padel, babolat_padel]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  # ==================== FASHION - INDITEX GROUP ====================
   zara:
     name: "Zara"
     category: "fashion"
     instagram_handles: ["zara", "zaraofficial"]
-    competitors: [mango, hm, pull_and_bear, bershka, stradivarius, primark, uniqlo]
+    competitors: [mango, hm, pull_and_bear, bershka, stradivarius, primark, uniqlo, cortefiel, springfield]
     ambassadors: []
-    conflict_severity: "medium"
+    conflict_severity: "high"
+    notes: "Flagship brand of Inditex group"
 
   mango:
     name: "Mango"
     category: "fashion"
     instagram_handles: ["mango", "mangofashion"]
-    competitors: [zara, hm, pull_and_bear, bershka, stradivarius]
+    competitors: [zara, hm, pull_and_bear, bershka, stradivarius, massimo_dutti]
+    ambassadors: []
+    conflict_severity: "high"
+
+  desigual:
+    name: "Desigual"
+    category: "fashion"
+    instagram_handles: ["desigual"]
+    competitors: [zara, mango, bimba_y_lola, custo]
     ambassadors: []
     conflict_severity: "medium"
+    notes: "Known for colorful prints and youthful style"
 
   hm:
     name: "H&M"
@@ -142,15 +188,16 @@ brands:
     instagram_handles: ["hm", "hm_espana"]
     competitors: [zara, mango, pull_and_bear, bershka, primark, uniqlo]
     ambassadors: []
-    conflict_severity: "medium"
+    conflict_severity: "high"
 
   pull_and_bear:
     name: "Pull & Bear"
     category: "fashion"
     instagram_handles: ["pullandbear"]
-    competitors: [zara, mango, hm, bershka, stradivarius]
+    competitors: [zara, mango, hm, bershka, stradivarius, springfield]
     ambassadors: []
-    conflict_severity: "low"
+    conflict_severity: "medium"
+    notes: "Inditex youth brand"
 
   bershka:
     name: "Bershka"
@@ -158,21 +205,198 @@ brands:
     instagram_handles: ["bershka"]
     competitors: [zara, mango, hm, pull_and_bear, stradivarius]
     ambassadors: []
-    conflict_severity: "low"
+    conflict_severity: "medium"
+    notes: "Inditex youth brand"
 
   stradivarius:
     name: "Stradivarius"
     category: "fashion"
-    instagram_handles: ["staboradivarius"]
-    competitors: [zara, mango, bershka, pull_and_bear]
+    instagram_handles: ["stradivarius"]
+    competitors: [zara, mango, bershka, pull_and_bear, oysho]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Inditex women's fashion"
+
+  massimo_dutti:
+    name: "Massimo Dutti"
+    category: "fashion"
+    instagram_handles: ["massimodutti"]
+    competitors: [mango, cortefiel, pedro_del_hierro, adolfo_dominguez]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Inditex premium fashion"
+
+  oysho:
+    name: "Oysho"
+    category: "fashion"
+    instagram_handles: ["oysho"]
+    competitors: [womens_secret, intimissimi]
     ambassadors: []
     conflict_severity: "low"
+    notes: "Inditex lingerie and athleisure"
+
+  lefties:
+    name: "Lefties"
+    category: "fashion"
+    instagram_handles: ["lefties"]
+    competitors: [primark, hm]
+    ambassadors: []
+    conflict_severity: "low"
+    notes: "Inditex value fashion"
+
+  # ==================== FASHION - TENDAM GROUP ====================
+  cortefiel:
+    name: "Cortefiel"
+    category: "fashion"
+    instagram_handles: ["cortefiel"]
+    competitors: [massimo_dutti, mango, zara, el_corte_ingles]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Tendam group classic fashion since 1945"
+
+  springfield:
+    name: "Springfield"
+    category: "fashion"
+    instagram_handles: ["springfield"]
+    competitors: [pull_and_bear, bershka, hm, scalpers]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Tendam group casual fashion"
+
+  womens_secret:
+    name: "Women'secret"
+    category: "fashion"
+    instagram_handles: ["womenssecret"]
+    competitors: [oysho, intimissimi, andres_sarda]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Tendam group lingerie"
+
+  pedro_del_hierro:
+    name: "Pedro del Hierro"
+    category: "fashion"
+    instagram_handles: ["pedrodelhierro"]
+    competitors: [massimo_dutti, adolfo_dominguez, roberto_verino]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Tendam group luxury fashion"
+
+  # ==================== FASHION - SPANISH DESIGNERS ====================
+  adolfo_dominguez:
+    name: "Adolfo Domínguez"
+    category: "fashion"
+    instagram_handles: ["adolfodominguez"]
+    competitors: [pedro_del_hierro, roberto_verino, purificacion_garcia, massimo_dutti]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Pioneer Spanish designer, minimalist style"
+
+  bimba_y_lola:
+    name: "Bimba y Lola"
+    category: "fashion"
+    instagram_handles: ["bimbaylola"]
+    competitors: [tous, desigual, scalpers, el_ganso]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Vigo-based accessories and fashion"
+
+  scalpers:
+    name: "Scalpers"
+    category: "fashion"
+    instagram_handles: ["scalpers"]
+    competitors: [el_ganso, springfield, hackett]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Sevilla-based casual chic brand"
+
+  el_ganso:
+    name: "El Ganso"
+    category: "fashion"
+    instagram_handles: ["elganso"]
+    competitors: [scalpers, hackett, springfield]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spanish preppy style brand"
+
+  loewe:
+    name: "Loewe"
+    category: "luxury_fashion"
+    instagram_handles: ["loewe"]
+    competitors: [gucci, louis_vuitton, balenciaga, celine]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Spanish luxury house since 1846, LVMH group"
+
+  # ==================== FASHION - BRIDAL ====================
+  pronovias:
+    name: "Pronovias"
+    category: "bridal"
+    instagram_handles: ["pronovias"]
+    competitors: [rosa_clara, jesus_peiro, vera_wang]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "World leader in bridal fashion"
+
+  rosa_clara:
+    name: "Rosa Clará"
+    category: "bridal"
+    instagram_handles: ["rosaclara"]
+    competitors: [pronovias, jesus_peiro]
+    ambassadors: []
+    conflict_severity: "high"
+
+  # ==================== FASHION - FOOTWEAR ====================
+  camper:
+    name: "Camper"
+    category: "footwear"
+    instagram_handles: ["camper"]
+    competitors: [pikolinos, munich, clarks, geox]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Mallorca-based innovative footwear"
+
+  pikolinos:
+    name: "Pikolinos"
+    category: "footwear"
+    instagram_handles: ["pikolinos"]
+    competitors: [camper, hispanitas, gioseppo, fluchos]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Elche artisanal leather footwear"
+
+  # ==================== FASHION - JEWELRY ====================
+  tous:
+    name: "Tous"
+    category: "jewelry"
+    instagram_handles: ["tous"]
+    competitors: [pandora, swarovski, unode50, majorica]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Iconic bear logo jewelry brand"
+
+  unode50:
+    name: "UNOde50"
+    category: "jewelry"
+    instagram_handles: ["unode50"]
+    competitors: [tous, majorica, carrera_y_carrera]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Artisanal limited edition jewelry"
+
+  majorica:
+    name: "Majorica"
+    category: "jewelry"
+    instagram_handles: ["majorica"]
+    competitors: [tous, unode50, swarovski]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Mallorca pearl jewelry"
 
   # ==================== BEAUTY ====================
   loreal:
     name: "L'Oreal"
     category: "beauty"
-    instagram_handles: ["loreal", "labororealparis", "lorealparis_es"]
+    instagram_handles: ["loreal", "lorealparis", "lorealparis_es"]
     competitors: [maybelline, garnier, revlon, rimmel, nyx]
     ambassadors: []
     conflict_severity: "medium"
@@ -185,38 +409,69 @@ brands:
     ambassadors: []
     conflict_severity: "medium"
 
+  natura_bisse:
+    name: "Natura Bissé"
+    category: "beauty"
+    instagram_handles: ["naturabisse"]
+    competitors: [la_mer, estee_lauder, clarins]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Barcelona luxury skincare"
+
+  puig:
+    name: "Puig"
+    category: "beauty"
+    instagram_handles: ["puig"]
+    competitors: [loreal, coty, lvmh_fragrances]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Barcelona fragrance and fashion house, owns Carolina Herrera, Jean Paul Gaultier"
+
   sephora:
     name: "Sephora"
     category: "beauty_retail"
     instagram_handles: ["sephora", "sephoraespana"]
-    competitors: [primor, douglas, kiko]
+    competitors: [primor, douglas, kiko, druni]
     ambassadors: []
     conflict_severity: "medium"
 
   primor:
     name: "Primor"
     category: "beauty_retail"
-    instagram_handles: ["primaborr", "primor_perfumerias"]
-    competitors: [sephora, douglas, kiko]
+    instagram_handles: ["primor", "primor_perfumerias"]
+    competitors: [sephora, douglas, kiko, druni]
     ambassadors: []
     conflict_severity: "low"
+    notes: "Sevilla-based beauty retail"
 
-  # ==================== RETAIL ====================
+  druni:
+    name: "Druni"
+    category: "beauty_retail"
+    instagram_handles: ["druniperfumerias"]
+    competitors: [primor, sephora, douglas]
+    ambassadors: []
+    conflict_severity: "low"
+    notes: "Valencia-based beauty retail"
+
+  # ==================== RETAIL - DEPARTMENT STORES ====================
   el_corte_ingles:
-    name: "El Corte Ingles"
+    name: "El Corte Inglés"
     category: "retail"
     instagram_handles: ["elcorteingles"]
     competitors: [amazon_es, carrefour, mediamarkt]
     ambassadors: []
-    conflict_severity: "medium"
+    conflict_severity: "high"
+    notes: "Iconic Spanish department store chain"
 
+  # ==================== RETAIL - GROCERY ====================
   mercadona:
     name: "Mercadona"
     category: "grocery_retail"
     instagram_handles: ["mercadona"]
-    competitors: [carrefour, lidl, aldi, dia, eroski]
+    competitors: [carrefour, lidl, aldi, dia, eroski, consum, coviran]
     ambassadors: []
-    conflict_severity: "low"
+    conflict_severity: "medium"
+    notes: "Spain's largest supermarket chain"
 
   carrefour:
     name: "Carrefour"
@@ -224,7 +479,7 @@ brands:
     instagram_handles: ["carrefour", "carrefourespana"]
     competitors: [mercadona, lidl, aldi, dia, eroski]
     ambassadors: []
-    conflict_severity: "low"
+    conflict_severity: "medium"
 
   lidl:
     name: "Lidl"
@@ -232,103 +487,206 @@ brands:
     instagram_handles: ["lidl", "lidlespana"]
     competitors: [mercadona, carrefour, aldi, dia]
     ambassadors: []
+    conflict_severity: "medium"
+
+  dia:
+    name: "DIA"
+    category: "grocery_retail"
+    instagram_handles: ["dia_espana"]
+    competitors: [mercadona, carrefour, lidl, eroski]
+    ambassadors: []
     conflict_severity: "low"
 
-  # ==================== AUTOMOTIVE ====================
-  seat:
-    name: "SEAT"
-    category: "automotive"
-    instagram_handles: ["seat", "seatofficial", "seat_es"]
-    competitors: [cupra, volkswagen, renault, peugeot, citroen, ford, toyota, hyundai]
+  eroski:
+    name: "Eroski"
+    category: "grocery_retail"
+    instagram_handles: ["eroski"]
+    competitors: [mercadona, carrefour, consum]
     ambassadors: []
-    conflict_severity: "high"
+    conflict_severity: "low"
+    notes: "Basque cooperative supermarket"
 
-  cupra:
-    name: "Cupra"
-    category: "automotive"
-    instagram_handles: ["cupraofficial"]
-    competitors: [seat, volkswagen, bmw, audi, mercedes]
-    ambassadors: []
-    conflict_severity: "high"
-
-  renault:
-    name: "Renault"
-    category: "automotive"
-    instagram_handles: ["renault", "renault_es"]
-    competitors: [seat, peugeot, citroen, ford, volkswagen, toyota]
-    ambassadors: []
-    conflict_severity: "high"
-
-  # ==================== TELECOM ====================
-  movistar:
-    name: "Movistar"
-    category: "telecom"
-    instagram_handles: ["movistar_es", "movistar"]
-    competitors: [vodafone, orange, yoigo, masmovil]
-    ambassadors: []
-    conflict_severity: "high"
-
-  vodafone:
-    name: "Vodafone"
-    category: "telecom"
-    instagram_handles: ["vodafone_es", "vodafone"]
-    competitors: [movistar, orange, yoigo, masmovil]
-    ambassadors: []
-    conflict_severity: "high"
-
-  orange:
-    name: "Orange"
-    category: "telecom"
-    instagram_handles: ["orange_es", "orange"]
-    competitors: [movistar, vodafone, yoigo, masmovil]
-    ambassadors: []
-    conflict_severity: "high"
-
-  # ==================== BANKING ====================
-  santander:
-    name: "Banco Santander"
-    category: "banking"
-    instagram_handles: ["santander", "bancosantander"]
-    competitors: [bbva, caixabank, sabadell, ing_espana]
-    ambassadors: []
-    conflict_severity: "high"
-
-  bbva:
-    name: "BBVA"
-    category: "banking"
-    instagram_handles: ["bbva", "bbva_espana"]
-    competitors: [santander, caixabank, sabadell, ing_espana]
-    ambassadors: []
-    conflict_severity: "high"
-
-  caixabank:
-    name: "CaixaBank"
-    category: "banking"
-    instagram_handles: ["caixabank"]
-    competitors: [santander, bbva, sabadell, ing_espana]
-    ambassadors: []
-    conflict_severity: "high"
-
-  # ==================== BEVERAGES ====================
-  mahou:
-    name: "Mahou"
-    category: "beverages"
-    instagram_handles: ["maaborhou", "mahousanmiguel"]
-    competitors: [estrella_galicia, cruzcampo, san_miguel, heineken_es]
+  # ==================== FOOD & BEVERAGE - MEAT ====================
+  el_pozo:
+    name: "El Pozo"
+    category: "food_charcuterie"
+    instagram_handles: ["elpozo"]
+    competitors: [campofrio, casa_tarradellas, navidul]
     ambassadors: []
     conflict_severity: "medium"
+    notes: "Leading Spanish meat producer from Murcia"
+
+  campofrio:
+    name: "Campofrío"
+    category: "food_charcuterie"
+    instagram_handles: ["campofrio"]
+    competitors: [el_pozo, casa_tarradellas, navidul]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  # ==================== FOOD & BEVERAGE - OLIVE OIL ====================
+  carbonell:
+    name: "Carbonell"
+    category: "olive_oil"
+    instagram_handles: ["carbonell"]
+    competitors: [borges, ybarra, la_espanola, hojiblanca]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Historic olive oil brand since 1866"
+
+  borges:
+    name: "Borges"
+    category: "olive_oil"
+    instagram_handles: ["borges"]
+    competitors: [carbonell, ybarra, la_espanola]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Mediterranean foods including olive oil and nuts"
+
+  # ==================== FOOD & BEVERAGE - COCOA & SPREADS ====================
+  cola_cao:
+    name: "Cola Cao"
+    category: "food_cocoa"
+    instagram_handles: ["colacao"]
+    competitors: [nesquik, nocilla]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Iconic Spanish breakfast cocoa"
+
+  nocilla:
+    name: "Nocilla"
+    category: "food_spread"
+    instagram_handles: ["nocilla"]
+    competitors: [nutella, cola_cao]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spanish chocolate hazelnut spread"
+
+  # ==================== FOOD & BEVERAGE - CONFECTIONERY ====================
+  chupa_chups:
+    name: "Chupa Chups"
+    category: "confectionery"
+    instagram_handles: ["chupachups"]
+    competitors: [haribo, mentos]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Iconic lollipops with Dalí-designed logo"
+
+  valor:
+    name: "Chocolates Valor"
+    category: "confectionery"
+    instagram_handles: ["chocolatesvalor"]
+    competitors: [lacasa, nestle_chocolate, lindt]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Premium Spanish chocolate since 1881"
+
+  lacasa:
+    name: "Lacasa"
+    category: "confectionery"
+    instagram_handles: ["lacasa"]
+    competitors: [valor, nestle_chocolate]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Maker of Lacasitos and Conguitos"
+
+  # ==================== BEVERAGES - BEER ====================
+  mahou:
+    name: "Mahou San Miguel"
+    category: "beer"
+    instagram_handles: ["mahou", "mahousanmiguel"]
+    competitors: [estrella_galicia, cruzcampo, damm, heineken_es, alhambra]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Spain's largest beer group"
 
   estrella_galicia:
     name: "Estrella Galicia"
-    category: "beverages"
+    category: "beer"
     instagram_handles: ["estrellagalicia"]
-    competitors: [mahou, cruzcampo, san_miguel, heineken_es]
+    competitors: [mahou, cruzcampo, damm, heineken_es]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Hijos de Rivera Galician beer"
+
+  cruzcampo:
+    name: "Cruzcampo"
+    category: "beer"
+    instagram_handles: ["cruzcampo"]
+    competitors: [mahou, estrella_galicia, damm]
     ambassadors: []
     conflict_severity: "medium"
+    notes: "Sevilla beer since 1904"
 
+  damm:
+    name: "Damm"
+    category: "beer"
+    instagram_handles: ["damm", "estrelladamm"]
+    competitors: [mahou, estrella_galicia, cruzcampo]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Barcelona Mediterranean beer"
+
+  # ==================== BEVERAGES - WINE & CAVA ====================
+  freixenet:
+    name: "Freixenet"
+    category: "cava"
+    instagram_handles: ["freixenet"]
+    competitors: [codorniu, juve_camps, gramona]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Leading cava producer"
+
+  codorniu:
+    name: "Codorníu"
+    category: "cava"
+    instagram_handles: ["codorniu"]
+    competitors: [freixenet, juve_camps, gramona]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Pioneering cava since 16th century"
+
+  marques_de_caceres:
+    name: "Marqués de Cáceres"
+    category: "wine"
+    instagram_handles: ["marquesdecaceres"]
+    competitors: [marques_de_riscal, rioja_wines, matarromera]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Prestigious Rioja winery"
+
+  # ==================== BEVERAGES - SPIRITS ====================
+  osborne:
+    name: "Osborne"
+    category: "spirits"
+    instagram_handles: ["osborne"]
+    competitors: [fundador, gonzalez_byass, terry]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Iconic bull silhouette, sherry and brandy"
+
+  licor_43:
+    name: "Licor 43"
+    category: "spirits"
+    instagram_handles: ["licor43"]
+    competitors: [baileys, amaretto]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Cartagena vanilla liqueur, Zamora Company"
+
+  dyc:
+    name: "DYC"
+    category: "spirits"
+    instagram_handles: ["dyc"]
+    competitors: [jb, ballantines]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "First Spanish whisky since 1958"
+
+  # ==================== BEVERAGES - SOFT DRINKS ====================
   cocacola:
     name: "Coca-Cola"
-    category: "beverages"
+    category: "soft_drinks"
     instagram_handles: ["cocacola", "cocacola_esp"]
     competitors: [pepsi, fanta, sprite]
     ambassadors: []
@@ -336,7 +694,7 @@ brands:
 
   pepsi:
     name: "Pepsi"
-    category: "beverages"
+    category: "soft_drinks"
     instagram_handles: ["pepsi", "pepsi_es"]
     competitors: [cocacola]
     ambassadors: []
@@ -358,6 +716,504 @@ brands:
     ambassadors: []
     conflict_severity: "high"
 
+  # ==================== AUTOMOTIVE ====================
+  seat:
+    name: "SEAT"
+    category: "automotive"
+    instagram_handles: ["seat", "seatofficial", "seat_es"]
+    competitors: [cupra, volkswagen, renault, peugeot, citroen, ford, toyota, hyundai]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Historic Spanish automaker since 1950, VW group"
+
+  cupra:
+    name: "Cupra"
+    category: "automotive"
+    instagram_handles: ["cupraofficial"]
+    competitors: [seat, volkswagen, bmw, audi, mercedes]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "SEAT's performance brand since 2018"
+
+  renault:
+    name: "Renault"
+    category: "automotive"
+    instagram_handles: ["renault", "renault_es"]
+    competitors: [seat, peugeot, citroen, ford, volkswagen, toyota]
+    ambassadors: []
+    conflict_severity: "high"
+
+  # ==================== TRAVEL - AIRLINES ====================
+  iberia:
+    name: "Iberia"
+    category: "airline"
+    instagram_handles: ["iberia"]
+    competitors: [air_europa, vueling, ryanair, lufthansa]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Spanish flag carrier since 1927, IAG group"
+
+  air_europa:
+    name: "Air Europa"
+    category: "airline"
+    instagram_handles: ["aireuropa"]
+    competitors: [iberia, vueling, ryanair]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Globalia group, Spain-Americas routes"
+
+  vueling:
+    name: "Vueling"
+    category: "airline"
+    instagram_handles: ["vueling"]
+    competitors: [iberia, air_europa, ryanair, easyjet]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Low-cost IAG airline"
+
+  binter:
+    name: "Binter Canarias"
+    category: "airline"
+    instagram_handles: ["baborintercanarias"]
+    competitors: [iberia, vueling]
+    ambassadors: []
+    conflict_severity: "low"
+    notes: "Canary Islands regional airline"
+
+  # ==================== TRAVEL - HOTELS ====================
+  melia:
+    name: "Meliá Hotels"
+    category: "hotels"
+    instagram_handles: ["maborelia"]
+    competitors: [barcelo, nh, riu, iberostar, paradores]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Mallorca-based global hotel chain"
+
+  barcelo:
+    name: "Barceló Hotel Group"
+    category: "hotels"
+    instagram_handles: ["barcelohotels"]
+    competitors: [melia, nh, riu, iberostar]
+    ambassadors: []
+    conflict_severity: "high"
+
+  nh:
+    name: "NH Hotel Group"
+    category: "hotels"
+    instagram_handles: ["nhhotels"]
+    competitors: [melia, barcelo, marriott, hilton]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Urban hotels, Minor International"
+
+  riu:
+    name: "RIU Hotels"
+    category: "hotels"
+    instagram_handles: ["riuhotels"]
+    competitors: [melia, barcelo, iberostar]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "All-inclusive beach resorts"
+
+  iberostar:
+    name: "Iberostar"
+    category: "hotels"
+    instagram_handles: ["iberostar"]
+    competitors: [melia, barcelo, riu]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Mallorca sustainable tourism leader"
+
+  paradores:
+    name: "Paradores"
+    category: "hotels"
+    instagram_handles: ["paraboradores"]
+    competitors: [melia, nh]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "State-owned historic hotels"
+
+  # ==================== TRAVEL - RAIL ====================
+  renfe:
+    name: "Renfe"
+    category: "rail"
+    instagram_handles: ["renfe"]
+    competitors: [ouigo, iryo, avlo]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "National rail operator, AVE high-speed"
+
+  # ==================== TELECOM ====================
+  telefonica:
+    name: "Telefónica"
+    category: "telecom"
+    instagram_handles: ["telefonica"]
+    competitors: [vodafone, orange]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Parent company of Movistar"
+
+  movistar:
+    name: "Movistar"
+    category: "telecom"
+    instagram_handles: ["movistar_es", "movistar"]
+    competitors: [vodafone, orange, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Telefónica's consumer brand"
+
+  vodafone:
+    name: "Vodafone"
+    category: "telecom"
+    instagram_handles: ["vodafone_es", "vodafone"]
+    competitors: [movistar, orange, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+
+  orange:
+    name: "Orange"
+    category: "telecom"
+    instagram_handles: ["orange_es", "orange"]
+    competitors: [movistar, vodafone, yoigo, masmovil]
+    ambassadors: []
+    conflict_severity: "high"
+
+  masmovil:
+    name: "MásMóvil"
+    category: "telecom"
+    instagram_handles: ["masmovil"]
+    competitors: [movistar, vodafone, orange]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Fourth operator, owns Yoigo, Pepephone"
+
+  yoigo:
+    name: "Yoigo"
+    category: "telecom"
+    instagram_handles: ["yoigo"]
+    competitors: [movistar, vodafone, orange]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "MásMóvil group"
+
+  # ==================== TECHNOLOGY ====================
+  glovo:
+    name: "Glovo"
+    category: "delivery"
+    instagram_handles: ["glovo"]
+    competitors: [uber_eats, just_eat, deliveroo]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Barcelona delivery platform"
+
+  wallapop:
+    name: "Wallapop"
+    category: "marketplace"
+    instagram_handles: ["wallapop"]
+    competitors: [vinted, ebay_es, milanuncios]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Secondhand marketplace app"
+
+  cabify:
+    name: "Cabify"
+    category: "mobility"
+    instagram_handles: ["cabify"]
+    competitors: [uber, bolt, free_now]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spanish ride-hailing platform"
+
+  indra:
+    name: "Indra"
+    category: "technology"
+    instagram_handles: ["indra"]
+    competitors: [accenture, capgemini, ibm]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "IT services and defense systems"
+
+  amadeus:
+    name: "Amadeus IT"
+    category: "technology"
+    instagram_handles: ["amadeusitgroup"]
+    competitors: [sabre, travelport]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Travel technology global leader"
+
+  # ==================== BANKING ====================
+  santander:
+    name: "Banco Santander"
+    category: "banking"
+    instagram_handles: ["santander", "bancosantander"]
+    competitors: [bbva, caixabank, sabadell, bankinter, unicaja, ibercaja, kutxabank, abanca]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Global Spanish bank"
+
+  bbva:
+    name: "BBVA"
+    category: "banking"
+    instagram_handles: ["bbva", "bbva_espana"]
+    competitors: [santander, caixabank, sabadell, bankinter]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Bilbao-origin multinational bank"
+
+  caixabank:
+    name: "CaixaBank"
+    category: "banking"
+    instagram_handles: ["caixabank"]
+    competitors: [santander, bbva, sabadell, bankinter]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Merged with Bankia, largest retail bank"
+
+  sabadell:
+    name: "Banco Sabadell"
+    category: "banking"
+    instagram_handles: ["bancosabadell"]
+    competitors: [santander, bbva, caixabank, bankinter]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  bankinter:
+    name: "Bankinter"
+    category: "banking"
+    instagram_handles: ["bankinter"]
+    competitors: [santander, bbva, caixabank, sabadell]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Technology-focused Spanish bank"
+
+  # ==================== INSURANCE ====================
+  mapfre:
+    name: "Mapfre"
+    category: "insurance"
+    instagram_handles: ["mapfre"]
+    competitors: [mutua_madrilena, linea_directa, axa, allianz]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Spain's largest insurer"
+
+  mutua_madrilena:
+    name: "Mutua Madrileña"
+    category: "insurance"
+    instagram_handles: ["mutuamadrilena"]
+    competitors: [mapfre, linea_directa, axa]
+    ambassadors: []
+    conflict_severity: "high"
+
+  linea_directa:
+    name: "Línea Directa"
+    category: "insurance"
+    instagram_handles: ["lineadirecta"]
+    competitors: [mapfre, mutua_madrilena]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Direct insurance, online/phone only"
+
+  # ==================== ENERGY ====================
+  repsol:
+    name: "Repsol"
+    category: "energy"
+    instagram_handles: ["repsol"]
+    competitors: [cepsa, bp, shell]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Major Spanish oil and gas company"
+
+  cepsa:
+    name: "Cepsa"
+    category: "energy"
+    instagram_handles: ["cepsa"]
+    competitors: [repsol, bp, shell]
+    ambassadors: []
+    conflict_severity: "high"
+
+  iberdrola:
+    name: "Iberdrola"
+    category: "utilities"
+    instagram_handles: ["iberdrola"]
+    competitors: [endesa, naturgy, repsol]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Global renewable energy leader"
+
+  endesa:
+    name: "Endesa"
+    category: "utilities"
+    instagram_handles: ["endesa"]
+    competitors: [iberdrola, naturgy]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Enel group electricity company"
+
+  naturgy:
+    name: "Naturgy"
+    category: "utilities"
+    instagram_handles: ["naturgy"]
+    competitors: [iberdrola, endesa, repsol]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Former Gas Natural Fenosa"
+
+  # ==================== CONSTRUCTION ====================
+  acs:
+    name: "ACS"
+    category: "construction"
+    instagram_handles: ["grupoacs"]
+    competitors: [ferrovial, acciona, fcc, sacyr, ohl]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "World's largest construction company by revenue"
+
+  ferrovial:
+    name: "Ferrovial"
+    category: "construction"
+    instagram_handles: ["ferrovial"]
+    competitors: [acs, acciona, fcc, sacyr]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Infrastructure and airports"
+
+  acciona:
+    name: "Acciona"
+    category: "construction"
+    instagram_handles: ["acciona"]
+    competitors: [acs, ferrovial, fcc]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Sustainable infrastructure leader"
+
+  fcc:
+    name: "FCC"
+    category: "construction"
+    instagram_handles: ["fcc_group"]
+    competitors: [acs, ferrovial, acciona, sacyr]
+    ambassadors: []
+    conflict_severity: "medium"
+
+  sacyr:
+    name: "Sacyr"
+    category: "construction"
+    instagram_handles: ["sacyr"]
+    competitors: [acs, ferrovial, acciona, fcc]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Panama Canal expansion contractor"
+
+  # ==================== MEDIA ====================
+  antena3:
+    name: "Antena 3"
+    category: "media_tv"
+    instagram_handles: ["antena3com"]
+    competitors: [telecinco, la1_tve, la_sexta, cuatro]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Atresmedia flagship channel"
+
+  telecinco:
+    name: "Telecinco"
+    category: "media_tv"
+    instagram_handles: ["telecinco"]
+    competitors: [antena3, la1_tve, la_sexta, cuatro]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Mediaset España flagship"
+
+  rtve:
+    name: "RTVE"
+    category: "media_broadcasting"
+    instagram_handles: ["rtve"]
+    competitors: [atresmedia, mediaset]
+    ambassadors: []
+    conflict_severity: "low"
+    notes: "Public broadcaster"
+
+  atresmedia:
+    name: "Atresmedia"
+    category: "media_group"
+    instagram_handles: ["atresmedia"]
+    competitors: [mediaset, rtve]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Owns Antena 3, La Sexta, Onda Cero"
+
+  mediaset:
+    name: "Mediaset España"
+    category: "media_group"
+    instagram_handles: ["mediasetcom"]
+    competitors: [atresmedia, rtve]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Owns Telecinco, Cuatro"
+
+  cadena_ser:
+    name: "Cadena SER"
+    category: "media_radio"
+    instagram_handles: ["cadenaser"]
+    competitors: [onda_cero, cope, rne]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Leading Spanish radio station"
+
+  marca:
+    name: "Marca"
+    category: "media_sports"
+    instagram_handles: ["marca"]
+    competitors: [as_diario, mundo_deportivo, sport]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Leading sports newspaper"
+
+  el_pais:
+    name: "El País"
+    category: "media_newspaper"
+    instagram_handles: ["elpais"]
+    competitors: [el_mundo, abc, la_vanguardia]
+    ambassadors: []
+    conflict_severity: "medium"
+    notes: "Spain's largest newspaper"
+
+  # ==================== SPORTS - FOOTBALL CLUBS ====================
+  real_madrid:
+    name: "Real Madrid CF"
+    category: "football_club"
+    instagram_handles: ["realmadrid"]
+    competitors: [barcelona, atletico]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Most decorated European club"
+
+  barcelona:
+    name: "FC Barcelona"
+    category: "football_club"
+    instagram_handles: ["fcbarcelona"]
+    competitors: [real_madrid, atletico]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Més que un club"
+
+  atletico:
+    name: "Atlético de Madrid"
+    category: "football_club"
+    instagram_handles: ["atleticodemadrid"]
+    competitors: [real_madrid, barcelona]
+    ambassadors: []
+    conflict_severity: "high"
+
+  laliga:
+    name: "LaLiga"
+    category: "football_league"
+    instagram_handles: ["laliga"]
+    competitors: [premier_league, serie_a, bundesliga]
+    ambassadors: []
+    conflict_severity: "high"
+    notes: "Spanish football league brand"
+
 # Category-level competitor groups (fallback when brand not found)
 category_competitors:
   sports_apparel:
@@ -369,6 +1225,9 @@ category_competitors:
     - new_balance
     - asics
     - fila
+    - joma
+    - kelme
+    - munich
 
   padel_equipment:
     - head_padel
@@ -377,6 +1236,7 @@ category_competitors:
     - adidas_padel
     - babolat_padel
     - wilson_padel
+    - siux
 
   fashion:
     - zara
@@ -387,6 +1247,51 @@ category_competitors:
     - stradivarius
     - primark
     - uniqlo
+    - desigual
+    - cortefiel
+    - springfield
+    - massimo_dutti
+
+  fashion_premium:
+    - adolfo_dominguez
+    - pedro_del_hierro
+    - roberto_verino
+    - purificacion_garcia
+    - bimba_y_lola
+    - scalpers
+    - el_ganso
+
+  luxury_fashion:
+    - loewe
+    - balenciaga
+    - louis_vuitton
+    - gucci
+
+  bridal:
+    - pronovias
+    - rosa_clara
+    - jesus_peiro
+    - vera_wang
+
+  lingerie:
+    - oysho
+    - womens_secret
+    - intimissimi
+    - andres_sarda
+
+  footwear:
+    - camper
+    - pikolinos
+    - hispanitas
+    - gioseppo
+    - munich
+
+  jewelry:
+    - tous
+    - unode50
+    - majorica
+    - pandora
+    - swarovski
 
   beauty:
     - loreal
@@ -395,12 +1300,93 @@ category_competitors:
     - revlon
     - nyx
     - mac
+    - natura_bisse
+    - puig
 
   beauty_retail:
     - sephora
     - primor
     - douglas
     - kiko
+    - druni
+
+  grocery_retail:
+    - mercadona
+    - carrefour
+    - lidl
+    - aldi
+    - dia
+    - eroski
+    - consum
+    - coviran
+
+  retail:
+    - el_corte_ingles
+    - amazon_es
+    - carrefour
+    - mediamarkt
+
+  food_charcuterie:
+    - el_pozo
+    - campofrio
+    - casa_tarradellas
+    - navidul
+    - cinco_jotas
+
+  olive_oil:
+    - carbonell
+    - borges
+    - ybarra
+    - la_espanola
+    - hojiblanca
+    - deoleo
+
+  confectionery:
+    - valor
+    - lacasa
+    - chupa_chups
+    - nestle
+
+  beer:
+    - mahou
+    - estrella_galicia
+    - cruzcampo
+    - damm
+    - san_miguel
+    - alhambra
+    - heineken_es
+
+  cava:
+    - freixenet
+    - codorniu
+    - juve_camps
+    - gramona
+
+  wine:
+    - marques_de_caceres
+    - marques_de_riscal
+    - matarromera
+    - abadia_retuerta
+    - vivanco
+    - felix_solis
+
+  spirits:
+    - osborne
+    - fundador
+    - licor_43
+    - dyc
+    - zamora_company
+
+  soft_drinks:
+    - cocacola
+    - pepsi
+    - fanta
+    - sprite
+
+  energy_drinks:
+    - redbull
+    - monster_energy
+    - burn
 
   automotive:
     - seat
@@ -414,6 +1400,31 @@ category_competitors:
     - bmw
     - mercedes
     - audi
+    - hyundai
+
+  airline:
+    - iberia
+    - air_europa
+    - vueling
+    - ryanair
+    - volotea
+    - binter
+
+  hotels:
+    - melia
+    - barcelo
+    - nh
+    - riu
+    - iberostar
+    - paradores
+    - hotusa
+    - palladium
+
+  rail:
+    - renfe
+    - ouigo
+    - iryo
+    - avlo
 
   telecom:
     - movistar
@@ -421,22 +1432,91 @@ category_competitors:
     - orange
     - yoigo
     - masmovil
+    - euskaltel
+
+  technology:
+    - indra
+    - amadeus
+    - glovo
+    - wallapop
+    - cabify
+
+  delivery:
+    - glovo
+    - uber_eats
+    - just_eat
+    - deliveroo
 
   banking:
     - santander
     - bbva
     - caixabank
     - sabadell
-    - ing_espana
+    - bankinter
+    - unicaja
+    - ibercaja
+    - kutxabank
+    - abanca
 
-  beverages:
-    - cocacola
-    - pepsi
-    - mahou
-    - estrella_galicia
-    - cruzcampo
+  insurance:
+    - mapfre
+    - mutua_madrilena
+    - linea_directa
+    - catalana_occidente
+    - axa
+    - allianz
 
-  energy_drinks:
-    - redbull
-    - monster_energy
-    - burn
+  energy:
+    - repsol
+    - cepsa
+    - bp
+    - shell
+
+  utilities:
+    - iberdrola
+    - endesa
+    - naturgy
+    - enagas
+    - ree
+
+  construction:
+    - acs
+    - ferrovial
+    - acciona
+    - fcc
+    - sacyr
+    - ohl
+
+  media_tv:
+    - antena3
+    - telecinco
+    - la1_tve
+    - la_sexta
+    - cuatro
+
+  media_group:
+    - atresmedia
+    - mediaset
+    - rtve
+    - prisa
+
+  media_newspaper:
+    - el_pais
+    - el_mundo
+    - abc
+    - la_vanguardia
+    - la_razon
+
+  media_sports:
+    - marca
+    - as_diario
+    - mundo_deportivo
+    - sport
+
+  football_club:
+    - real_madrid
+    - barcelona
+    - atletico
+    - sevilla
+    - valencia
+    - athletic_bilbao
