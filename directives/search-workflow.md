@@ -11,6 +11,39 @@ Process brand briefs and natural language queries to find and intelligently rank
 
 ## Process Flow
 
+### Architecture: Batch Verification Approach
+
+The search flow uses a **batch verification architecture** to ensure predictable latency and controlled API costs:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  1. Get large candidate pool from DB (200 candidates)           │
+│     Fast, local operation - no API calls                        │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  2. Soft pre-filter using cached metrics (select top 50)        │
+│     Scores candidates by likelihood of passing verification     │
+│     Fast, local operation - no API calls                        │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  3. Batch verify top 50 via PrimeTag API                        │
+│     MAX 50 API calls per search (predictable cost)              │
+│     5 concurrent requests with exponential backoff              │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  4. Strict filter verified candidates                           │
+│     5. Rank and return top N results                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why this approach?** Previous loop-based verification (verify → filter → if not enough → repeat) was slow and expensive. This batch approach ensures:
+- Predictable latency (~50 API calls max)
+- Predictable cost per search
+- No runaway loops when filter rejection rate is high
+
 ### Step 1: Brief Parsing (Orchestration Layer)
 **Script:** `backend/app/orchestration/query_parser.py`
 
@@ -47,42 +80,38 @@ Parse the brand brief using GPT-4o to extract:
 - If LLM fails, fallback to basic keyword extraction
 - Log parsing confidence for debugging
 
-### Step 2: Cache Check (Execution Layer)
+### Step 2: Candidate Discovery (Execution Layer)
 **Script:** `backend/app/services/cache_service.py`
 
-Check PostgreSQL cache for influencers matching:
-- Minimum credibility score
-- Minimum Spain audience percentage
-- Non-expired cache entries (24-hour TTL)
+Get large candidate pool from local database (200 candidates):
+1. Search by interests matching campaign topics
+2. Search by keywords in bio
+3. Fall back to generic cache search
 
-### Step 3: PrimeTag API Search (Execution Layer)
-**Script:** `backend/app/services/primetag_client.py`
+**Configuration:** `CANDIDATE_POOL_SIZE = 200` in search_service.py
 
-If cache insufficient:
-1. Search `/media-kits` with extracted keywords
-2. Limit to 5 keyword searches
-3. Fetch `/media-kits/{platform}/{username}` for detailed metrics
-4. Limit to 30 detail fetches per search
+### Step 3: Soft Pre-Filter (Execution Layer)
+**Script:** `backend/app/services/search_service.py` → `_soft_prefilter_candidates()`
 
-**API Configuration:**
-- Authentication: `Authorization: Bearer {PRIMETAG_API_KEY}` header
-- Max 50 results per search call
-- 30-second timeout per request
+Score candidates using cached/imported data **before** expensive API verification:
+- Candidates with cached metrics meeting thresholds score highest
+- Candidates with partial metrics (need verification) score medium
+- Candidates clearly failing filters are deprioritized
+- Interest/niche match bonuses applied
+- Excluded niche penalties applied
 
-**API Rate Limits (IMPORTANT):**
-- The API returns 429 errors after ~20-25 requests in quick succession
-- Implement exponential backoff on 429 responses
-- Consider request queuing to stay under limits
-- Leverage caching aggressively to minimize API calls
+**Configuration:** `MAX_CANDIDATES_TO_VERIFY = 50` (controls API cost)
 
-### Step 4: Primetag Verification Gate (NEW)
+### Step 4: Primetag Verification Gate (Execution Layer)
 **Script:** `backend/app/services/search_service.py` → `_verify_candidates_batch()`
 
-**Every candidate must be verified via Primetag API** before filtering:
-1. For each discovered candidate, call `get_media_kit_detail()` to fetch full metrics
-2. Parallel verification with bounded concurrency (max 5 concurrent)
-3. Candidates without full metrics are discarded
-4. Verified data is cached for future searches
+Verify **only the top 50 candidates** from soft pre-filter:
+1. Check if candidate already has full cached metrics (skip API call)
+2. If cached `primetag_encrypted_username` exists, call detail endpoint directly (1 API call)
+3. Otherwise, search + detail (2 API calls)
+4. Parallel verification with bounded concurrency (max 5 concurrent)
+
+**Optimization:** New fields `external_social_profile_id` and `primetag_encrypted_username` are stored in the database to skip the search step on subsequent verifications.
 
 **Required Metrics (from Primetag):**
 - `audience_geography["ES"]` - Spain audience % (from `location_by_country`)
@@ -90,6 +119,13 @@ If cache insufficient:
 - `engagement_rate` - ER %
 - `audience_genders` - Gender distribution
 - `audience_age_distribution` - Age breakdown
+
+**API Configuration:**
+- Authentication: `Authorization: Bearer {PRIMETAG_API_KEY}` header
+- Platform types: Instagram = 2, TikTok = 6 (verified 2026-01-28)
+- Max 50 results per search call
+- 30-second timeout per request
+- Exponential backoff on 429/5xx errors (3 retries, 1-30s delay)
 
 **Known Issue:** Some profiles return empty `location_by_country` from PrimeTag, causing Spain % to show as 0%. When this happens, the filter service falls back to checking the `country` field for Spanish influencers.
 

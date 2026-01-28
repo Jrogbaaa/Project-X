@@ -20,6 +20,8 @@ class Influencer(Base):
     # PrimeTag identifiers
     platform_type = Column(String(20), nullable=False, default="instagram")
     username = Column(String(100), nullable=False)
+    external_social_profile_id = Column(String(100), nullable=True)  # PrimeTag's external ID
+    primetag_encrypted_username = Column(Text, nullable=True)  # Encrypted username for direct API calls
 
     # Basic profile info (cached from PrimeTag)
     display_name = Column(String(255), nullable=True)

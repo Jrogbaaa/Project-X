@@ -149,13 +149,15 @@ def with_retry(
 class PrimeTagClient:
     """Client for PrimeTag API interactions."""
 
-    # Platform type mapping (per Primetag API docs)
-    PLATFORM_YOUTUBE = 1
-    PLATFORM_INSTAGRAM = 2
-    PLATFORM_TIKTOK = 3
-    PLATFORM_FACEBOOK = 4
-    PLATFORM_PINTEREST = 5
-    PLATFORM_LINKEDIN = 6
+    # Platform type mapping (verified via API testing 2026-01-28)
+    # Supported: Instagram (2), TikTok (6)
+    # Unsupported: Facebook (1), Twitter (3), Pinterest (4), LinkedIn (5)
+    PLATFORM_FACEBOOK = 1      # Not supported
+    PLATFORM_INSTAGRAM = 2     # Supported
+    PLATFORM_TWITTER = 3       # Not supported
+    PLATFORM_PINTEREST = 4     # Not supported
+    PLATFORM_LINKEDIN = 5      # Not supported
+    PLATFORM_TIKTOK = 6        # Supported
 
     def __init__(self):
         self.settings = get_settings()

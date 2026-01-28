@@ -20,6 +20,11 @@ from app.core.exceptions import SearchError
 
 logger = logging.getLogger(__name__)
 
+# Configuration constants for batch verification approach
+CANDIDATE_POOL_SIZE = 200  # Fixed pool size for predictable performance
+MAX_CANDIDATES_TO_VERIFY = 50  # Max candidates to verify via API (controls cost)
+MAX_CONCURRENT_VERIFICATION = 5  # Parallel API calls for verification
+
 
 class SearchService:
     """Main service for orchestrating influencer searches."""
@@ -57,19 +62,18 @@ class SearchService:
             # Merge with request filters if provided
             filters_applied = self._merge_filters(parsed_query, request.filters)
 
-            # Track candidates
+            # Track candidates - use fixed pool size for predictable performance
             candidates: List[Influencer] = []
             seen_usernames: Set[str] = set()
-            target_candidates = parsed_query.target_count * 5  # Get 5x for filtering headroom
 
-            # Step 2: Discover candidates from local DB
+            # Step 2: Discover candidates from local DB (get large pool)
             if parsed_query.campaign_topics:
                 logger.info(f"Searching by interests: {parsed_query.campaign_topics}")
                 interest_matches = await self.cache_service.find_by_interests(
                     interests=parsed_query.campaign_topics,
                     exclude_interests=parsed_query.exclude_niches,
                     country="Spain",
-                    limit=target_candidates
+                    limit=CANDIDATE_POOL_SIZE
                 )
                 for inf in interest_matches:
                     if inf.username not in seen_usernames:
@@ -78,11 +82,11 @@ class SearchService:
                 logger.info(f"Found {len(interest_matches)} matches by interests")
 
             # Step 3: Search by keywords in bio
-            if len(candidates) < target_candidates and parsed_query.search_keywords:
+            if len(candidates) < CANDIDATE_POOL_SIZE and parsed_query.search_keywords:
                 logger.info(f"Searching by keywords: {parsed_query.search_keywords}")
                 keyword_matches = await self.cache_service.search_by_keywords(
                     keywords=parsed_query.search_keywords[:5],
-                    limit=target_candidates
+                    limit=CANDIDATE_POOL_SIZE
                 )
                 for inf in keyword_matches:
                     if inf.username not in seen_usernames:
@@ -91,13 +95,13 @@ class SearchService:
                 logger.info(f"Found {len(keyword_matches)} matches by keywords")
 
             # Step 4: Fall back to generic cache search
-            if len(candidates) < target_candidates:
+            if len(candidates) < CANDIDATE_POOL_SIZE:
                 logger.info("Falling back to generic cache search")
                 cached_influencers = await self.cache_service.find_matching(
                     min_credibility=0,  # Don't pre-filter, let verification handle it
                     min_spain_pct=0,
                     min_engagement=None,
-                    limit=target_candidates,
+                    limit=CANDIDATE_POOL_SIZE,
                     include_partial_data=True
                 )
                 for inf in cached_influencers:
@@ -106,19 +110,29 @@ class SearchService:
                         candidates.append(inf)
                 logger.info(f"Total candidates after cache: {len(candidates)}")
 
-            # NOTE: PrimeTag API discovery removed - using local database only
-            # PrimeTag is still used for verification (Step 6) to fetch metrics
-
             total_candidates = len(candidates)
             logger.info(f"Total candidates from local DB: {total_candidates}")
 
             # ============================================================
-            # Step 6: VERIFICATION GATE - Verify ALL candidates via Primetag
+            # Step 5: SOFT PRE-FILTER - Score candidates using cached data
+            # This reduces API calls by only verifying the most promising ones
             # ============================================================
-            logger.info(f"Verifying {len(candidates)} candidates via Primetag API...")
-            verified_candidates, failed_count = await self._verify_candidates_batch(
+            prefiltered = self._soft_prefilter_candidates(
                 candidates,
-                max_concurrent=5
+                filters_applied,
+                parsed_query,
+                limit=MAX_CANDIDATES_TO_VERIFY
+            )
+            logger.info(f"Soft pre-filter: {len(prefiltered)} candidates selected for verification (from {total_candidates})")
+
+            # ============================================================
+            # Step 6: VERIFICATION GATE - Verify pre-filtered candidates via Primetag
+            # Only verifies MAX_CANDIDATES_TO_VERIFY (50) candidates max
+            # ============================================================
+            logger.info(f"Verifying {len(prefiltered)} candidates via Primetag API...")
+            verified_candidates, failed_count = await self._verify_candidates_batch(
+                prefiltered,
+                max_concurrent=MAX_CONCURRENT_VERIFICATION
             )
             logger.info(f"Verification complete: {len(verified_candidates)} verified, {failed_count} failed")
 
@@ -286,6 +300,110 @@ class SearchService:
 
         return True
 
+    def _soft_prefilter_candidates(
+        self,
+        candidates: List[Influencer],
+        filters: FilterConfig,
+        parsed_query: ParsedSearchQuery,
+        limit: int = MAX_CANDIDATES_TO_VERIFY
+    ) -> List[Influencer]:
+        """
+        Apply soft filters using cached data BEFORE expensive API verification.
+        
+        This reduces API calls by scoring candidates based on available cached metrics
+        and selecting only the most promising ones for verification.
+        
+        Scoring logic:
+        - Candidates with full cached metrics that meet filters score highest
+        - Candidates with partial metrics score medium (need verification)
+        - Candidates that clearly fail filters are deprioritized
+        
+        Args:
+            candidates: All candidates from local DB
+            filters: Filter config with thresholds
+            parsed_query: Parsed query with preferences
+            limit: Max candidates to return for verification
+            
+        Returns:
+            Top N candidates sorted by likelihood of passing filters
+        """
+        scored: List[tuple[Influencer, float, bool]] = []
+        
+        for c in candidates:
+            score = 0.0
+            has_full_metrics = self._has_full_metrics(c)
+            
+            # Score based on credibility (if available)
+            min_cred = filters.min_credibility_score or 70.0
+            if c.credibility_score is not None:
+                if c.credibility_score >= min_cred:
+                    score += 3.0  # Meets threshold
+                    # Bonus for exceeding threshold
+                    score += min(1.0, (c.credibility_score - min_cred) / 20.0)
+                else:
+                    score -= 2.0  # Below threshold - likely to fail
+            else:
+                score += 0.5  # Unknown - might pass after verification
+            
+            # Score based on engagement rate (if available)
+            min_er = filters.min_engagement_rate or 0.0
+            if c.engagement_rate is not None:
+                if c.engagement_rate >= min_er:
+                    score += 2.0  # Meets threshold
+                else:
+                    score -= 1.0  # Below threshold
+            else:
+                score += 0.5  # Unknown
+            
+            # Score based on Spain audience % (if available)
+            min_spain = filters.min_spain_audience_pct or 60.0
+            spain_pct = 0.0
+            if c.audience_geography:
+                spain_pct = c.audience_geography.get("ES", c.audience_geography.get("es", 0))
+            # Fallback to country field
+            if spain_pct == 0 and c.country and c.country.lower() == "spain":
+                spain_pct = 80.0  # Assume Spanish influencers have ~80% Spain audience
+            
+            if spain_pct >= min_spain:
+                score += 3.0  # Meets threshold
+            elif spain_pct > 0:
+                score -= 1.0  # Below threshold
+            else:
+                score += 0.5  # Unknown
+            
+            # Bonus for candidates with full metrics (saves API calls)
+            if has_full_metrics:
+                score += 2.0
+            
+            # Bonus for interest/niche match
+            if c.interests and parsed_query.campaign_topics:
+                c_interests_lower = [i.lower() for i in c.interests]
+                for topic in parsed_query.campaign_topics:
+                    if topic.lower() in c_interests_lower:
+                        score += 1.0
+            
+            # Penalty for excluded niches
+            if c.interests and parsed_query.exclude_niches:
+                c_interests_lower = [i.lower() for i in c.interests]
+                for exclude in parsed_query.exclude_niches:
+                    if exclude.lower() in c_interests_lower:
+                        score -= 3.0
+            
+            # Slight preference for larger accounts (more reliable data)
+            if c.follower_count:
+                if c.follower_count >= 100000:
+                    score += 0.5
+                elif c.follower_count >= 50000:
+                    score += 0.25
+            
+            scored.append((c, score, has_full_metrics))
+        
+        # Sort by score descending, then by has_full_metrics (True first to save API calls)
+        scored.sort(key=lambda x: (-x[1], not x[2], -(x[0].follower_count or 0)))
+        
+        # Return top N candidates
+        return [c for c, _, _ in scored[:limit]]
+
     async def _verify_candidate(self, influencer: Influencer) -> Optional[Influencer]:
         """
         Verify a candidate by fetching full metrics from Primetag API.
@@ -297,37 +415,48 @@ class SearchService:
         - % Edades (audience_age_distribution)
         - % Credibilidad (credibility_score) - Instagram only
         - % ER (engagement_rate)
+        
+        Optimization: If we have cached primetag_encrypted_username, we can skip
+        the search step and directly call the detail endpoint (1 API call instead of 2).
         """
         username = influencer.username
 
         # Check if already has full metrics and cache is fresh
         if self._has_full_metrics(influencer) and influencer.cache_expires_at > datetime.utcnow():
-            logger.debug(f"Candidate {username} already has full metrics")
+            logger.debug(f"Candidate {username} already has full metrics (cache hit)")
             return influencer
 
         try:
-            # Search Primetag to get the encrypted username
-            search_results = await self.primetag.search_media_kits(
-                username,
-                platform_type=PrimeTagClient.PLATFORM_INSTAGRAM,
-                limit=5
-            )
+            username_encrypted = None
+            search_summary = None  # Will be populated if we need to search
+            
+            # OPTIMIZATION: Use cached encrypted username if available (saves 1 API call)
+            if influencer.primetag_encrypted_username:
+                username_encrypted = influencer.primetag_encrypted_username
+                logger.debug(f"Using cached encrypted username for {username}")
+            else:
+                # Need to search Primetag to get the encrypted username
+                logger.debug(f"Searching Primetag for {username} (no cached encrypted username)")
+                search_results = await self.primetag.search_media_kits(
+                    username,
+                    platform_type=PrimeTagClient.PLATFORM_INSTAGRAM,
+                    limit=5
+                )
 
-            # Find exact match
-            exact_match = None
-            for result in search_results:
-                if result.username.lower() == username.lower():
-                    exact_match = result
-                    break
+                # Find exact match
+                for result in search_results:
+                    if result.username.lower() == username.lower():
+                        search_summary = result
+                        break
 
-            if not exact_match:
-                logger.warning(f"Verification failed: {username} not found in Primetag")
-                return None
+                if not search_summary:
+                    logger.warning(f"Verification failed: {username} not found in Primetag")
+                    return None
 
-            # Extract encrypted username from mediakit_url
-            username_encrypted = PrimeTagClient.extract_encrypted_username(exact_match.mediakit_url)
-            if not username_encrypted:
-                username_encrypted = exact_match.external_social_profile_id or username
+                # Extract encrypted username from mediakit_url
+                username_encrypted = PrimeTagClient.extract_encrypted_username(search_summary.mediakit_url)
+                if not username_encrypted:
+                    username_encrypted = search_summary.external_social_profile_id or username
 
             # Fetch FULL metrics from detail endpoint
             detail = await self.primetag.get_media_kit_detail(
@@ -336,12 +465,22 @@ class SearchService:
             )
             metrics = self.primetag.extract_metrics(detail)
 
-            # Add follower count from search result if not in detail
+            # Add follower count from search result or existing data if not in detail
             if not metrics.get('follower_count'):
-                metrics['follower_count'] = exact_match.audience_size
+                if search_summary:
+                    metrics['follower_count'] = search_summary.audience_size
+                elif influencer.follower_count:
+                    metrics['follower_count'] = influencer.follower_count
 
             # Update cache with verified data
-            verified = await self.cache_service.upsert_influencer(exact_match, metrics)
+            # Use search_summary if we have it, otherwise create a minimal summary object
+            summary_for_cache = search_summary if search_summary else type('Summary', (), {
+                'username': username,
+                'external_social_profile_id': influencer.external_social_profile_id,
+                'mediakit_url': f"https://mediakit.primetag.com/instagram/{username_encrypted}" if username_encrypted else None
+            })()
+            
+            verified = await self.cache_service.upsert_influencer(summary_for_cache, metrics)
             logger.info(f"Verified {username}: Spain={metrics.get('audience_geography', {}).get('ES', 0)}%, "
                        f"Cred={metrics.get('credibility_score')}, ER={metrics.get('engagement_rate')}")
             return verified

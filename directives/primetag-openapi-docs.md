@@ -86,19 +86,27 @@ Autocomplete search for usernames.
 | username_startswith | string | query | Yes | Username prefix to filter |
 | limit | integer | query | No | Max results (default: 10) |
 
-## Platform Types
-| ID | Platform |
-|----|----------|
-| 1 | Instagram |
-| 2 | TikTok |
-| 3 | YouTube |
-| 4 | Facebook |
-| 5 | Pinterest |
-| 6 | LinkedIn |
+## Platform Types (Verified 2026-01-28)
+| ID | Platform | Status |
+|----|----------|--------|
+| 1 | Facebook | Not supported |
+| 2 | Instagram | **Supported** |
+| 3 | Twitter | Not supported |
+| 4 | Pinterest | Not supported |
+| 5 | LinkedIn | Not supported |
+| 6 | TikTok | **Supported** |
 
-## Authentication
-- `Authorization: Token {PRIMETAG_API_KEY}` header
+**Note:** Only Instagram (2) and TikTok (6) are currently supported. Other platform types return 400 error.
+
+## Authentication (Verified 2026-01-28)
+- `Authorization: Bearer {PRIMETAG_API_KEY}` header (NOT "Token")
 - Optional: `X-User-ID` and `X-Auth-User-ID` headers
+
+## Rate Limits (Observed)
+- Returns 429 "Too many requests" after ~100-200 requests
+- `metadata.num_requests` in error response shows request count
+- Implement exponential backoff (1s, 2s, 4s... up to 30s)
+- Consider request queuing to stay under limits
 
 ## Key Schemas
 

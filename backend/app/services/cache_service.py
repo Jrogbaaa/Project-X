@@ -273,6 +273,25 @@ class CacheService:
 
         # Extract username from summary
         username = summary.username if hasattr(summary, 'username') else summary.get('username', '')
+        
+        # Extract PrimeTag identifiers for optimized future API calls
+        external_social_profile_id = None
+        primetag_encrypted_username = None
+        
+        if hasattr(summary, 'external_social_profile_id'):
+            external_social_profile_id = summary.external_social_profile_id
+        elif isinstance(summary, dict):
+            external_social_profile_id = summary.get('external_social_profile_id')
+            
+        if hasattr(summary, 'mediakit_url') and summary.mediakit_url:
+            # Extract encrypted username from URL: .../instagram/ENCRYPTED_USERNAME
+            parts = summary.mediakit_url.rstrip('/').split('/')
+            if len(parts) >= 2:
+                primetag_encrypted_username = parts[-1]
+        elif isinstance(summary, dict) and summary.get('mediakit_url'):
+            parts = summary['mediakit_url'].rstrip('/').split('/')
+            if len(parts) >= 2:
+                primetag_encrypted_username = parts[-1]
 
         # Check if exists
         existing = await self.get_by_username(username, platform_type)
@@ -293,10 +312,15 @@ class CacheService:
             existing.audience_genders = metrics.get('audience_genders') or existing.audience_genders
             existing.audience_age_distribution = metrics.get('audience_age_distribution') or existing.audience_age_distribution
             existing.audience_geography = metrics.get('audience_geography') or existing.audience_geography
-            # Update new fields
+            # Update discovery fields
             existing.interests = metrics.get('interests') or existing.interests
             existing.brand_mentions = metrics.get('brand_mentions') or existing.brand_mentions
             existing.country = metrics.get('country') or existing.country
+            # Update PrimeTag identifiers (only if we have new values)
+            if external_social_profile_id:
+                existing.external_social_profile_id = external_social_profile_id
+            if primetag_encrypted_username:
+                existing.primetag_encrypted_username = primetag_encrypted_username
             existing.cached_at = now
             existing.cache_expires_at = expires_at
             existing.updated_at = now
@@ -309,6 +333,8 @@ class CacheService:
             influencer = Influencer(
                 platform_type=platform_type,
                 username=username,
+                external_social_profile_id=external_social_profile_id,
+                primetag_encrypted_username=primetag_encrypted_username,
                 display_name=metrics.get('display_name'),
                 profile_picture_url=metrics.get('profile_picture_url'),
                 bio=metrics.get('bio'),
