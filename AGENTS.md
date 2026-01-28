@@ -83,7 +83,17 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 5. Geography (Spain focus)
 6. **Brand Affinity** (audience overlap with brand)
 7. **Creative Fit** (tone/theme alignment)
-8. **Niche Match** (content category alignment)
+8. **Niche Match** (content niche alignment) ⭐ **Key Factor**
+
+### Niche Matching - Key Concept
+
+**An influencer's niche is what they post about** - their content category (e.g., fitness, home decor, fashion, sports). This is one of the most important factors for matching influencers to brands:
+
+- A **home furniture brand** (IKEA) should match with **home/lifestyle influencers**
+- A **health food brand** should match with **fitness/nutrition influencers**
+- A **padel equipment brand** should match with **padel/racket sports influencers** (not soccer players)
+
+Each influencer in our database has a `interests` field containing their content niches (e.g., "Home Decor, Furniture & Garden", "Fitness & Yoga", "Sports, Soccer"). The ranking algorithm scores how well these niches align with the brand's category.
 
 ### Architecture Overview
 
@@ -131,8 +141,8 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 | **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, niche relevance scoring |
 | Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) + **bulk upsert & cache warming** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
-| Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for GENRE—see directive) |
-| Import Service | `import_influencers.py` | Import enriched CSV into database with interests/country parsing |
+| Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |
+| Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 

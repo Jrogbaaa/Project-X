@@ -136,6 +136,24 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
               <p className="text-light-secondary text-xs mt-0.5">
                 <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> followers
               </p>
+              {/* Niche Tags - Show first 2 */}
+              {raw_data.interests && raw_data.interests.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {raw_data.interests.slice(0, 2).map((interest, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 text-[10px] rounded-full bg-[#06b6d4]/10 text-[#06b6d4] border border-[#06b6d4]/20"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                  {raw_data.interests.length > 2 && (
+                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-dark-tertiary text-light-tertiary">
+                      +{raw_data.interests.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -206,6 +224,25 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
             <p className="text-sm text-light-secondary leading-relaxed">
               {raw_data.bio}
             </p>
+          )}
+
+          {/* Content Niches */}
+          {raw_data.interests && raw_data.interests.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-light-tertiary uppercase tracking-wider mb-2">
+                Content Niches
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {raw_data.interests.map((interest, i) => (
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 text-xs rounded-full bg-[#06b6d4]/10 text-[#06b6d4] border border-[#06b6d4]/20"
+                  >
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Audience Demographics */}

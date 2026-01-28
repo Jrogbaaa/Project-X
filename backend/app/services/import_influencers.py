@@ -31,8 +31,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Known genre/interest categories for parsing concatenated strings
-KNOWN_CATEGORIES = [
+# Known niche/interest categories for parsing concatenated strings
+# These represent the content niches that influencers create content about
+KNOWN_NICHES = [
     "Entertainment and Music",
     "Fashion and Accessories",
     "Food and Drink",
@@ -77,29 +78,32 @@ KNOWN_CATEGORIES = [
 ]
 
 # Lowercase version for matching
-KNOWN_CATEGORIES_LOWER = {cat.lower(): cat for cat in KNOWN_CATEGORIES}
+KNOWN_NICHES_LOWER = {niche.lower(): niche for niche in KNOWN_NICHES}
 
 
-def parse_genre_string(genre: str) -> List[str]:
+def parse_niche_string(niche_str: str) -> List[str]:
     """
-    Parse concatenated genre strings like 'SportsSoccer' or 'BooksLifestyleModeling'
-    into a list of individual interests.
+    Parse concatenated niche strings like 'SportsSoccer' or 'BooksLifestyleModeling'
+    into a list of individual niches/interests.
+    
+    Niches represent the content categories that influencers create content about.
+    This is one of the most important factors for matching influencers to brands.
     """
-    if not genre or genre.strip() == "":
+    if not niche_str or niche_str.strip() == "":
         return []
     
-    # Handle known multi-word categories first
-    remaining = genre
+    # Handle known multi-word niches first
+    remaining = niche_str
     found = []
     
-    # Sort categories by length (longest first) to match "Entertainment and Music" before "Music"
-    sorted_categories = sorted(KNOWN_CATEGORIES, key=len, reverse=True)
+    # Sort niches by length (longest first) to match "Entertainment and Music" before "Music"
+    sorted_niches = sorted(KNOWN_NICHES, key=len, reverse=True)
     
-    for category in sorted_categories:
+    for niche in sorted_niches:
         # Case-insensitive search
-        pattern = re.compile(re.escape(category), re.IGNORECASE)
+        pattern = re.compile(re.escape(niche), re.IGNORECASE)
         if pattern.search(remaining):
-            found.append(category)
+            found.append(niche)
             remaining = pattern.sub('', remaining, count=1)
     
     # Handle remaining text - try to split on capital letters
@@ -108,9 +112,9 @@ def parse_genre_string(genre: str) -> List[str]:
         words = re.findall(r'[A-Z][a-z]*|[a-z]+', remaining)
         for word in words:
             if len(word) > 2:  # Skip very short fragments
-                # Check if it matches a known category
-                if word.lower() in KNOWN_CATEGORIES_LOWER:
-                    canonical = KNOWN_CATEGORIES_LOWER[word.lower()]
+                # Check if it matches a known niche
+                if word.lower() in KNOWN_NICHES_LOWER:
+                    canonical = KNOWN_NICHES_LOWER[word.lower()]
                     if canonical not in found:
                         found.append(canonical)
                 elif word.lower() not in ['and', 'the', 'of']:
@@ -225,9 +229,10 @@ async def import_influencers(
                     # Get additional data from Instagram cache
                     ig_data = ig_cache.get(username, {})
                     
-                    # Parse genre into interests
-                    genre = row.get('GENRE', '')
-                    interests = parse_genre_string(genre)
+                    # Parse niche into interests
+                    # GENRE column contains the influencer's content niche (e.g., "SportsSoccer", "LifestyleHome")
+                    niche_raw = row.get('GENRE', '')
+                    interests = parse_niche_string(niche_raw)
                     
                     # Get bio from Details column or Instagram cache
                     bio = row.get('Details', '') or ig_data.get('biography', '')

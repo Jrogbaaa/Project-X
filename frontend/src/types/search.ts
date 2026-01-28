@@ -82,6 +82,11 @@ export interface InfluencerData {
   audience_genders: Record<string, number>;
   audience_age_distribution: Record<string, number>;
   audience_geography: Record<string, number>;
+  
+  // Content niches - what the influencer posts about (key for brand matching)
+  interests?: string[];
+  brand_mentions?: string[];
+  
   platform_type?: string;
   cached_at?: string | null;
 

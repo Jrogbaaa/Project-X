@@ -169,7 +169,7 @@ export default function Home() {
           </p>
           <p className="text-light-tertiary text-sm mb-10 max-w-xl mx-auto animate-fade-in"
              style={{ animationDelay: '150ms' }}>
-            Include brand name, creative concept, tone, and target audience — our AI extracts everything and scores influencers on brand affinity, creative fit, and niche match.
+            Include brand name and campaign details — our AI matches influencers based on their content niche, brand affinity, and creative fit.
           </p>
 
           {/* Search Bar */}

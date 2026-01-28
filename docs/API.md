@@ -8,11 +8,25 @@ This API powers an intelligent influencer discovery platform. Users can paste br
 
 ### Key Features
 - **Natural Language Input**: Paste entire brand briefs or campaign descriptions
+- **Niche Matching**: Match influencers based on their content niche (what they post about) - this is one of the most important factors for brand alignment
 - **8-Factor Scoring**: Credibility, engagement, audience match, growth, geography, brand affinity, creative fit, niche match
 - **Anti-Celebrity Bias**: Optionally prefer mid-tier influencers over mega-celebrities
 - **Creative Concept Matching**: Score influencers based on alignment with campaign tone and themes
 - **Gender-Split Results**: Request specific counts per gender (e.g., "3 male, 3 female")
 - **Local-First Search**: Searches cached database first, uses PrimeTag API only for metric verification
+
+### Niche Matching - Key Concept
+
+An influencer's **niche** is what they post about - their content category. This is one of the most important factors for matching influencers to brands:
+
+| Brand Type | Should Match Niche |
+|------------|-------------------|
+| IKEA (home furniture) | Home Decor, Lifestyle, Interior Design |
+| Health food brand | Fitness, Nutrition, Healthy Lifestyle |
+| Padel equipment | Padel, Racket Sports (NOT soccer players) |
+| Fashion brand | Fashion, Style, Beauty |
+
+Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
 
 ## Authentication
 

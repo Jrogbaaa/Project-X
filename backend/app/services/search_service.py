@@ -115,70 +115,51 @@ class SearchService:
 
             # ============================================================
             # Step 5: SOFT PRE-FILTER - Score candidates using cached data
-            # This reduces API calls by only verifying the most promising ones
+            # Ranks candidates by likelihood of being a good match
             # ============================================================
+            # Use larger pool since we're not making API calls for now
+            prefilter_limit = min(100, total_candidates)  # Up to 100 candidates for ranking
             prefiltered = self._soft_prefilter_candidates(
                 candidates,
                 filters_applied,
                 parsed_query,
-                limit=MAX_CANDIDATES_TO_VERIFY
+                limit=prefilter_limit
             )
-            logger.info(f"Soft pre-filter: {len(prefiltered)} candidates selected for verification (from {total_candidates})")
+            logger.info(f"Soft pre-filter: {len(prefiltered)} candidates selected (from {total_candidates})")
 
             # ============================================================
-            # Step 6: VERIFICATION GATE - Split candidates before batch verification
-            # Skip already-verified candidates to reduce API calls to near-zero for cached searches
+            # Step 6: SKIP API VERIFICATION (temporarily disabled)
+            # Using imported data directly - will re-enable PrimeTag API later
             # ============================================================
-            already_verified = []
-            needs_verification = []
-            
-            for candidate in prefiltered:
-                # Check if candidate has full metrics AND fresh cache
-                if (self._has_full_metrics(candidate) and 
-                    candidate.cache_expires_at and 
-                    candidate.cache_expires_at > datetime.utcnow()):
-                    already_verified.append(candidate)
-                else:
-                    needs_verification.append(candidate)
-            
-            logger.info(f"Verification split: {len(already_verified)} already verified (cache hit), "
-                       f"{len(needs_verification)} need API verification")
-            
-            # Only verify candidates that actually need it
-            if needs_verification:
-                verified_from_api, failed_count = await self._verify_candidates_batch(
-                    needs_verification[:MAX_CANDIDATES_TO_VERIFY],
-                    max_concurrent=MAX_CONCURRENT_VERIFICATION
-                )
-            else:
-                verified_from_api = []
-                failed_count = 0
-            
-            # Combine already-verified with newly-verified
-            verified_candidates = already_verified + verified_from_api
-            logger.info(f"Verification complete: {len(verified_candidates)} total verified "
-                       f"({len(already_verified)} cached, {len(verified_from_api)} from API, {failed_count} failed)")
+            # For now, use prefiltered candidates directly without API verification
+            # This allows imported influencers to pass through based on cached data
+            verified_candidates = prefiltered
+            failed_count = 0
+            logger.info(f"Using {len(verified_candidates)} candidates directly (API verification disabled)")
 
             # ============================================================
-            # Step 7: Apply STRICT hard filters (no lenient mode)
-            # Only verified candidates with real metrics pass through
+            # Step 7: Apply filters with lenient mode for imported data
+            # Allows profiles without full metrics (credibility, etc.) to pass
+            # Uses country fallback for Spain filter when audience_geography is missing
             # ============================================================
             filtered = self.filter_service.apply_filters(
                 verified_candidates,
                 parsed_query,
                 filters_applied,
-                lenient_mode=False  # STRICT: Must have real data to pass
+                lenient_mode=True  # LENIENT: Allow imported profiles without full metrics
             )
             total_after_filter = len(filtered)
-            logger.info(f"After strict filtering: {total_after_filter} candidates")
+            logger.info(f"After filtering (lenient mode): {total_after_filter} candidates")
 
             # Calculate rejection stats
             rejected_count = len(verified_candidates) - total_after_filter
 
             # Step 8: Rank survivors using 8-factor scoring
+            # Enrich campaign_topics with search_keywords if empty (for niche matching)
+            ranking_query = self._enrich_campaign_topics(parsed_query)
             ranked = self.ranking_service.rank_influencers(
                 filtered,
-                parsed_query,
+                ranking_query,
                 request.ranking_weights
             )
 
@@ -715,6 +696,72 @@ class SearchService:
             search_keywords=enriched_keywords,
             parsing_confidence=parsed_query.parsing_confidence,
             reasoning=parsed_query.reasoning + f" [Brand context: {brand_context.category}]" if brand_context.category else parsed_query.reasoning,
+        )
+
+    def _enrich_campaign_topics(self, parsed_query: ParsedSearchQuery) -> ParsedSearchQuery:
+        """
+        Enrich campaign_topics with search_keywords if empty.
+        
+        This ensures niche matching works even when the LLM extracts
+        keywords but not explicit campaign_topics. For example, for
+        "IKEA home furniture campaign", search_keywords might include
+        ["home", "furniture", "decoracion"] which should boost influencers
+        with matching interests.
+        """
+        # If campaign_topics already has values, use as-is
+        if parsed_query.campaign_topics:
+            return parsed_query
+        
+        # If no search_keywords either, return as-is
+        if not parsed_query.search_keywords:
+            return parsed_query
+        
+        # Filter search_keywords to likely niche-relevant terms
+        # Exclude brand names and very generic terms
+        brand_terms = {
+            parsed_query.brand_name.lower() if parsed_query.brand_name else "",
+            parsed_query.brand_handle.lower().lstrip("@") if parsed_query.brand_handle else "",
+        }
+        generic_terms = {"influencer", "campaign", "spain", "spanish", "espana"}
+        
+        niche_keywords = [
+            kw for kw in parsed_query.search_keywords
+            if kw.lower() not in brand_terms 
+            and kw.lower() not in generic_terms
+            and len(kw) > 2
+        ]
+        
+        if not niche_keywords:
+            return parsed_query
+        
+        # Create enriched query with campaign_topics from keywords
+        logger.info(f"Enriching campaign_topics with search_keywords: {niche_keywords[:5]}")
+        
+        return ParsedSearchQuery(
+            target_count=parsed_query.target_count,
+            influencer_gender=parsed_query.influencer_gender,
+            target_audience_gender=parsed_query.target_audience_gender,
+            target_male_count=parsed_query.target_male_count,
+            target_female_count=parsed_query.target_female_count,
+            brand_name=parsed_query.brand_name,
+            brand_handle=parsed_query.brand_handle,
+            brand_category=parsed_query.brand_category,
+            creative_concept=parsed_query.creative_concept,
+            creative_tone=parsed_query.creative_tone,
+            creative_themes=parsed_query.creative_themes,
+            campaign_topics=niche_keywords[:5],  # Use top 5 keywords as topics
+            exclude_niches=parsed_query.exclude_niches,
+            content_themes=parsed_query.content_themes,
+            preferred_follower_min=parsed_query.preferred_follower_min,
+            preferred_follower_max=parsed_query.preferred_follower_max,
+            target_age_ranges=parsed_query.target_age_ranges,
+            min_spain_audience_pct=parsed_query.min_spain_audience_pct,
+            min_credibility_score=parsed_query.min_credibility_score,
+            min_engagement_rate=parsed_query.min_engagement_rate,
+            suggested_ranking_weights=parsed_query.suggested_ranking_weights,
+            search_keywords=parsed_query.search_keywords,
+            parsing_confidence=parsed_query.parsing_confidence,
+            reasoning=parsed_query.reasoning,
         )
 
     def _merge_filters(

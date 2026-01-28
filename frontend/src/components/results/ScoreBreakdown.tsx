@@ -57,7 +57,7 @@ const SCORE_CONFIG: Record<keyof ScoreComponents, {
   },
   niche_match: {
     label: 'Niche Match',
-    description: 'Content category alignment',
+    description: 'Content niche alignment (what they post about)',
     color: 'bg-[#06b6d4]',
     bgColor: 'bg-[#06b6d4]/20',
   },
