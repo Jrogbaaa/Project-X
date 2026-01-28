@@ -28,7 +28,7 @@ class PrimeTagClient:
         # Use the base URL from settings (configured in .env)
         self.base_url = self.settings.primetag_api_base_url.rstrip("/")
         self.headers = {
-            "Authorization": f"Token {self.settings.primetag_api_key}",
+            "Authorization": f"Bearer {self.settings.primetag_api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }

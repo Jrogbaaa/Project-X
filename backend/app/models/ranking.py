@@ -7,7 +7,7 @@ from app.core.database import Base
 
 
 class RankingPreset(Base):
-    """Configurable ranking weight presets."""
+    """Configurable ranking weight presets for 8-factor scoring."""
 
     __tablename__ = "ranking_presets"
 
@@ -16,12 +16,15 @@ class RankingPreset(Base):
     name = Column(String(100), nullable=False, unique=True)
     description = Column(Text, nullable=True)
 
-    # Weight configuration
-    credibility_weight = Column(Float, default=0.25)
-    engagement_weight = Column(Float, default=0.30)
-    audience_match_weight = Column(Float, default=0.25)
+    # Weight configuration (8 factors)
+    credibility_weight = Column(Float, default=0.15)
+    engagement_weight = Column(Float, default=0.20)
+    audience_match_weight = Column(Float, default=0.15)
     growth_weight = Column(Float, default=0.10)
     geography_weight = Column(Float, default=0.10)
+    brand_affinity_weight = Column(Float, default=0.10)
+    creative_fit_weight = Column(Float, default=0.10)
+    niche_match_weight = Column(Float, default=0.10)
 
     # Metadata
     is_default = Column(Boolean, default=False)
@@ -33,7 +36,9 @@ class RankingPreset(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "credibility_weight + engagement_weight + audience_match_weight + growth_weight + geography_weight BETWEEN 0.99 AND 1.01",
+            "credibility_weight + engagement_weight + audience_match_weight + growth_weight + "
+            "geography_weight + brand_affinity_weight + creative_fit_weight + niche_match_weight "
+            "BETWEEN 0.99 AND 1.01",
             name="weights_sum_check"
         ),
     )

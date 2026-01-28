@@ -70,6 +70,7 @@ class Influencer(Base):
         Index("idx_influencers_cache_expiry", "cache_expires_at"),
         Index("idx_influencers_country", "country"),
         Index("idx_influencers_interests", "interests", postgresql_using="gin"),
+        Index("idx_influencers_brand_mentions", "brand_mentions", postgresql_using="gin"),
     )
 
     def to_dict(self) -> dict:

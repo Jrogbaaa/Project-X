@@ -511,7 +511,6 @@ class SearchService:
             min_follower_growth_rate=filters_applied.min_follower_growth_rate,
             ranking_weights=request.ranking_weights.model_dump() if request.ranking_weights else None,
             result_count=len(results),
-            result_influencer_ids=[UUID(r.influencer_id) for r in results if r.influencer_id],
         )
         self.db.add(search)
         await self.db.flush()
@@ -526,11 +525,15 @@ class SearchService:
                 influencer_id=UUID(result.influencer_id),
                 rank_position=result.rank_position,
                 relevance_score=result.relevance_score,
+                # All 8 score components
                 credibility_score_normalized=result.scores.credibility,
                 engagement_score_normalized=result.scores.engagement,
                 audience_match_score=result.scores.audience_match,
                 growth_score_normalized=result.scores.growth,
                 geography_score=result.scores.geography,
+                brand_affinity_score=result.scores.brand_affinity,
+                creative_fit_score=result.scores.creative_fit,
+                niche_match_score=result.scores.niche_match,
                 metrics_snapshot=result.raw_data.model_dump() if result.raw_data else None
             )
             self.db.add(search_result)

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -32,9 +32,8 @@ class Search(Base):
     # Ranking weights used
     ranking_weights = Column(JSONB, nullable=True)
 
-    # Results
+    # Results count (influencer IDs derived from search_results relationship)
     result_count = Column(Integer, nullable=True)
-    result_influencer_ids = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
 
     # Saved search metadata
     is_saved = Column(Boolean, default=False)
@@ -72,12 +71,15 @@ class SearchResult(Base):
     rank_position = Column(Integer, nullable=False)
     relevance_score = Column(Float, nullable=True)
 
-    # Individual score components (for transparency)
+    # Individual score components (all 8 factors for transparency)
     credibility_score_normalized = Column(Float, nullable=True)
     engagement_score_normalized = Column(Float, nullable=True)
     audience_match_score = Column(Float, nullable=True)
     growth_score_normalized = Column(Float, nullable=True)
     geography_score = Column(Float, nullable=True)
+    brand_affinity_score = Column(Float, nullable=True)
+    creative_fit_score = Column(Float, nullable=True)
+    niche_match_score = Column(Float, nullable=True)
 
     # Snapshot of key metrics at search time
     metrics_snapshot = Column(JSONB, nullable=True)

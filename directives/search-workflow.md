@@ -64,10 +64,16 @@ If cache insufficient:
 3. Fetch `/media-kits/{platform}/{username}` for detailed metrics
 4. Limit to 30 detail fetches per search
 
-**API Rate Limits:**
+**API Configuration:**
+- Authentication: `Authorization: Bearer {PRIMETAG_API_KEY}` header
 - Max 50 results per search call
 - 30-second timeout per request
-- Implement exponential backoff on failures
+
+**API Rate Limits (IMPORTANT):**
+- The API returns 429 errors after ~20-25 requests in quick succession
+- Implement exponential backoff on 429 responses
+- Consider request queuing to stay under limits
+- Leverage caching aggressively to minimize API calls
 
 ### Step 4: Primetag Verification Gate (NEW)
 **Script:** `backend/app/services/search_service.py` → `_verify_candidates_batch()`
@@ -79,11 +85,13 @@ If cache insufficient:
 4. Verified data is cached for future searches
 
 **Required Metrics (from Primetag):**
-- `audience_geography["ES"]` - Spain audience %
+- `audience_geography["ES"]` - Spain audience % (from `location_by_country`)
 - `credibility_score` - Credibility % (Instagram only)
 - `engagement_rate` - ER %
 - `audience_genders` - Gender distribution
 - `audience_age_distribution` - Age breakdown
+
+**Known Issue:** Some profiles return empty `location_by_country` from PrimeTag, causing Spain % to show as 0%. When this happens, the filter service falls back to checking the `country` field for Spanish influencers.
 
 **Verification Result:**
 - Verified candidates proceed to filtering
