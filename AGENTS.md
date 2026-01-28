@@ -164,10 +164,49 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 |-----------|------|---------|
 | SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries (expandable textarea) |
 | FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds (credibility, Spain %, engagement, growth, gender, age brackets) |
-| ResultsGrid | `results/ResultsGrid.tsx` | Grid layout for influencer cards |
-| InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics |
+| ResultsGrid | `results/ResultsGrid.tsx` | Grid layout with **card/list view toggle**, sticky header, export/save actions |
+| InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics, **quick copy buttons** |
+| InfluencerRow | `results/InfluencerRow.tsx` | **Compact list view** showing username, MediaKit URL, metrics at a glance |
 | AudienceChart | `results/AudienceChart.tsx` | Pie/bar charts for demographics |
 | ScoreBreakdown | `results/ScoreBreakdown.tsx` | Visual breakdown of all 8 ranking factors |
+| Toast | `ui/Toast.tsx` | Toast notifications for copy/save/export feedback |
+
+### Frontend Hooks (`frontend/src/hooks/`)
+
+| Hook | File | Purpose |
+|------|------|---------|
+| useToast | `useToast.ts` | Toast notification state management |
+
+### Frontend UX Features
+
+**Auto-scroll**: Results section automatically scrolls into view when search completes.
+
+**View Modes**: Toggle between card view (detailed) and list view (compact, scannable).
+
+**Keyboard Shortcuts** (when results are displayed):
+- `j` / `k` - Navigate to next/previous result
+- `c` - Copy selected influencer's username
+- `o` - Open profile in new tab
+- `m` - Open MediaKit in new tab (if available)
+- `Escape` - Clear selection
+
+**Quick Copy**: Hover over influencer cards/rows to reveal one-click copy buttons for username and MediaKit URL.
+
+**Toast Notifications**: Visual feedback for copy, save, and export actions.
+
+### Frontend Testing
+
+```bash
+# Run tests
+cd frontend && npm test
+
+# Run tests once (CI mode)
+cd frontend && npm run test:run
+```
+
+Test coverage includes:
+- InfluencerCard: username display, MediaKit links, copy functionality, metrics
+- InfluencerRow: compact view, all essential data visible without expansion
 
 ### Database Schema
 

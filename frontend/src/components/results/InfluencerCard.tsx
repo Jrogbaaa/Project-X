@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ExternalLink, Users, TrendingUp, TrendingDown, BadgeCheck, ChevronDown } from 'lucide-react';
+import { ExternalLink, Users, TrendingUp, TrendingDown, BadgeCheck, ChevronDown, Copy, Check } from 'lucide-react';
 import { RankedInfluencer } from '@/types/search';
 import { formatNumber, formatPercentage, cn, getMetricClass, getMatchScoreClass } from '@/lib/utils';
 import { AudienceChart } from './AudienceChart';
@@ -11,6 +11,9 @@ import { ScoreBreakdown } from './ScoreBreakdown';
 interface InfluencerCardProps {
   influencer: RankedInfluencer;
   index?: number;
+  isSelected?: boolean;
+  onCopy?: (message: string) => void;
+  onExpand?: () => void;
 }
 
 interface MetricPillProps {
@@ -32,9 +35,28 @@ function MetricPill({ label, value, metricClass, icon }: MetricPillProps) {
   );
 }
 
-export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
+export function InfluencerCard({ influencer, index = 0, isSelected = false, onCopy, onExpand }: InfluencerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copiedField, setCopiedField] = useState<'username' | 'mediakit' | null>(null);
   const { raw_data, scores, relevance_score, rank_position } = influencer;
+
+  const handleCopy = async (text: string, field: 'username' | 'mediakit') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      onCopy?.(field === 'username' ? 'Username copied' : 'MediaKit URL copied');
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleExpandToggle = () => {
+    setIsExpanded(!isExpanded);
+    if (!isExpanded) {
+      onExpand?.();
+    }
+  };
 
   const spainPct = raw_data.audience_geography?.ES || raw_data.audience_geography?.es || 0;
   const growthRate = raw_data.follower_growth_rate_6m;
@@ -45,11 +67,15 @@ export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
   return (
     <div
       className={cn(
-        'group bg-dark-secondary rounded-xl border border-dark-border/50 overflow-hidden',
+        'group bg-dark-secondary rounded-xl border overflow-hidden',
         'hover:border-accent-gold/30 hover:shadow-card-hover transition-all duration-300',
-        'animate-cascade'
+        'animate-cascade',
+        isSelected 
+          ? 'border-accent-gold/50 ring-2 ring-accent-gold/20 shadow-glow-gold' 
+          : 'border-dark-border/50'
       )}
       style={{ animationDelay: `${index * 50}ms` }}
+      data-index={index}
     >
       {/* Main Card Content */}
       <div className="p-5">
@@ -89,6 +115,18 @@ export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
                 {raw_data.is_verified && (
                   <BadgeCheck className="h-4 w-4 text-accent-gold flex-shrink-0" />
                 )}
+                <button
+                  onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all ml-0.5"
+                  aria-label="Copy username"
+                  tabIndex={0}
+                >
+                  {copiedField === 'username' ? (
+                    <Check className="w-3.5 h-3.5 text-metric-excellent" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-light-tertiary" />
+                  )}
+                </button>
               </div>
               {raw_data.display_name && (
                 <p className="text-light-tertiary text-sm truncate">
@@ -142,7 +180,7 @@ export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
 
         {/* Expand Toggle */}
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleExpandToggle}
           className="w-full flex items-center justify-center gap-2 py-2 text-sm text-light-tertiary hover:text-light-secondary transition-colors"
         >
           <span>{isExpanded ? 'Hide details' : 'View details'}</span>
@@ -189,17 +227,31 @@ export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
         </div>
         <div className="flex items-center gap-3">
           {raw_data.mediakit_url && (
-            <a
-              href={raw_data.mediakit_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-light-secondary hover:text-light-primary text-sm font-medium transition-colors"
-              aria-label={`View MediaKit for ${raw_data.username}`}
-              tabIndex={0}
-            >
-              MediaKit
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleCopy(raw_data.mediakit_url!, 'mediakit')}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
+                aria-label="Copy MediaKit URL"
+                tabIndex={0}
+              >
+                {copiedField === 'mediakit' ? (
+                  <Check className="w-3.5 h-3.5 text-metric-excellent" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5 text-light-tertiary" />
+                )}
+              </button>
+              <a
+                href={raw_data.mediakit_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-light-secondary hover:text-light-primary text-sm font-medium transition-colors"
+                aria-label={`View MediaKit for ${raw_data.username}`}
+                tabIndex={0}
+              >
+                MediaKit
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
           )}
           <a
             href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}

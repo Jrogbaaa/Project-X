@@ -1,26 +1,39 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, FileSpreadsheet, Bookmark, CheckCircle, Tag, Sparkles } from 'lucide-react';
+import { useState, forwardRef } from 'react';
+import { Download, FileSpreadsheet, Bookmark, CheckCircle, Tag, Sparkles, LayoutGrid, List } from 'lucide-react';
 import { SearchResponse } from '@/types/search';
 import { InfluencerCard } from './InfluencerCard';
+import { InfluencerRow } from './InfluencerRow';
 import { downloadExport, saveSearch } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+type ViewMode = 'cards' | 'list';
 
 interface ResultsGridProps {
   searchResponse: SearchResponse;
+  selectedIndex?: number;
+  onToast?: (message: string) => void;
 }
 
-export function ResultsGrid({ searchResponse }: ResultsGridProps) {
+export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function ResultsGrid(
+  { searchResponse, selectedIndex, onToast },
+  ref
+) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isExporting, setIsExporting] = useState<'csv' | 'excel' | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
 
   const handleExport = async (format: 'csv' | 'excel') => {
     setIsExporting(format);
+    onToast?.(`Exporting ${format.toUpperCase()}...`);
     try {
       await downloadExport(searchResponse.search_id, format);
+      onToast?.(`${format.toUpperCase()} downloaded`);
     } catch (error) {
       console.error('Export failed:', error);
+      onToast?.('Export failed');
     } finally {
       setIsExporting(null);
     }
@@ -32,31 +45,67 @@ export function ResultsGrid({ searchResponse }: ResultsGridProps) {
       const name = `Search: ${searchResponse.query.substring(0, 50)}`;
       await saveSearch(searchResponse.search_id, name);
       setIsSaved(true);
+      onToast?.('Search saved');
     } catch (error) {
       console.error('Save failed:', error);
+      onToast?.('Save failed');
     } finally {
       setIsSaving(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Results Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h2 className="font-serif text-xl text-light-primary">Results</h2>
-            <div className="h-px flex-1 bg-dark-border max-w-[100px]" />
-          </div>
-          <p className="text-sm text-light-tertiary">
-            <span className="font-mono text-light-secondary">{searchResponse.total_candidates}</span> candidates found,{' '}
-            <span className="font-mono text-light-secondary">{searchResponse.total_after_filter}</span> passed filters,{' '}
-            showing top <span className="font-mono text-accent-gold">{searchResponse.results.length}</span>
-          </p>
-        </div>
+  const handleCopy = (message: string) => {
+    onToast?.(message);
+  };
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+  return (
+    <div className="space-y-6" ref={ref}>
+      {/* Results Header - Sticky */}
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-4 bg-dark-primary/95 backdrop-blur-md border-b border-dark-border/30">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h2 className="font-serif text-xl text-light-primary">Results</h2>
+              <div className="h-px flex-1 bg-dark-border max-w-[100px]" />
+            </div>
+            <p className="text-sm text-light-tertiary">
+              <span className="font-mono text-light-secondary">{searchResponse.total_candidates}</span> candidates found,{' '}
+              <span className="font-mono text-light-secondary">{searchResponse.total_after_filter}</span> passed filters,{' '}
+              showing top <span className="font-mono text-accent-gold">{searchResponse.results.length}</span>
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center rounded-lg border border-dark-border p-0.5 mr-2">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={cn(
+                  'p-1.5 rounded-md transition-all',
+                  viewMode === 'cards'
+                    ? 'bg-accent-gold/20 text-accent-gold'
+                    : 'text-light-tertiary hover:text-light-secondary'
+                )}
+                aria-label="Card view"
+                title="Card view"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-1.5 rounded-md transition-all',
+                  viewMode === 'list'
+                    ? 'bg-accent-gold/20 text-accent-gold'
+                    : 'text-light-tertiary hover:text-light-secondary'
+                )}
+                aria-label="List view"
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           <button
             onClick={() => handleExport('csv')}
             disabled={isExporting !== null}
@@ -101,7 +150,8 @@ export function ResultsGrid({ searchResponse }: ResultsGridProps) {
                 {isSaving ? 'Saving...' : 'Save'}
               </>
             )}
-          </button>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -142,17 +192,33 @@ export function ResultsGrid({ searchResponse }: ResultsGridProps) {
         </div>
       )}
 
-      {/* Results Grid */}
+      {/* Results Grid/List */}
       {searchResponse.results.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-          {searchResponse.results.map((result, index) => (
-            <InfluencerCard
-              key={result.influencer_id}
-              influencer={result}
-              index={index}
-            />
-          ))}
-        </div>
+        viewMode === 'cards' ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+            {searchResponse.results.map((result, index) => (
+              <InfluencerCard
+                key={result.influencer_id}
+                influencer={result}
+                index={index}
+                isSelected={selectedIndex === index}
+                onCopy={handleCopy}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {searchResponse.results.map((result, index) => (
+              <InfluencerRow
+                key={result.influencer_id}
+                influencer={result}
+                index={index}
+                isSelected={selectedIndex === index}
+                onCopy={handleCopy}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-16">
           <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-dark-secondary border border-dark-border flex items-center justify-center">
@@ -168,4 +234,4 @@ export function ResultsGrid({ searchResponse }: ResultsGridProps) {
       )}
     </div>
   );
-}
+});

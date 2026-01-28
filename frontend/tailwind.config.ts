@@ -64,12 +64,14 @@ const config: Config = {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
         'slide-down': 'slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'scale-in': 'scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'shimmer': 'shimmer 2s linear infinite',
         'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
         'border-glow': 'borderGlow 3s ease-in-out infinite',
         'float': 'float 6s ease-in-out infinite',
         'cascade': 'cascade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'pulse-ring': 'pulseRing 1.5s ease-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -107,6 +109,15 @@ const config: Config = {
         cascade: {
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInRight: {
+          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        pulseRing: {
+          '0%': { boxShadow: '0 0 0 0 rgba(212, 165, 116, 0.4)' },
+          '70%': { boxShadow: '0 0 0 8px rgba(212, 165, 116, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(212, 165, 116, 0)' },
         },
       },
       backgroundImage: {
