@@ -35,7 +35,12 @@ Execute an influencer search by pasting a brand brief or natural language query.
     "min_credibility_score": 70.0,
     "min_engagement_rate": null,
     "min_spain_audience_pct": 60.0,
-    "min_follower_growth_rate": null
+    "min_follower_growth_rate": null,
+    "target_audience_gender": null,
+    "min_target_gender_pct": 50,
+    "target_age_ranges": ["18-24", "25-34"],
+    "min_target_age_pct": 30,
+    "exclude_competitor_ambassadors": true
   },
   "ranking_weights": {
     "credibility": 0.15,
@@ -114,7 +119,10 @@ Execute an influencer search by pasting a brand brief or natural language query.
         "audience_age_distribution": {"18-24": 25, "25-34": 45},
         "audience_geography": {"ES": 70, "MX": 10},
         "interests": ["padel", "fitness", "sports"],
-        "brand_mentions": ["nike", "head"]
+        "brand_mentions": ["nike", "head"],
+        "brand_warning_type": null,
+        "brand_warning_message": null,
+        "niche_warning": null
       }
     }
   ],

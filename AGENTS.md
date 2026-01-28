@@ -126,8 +126,9 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 |---------|------|---------|
 | PrimeTag Client | `primetag_client.py` | API integration for influencer data (metrics, interests, brand mentions) |
 | Search Service | `search_service.py` | Main search orchestration with **Primetag verification gate** |
-| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, etc.) |
+| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
 | Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
+| **Brand Intelligence** | `brand_intelligence_service.py` | **NEW**: Competitor detection, ambassador tracking, niche relevance scoring |
 | Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for GENRE—see directive) |
@@ -159,7 +160,7 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 | Component | Path | Purpose |
 |-----------|------|---------|
 | SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries (expandable textarea) |
-| FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds |
+| FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds (credibility, Spain %, engagement, growth, gender, age brackets) |
 | ResultsGrid | `results/ResultsGrid.tsx` | Grid layout for influencer cards |
 | InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics |
 | AudienceChart | `results/AudienceChart.tsx` | Pie/bar charts for demographics |
