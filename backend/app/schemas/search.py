@@ -31,6 +31,36 @@ class FilterConfig(BaseModel):
         description="Minimum 6-month follower growth rate"
     )
 
+    # Gender audience filter
+    target_audience_gender: Optional[str] = Field(
+        default=None,
+        description="Filter by majority audience gender: 'male', 'female', or None for any"
+    )
+    min_target_gender_pct: float = Field(
+        default=50.0,
+        ge=0,
+        le=100,
+        description="Minimum percentage of target gender in audience"
+    )
+
+    # Age bracket filter
+    target_age_ranges: List[str] = Field(
+        default_factory=list,
+        description="Target audience age ranges: ['18-24', '25-34', etc.]"
+    )
+    min_target_age_pct: float = Field(
+        default=30.0,
+        ge=0,
+        le=100,
+        description="Minimum combined percentage in target age ranges"
+    )
+
+    # Brand conflict filter
+    exclude_competitor_ambassadors: bool = Field(
+        default=True,
+        description="Hard-exclude known competitor brand ambassadors (e.g., Messi for Nike campaigns)"
+    )
+
 
 class RankingWeights(BaseModel):
     """Configurable ranking weights for influencer scoring.
@@ -120,6 +150,17 @@ class SearchRequest(BaseModel):
     )
 
 
+class VerificationStats(BaseModel):
+    """Statistics about the Primetag verification process."""
+    total_candidates: int = Field(description="Total candidates discovered")
+    verified: int = Field(description="Successfully verified via Primetag")
+    failed_verification: int = Field(description="Failed to verify (not found or API error)")
+    passed_filters: int = Field(description="Passed hard filters after verification")
+    rejected_spain_pct: int = Field(default=0, description="Rejected for Spain audience < threshold")
+    rejected_credibility: int = Field(default=0, description="Rejected for low credibility")
+    rejected_engagement: int = Field(default=0, description="Rejected for low engagement")
+
+
 class SearchResponse(BaseModel):
     """Response from an influencer search."""
     search_id: str
@@ -129,6 +170,10 @@ class SearchResponse(BaseModel):
     results: List[RankedInfluencer]
     total_candidates: int
     total_after_filter: int
+    verification_stats: Optional[VerificationStats] = Field(
+        default=None,
+        description="Stats about the Primetag verification process"
+    )
     executed_at: datetime = Field(default_factory=datetime.utcnow)
 
 

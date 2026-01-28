@@ -10,7 +10,7 @@ from app.services.primetag_client import PrimeTagClient
 from app.services.filter_service import FilterService
 from app.services.ranking_service import RankingService
 from app.services.cache_service import CacheService
-from app.schemas.search import SearchRequest, SearchResponse, FilterConfig, RankingWeights
+from app.schemas.search import SearchRequest, SearchResponse, FilterConfig, RankingWeights, VerificationStats
 from app.schemas.llm import ParsedSearchQuery
 from app.schemas.influencer import RankedInfluencer
 from app.models.search import Search, SearchResult
@@ -32,14 +32,13 @@ class SearchService:
 
     async def execute_search(self, request: SearchRequest) -> SearchResponse:
         """
-        Main search orchestration flow (local-first):
+        Main search orchestration flow with verification gate:
         1. Parse natural language query with LLM
-        2. Search local database by interests/niche
-        3. Fall back to generic cache search
-        4. Search PrimeTag API only if local results insufficient
-        5. Apply filters (lenient for partial data)
-        6. Rank results using 8-factor scoring
-        7. Save search and return
+        2. Discover candidates from local DB + PrimeTag API
+        3. VERIFY each candidate via Primetag API (fetch full metrics)
+        4. Apply STRICT hard filters (Spain %, credibility, ER)
+        5. Rank survivors using 8-factor scoring
+        6. Save search and return
         """
         try:
             # Step 1: Parse query with LLM
@@ -55,13 +54,13 @@ class SearchService:
             seen_usernames: Set[str] = set()
             target_candidates = parsed_query.target_count * 5  # Get 5x for filtering headroom
 
-            # Step 2: Search local DB by interests/niche (PRIMARY SOURCE)
+            # Step 2: Discover candidates from local DB
             if parsed_query.campaign_topics:
                 logger.info(f"Searching by interests: {parsed_query.campaign_topics}")
                 interest_matches = await self.cache_service.find_by_interests(
                     interests=parsed_query.campaign_topics,
                     exclude_interests=parsed_query.exclude_niches,
-                    country="Spain",  # Default to Spain
+                    country="Spain",
                     limit=target_candidates
                 )
                 for inf in interest_matches:
@@ -83,15 +82,15 @@ class SearchService:
                         candidates.append(inf)
                 logger.info(f"Found {len(keyword_matches)} matches by keywords")
 
-            # Step 4: Fall back to generic cache search (includes partial data)
+            # Step 4: Fall back to generic cache search
             if len(candidates) < target_candidates:
                 logger.info("Falling back to generic cache search")
                 cached_influencers = await self.cache_service.find_matching(
-                    min_credibility=filters_applied.min_credibility_score,
-                    min_spain_pct=filters_applied.min_spain_audience_pct,
-                    min_engagement=filters_applied.min_engagement_rate,
+                    min_credibility=0,  # Don't pre-filter, let verification handle it
+                    min_spain_pct=0,
+                    min_engagement=None,
                     limit=target_candidates,
-                    include_partial_data=True  # Include imported profiles without full metrics
+                    include_partial_data=True
                 )
                 for inf in cached_influencers:
                     if inf.username not in seen_usernames:
@@ -99,7 +98,7 @@ class SearchService:
                         candidates.append(inf)
                 logger.info(f"Total candidates after cache: {len(candidates)}")
 
-            # Step 5: Search PrimeTag API ONLY if local results still insufficient
+            # Step 5: Search PrimeTag API if still insufficient
             if len(candidates) < target_candidates and parsed_query.search_keywords:
                 logger.info(f"Local results insufficient ({len(candidates)}), trying PrimeTag API")
                 await self._search_primetag_api(
@@ -112,28 +111,44 @@ class SearchService:
 
             total_candidates = len(candidates)
 
-            # Step 6: Apply filters (lenient for partial data)
-            filtered = self.filter_service.apply_filters(
+            # ============================================================
+            # Step 6: VERIFICATION GATE - Verify ALL candidates via Primetag
+            # ============================================================
+            logger.info(f"Verifying {len(candidates)} candidates via Primetag API...")
+            verified_candidates, failed_count = await self._verify_candidates_batch(
                 candidates,
+                max_concurrent=5
+            )
+            logger.info(f"Verification complete: {len(verified_candidates)} verified, {failed_count} failed")
+
+            # ============================================================
+            # Step 7: Apply STRICT hard filters (no lenient mode)
+            # Only verified candidates with real metrics pass through
+            # ============================================================
+            filtered = self.filter_service.apply_filters(
+                verified_candidates,
                 parsed_query,
                 filters_applied,
-                lenient_mode=True  # Don't filter out profiles missing metrics
+                lenient_mode=False  # STRICT: Must have real data to pass
             )
             total_after_filter = len(filtered)
-            logger.info(f"After filtering: {total_after_filter} candidates")
+            logger.info(f"After strict filtering: {total_after_filter} candidates")
 
-            # Step 7: Rank results using 8-factor scoring
+            # Calculate rejection stats
+            rejected_count = len(verified_candidates) - total_after_filter
+
+            # Step 8: Rank survivors using 8-factor scoring
             ranked = self.ranking_service.rank_influencers(
                 filtered,
                 parsed_query,
                 request.ranking_weights
             )
 
-            # Step 8: Limit to requested count
+            # Step 9: Limit to requested count
             final_results = ranked[:request.limit]
             logger.info(f"Final results: {len(final_results)}")
 
-            # Step 9: Save search to database
+            # Step 10: Save search to database
             search = await self._save_search(
                 request=request,
                 parsed_query=parsed_query,
@@ -141,6 +156,14 @@ class SearchService:
                 results=final_results,
                 total_candidates=total_candidates,
                 total_after_filter=total_after_filter
+            )
+
+            # Build verification stats
+            verification_stats = VerificationStats(
+                total_candidates=total_candidates,
+                verified=len(verified_candidates),
+                failed_verification=failed_count,
+                passed_filters=total_after_filter,
             )
 
             return SearchResponse(
@@ -151,6 +174,7 @@ class SearchService:
                 results=final_results,
                 total_candidates=total_candidates,
                 total_after_filter=total_after_filter,
+                verification_stats=verification_stats,
                 executed_at=search.executed_at
             )
 
@@ -234,6 +258,121 @@ class SearchService:
 
         except Exception:
             return None
+
+    def _has_full_metrics(self, influencer: Influencer) -> bool:
+        """
+        Check if an influencer has the full metrics required for verification.
+        Required: audience_geography, credibility_score (for IG), engagement_rate
+        """
+        # Must have audience geography data with Spain percentage
+        if not influencer.audience_geography:
+            return False
+        spain_pct = influencer.audience_geography.get("ES", influencer.audience_geography.get("es", 0))
+        if spain_pct == 0:
+            return False
+
+        # Must have engagement rate
+        if influencer.engagement_rate is None:
+            return False
+
+        # Credibility score is required for Instagram
+        if influencer.platform_type == "instagram" and influencer.credibility_score is None:
+            return False
+
+        return True
+
+    async def _verify_candidate(self, influencer: Influencer) -> Optional[Influencer]:
+        """
+        Verify a candidate by fetching full metrics from Primetag API.
+
+        Returns the influencer with full metrics, or None if verification fails.
+        This ensures we have real data for:
+        - % España (audience_geography)
+        - % Hombres/Mujeres (audience_genders)
+        - % Edades (audience_age_distribution)
+        - % Credibilidad (credibility_score) - Instagram only
+        - % ER (engagement_rate)
+        """
+        username = influencer.username
+
+        # Check if already has full metrics and cache is fresh
+        if self._has_full_metrics(influencer) and influencer.cache_expires_at > datetime.utcnow():
+            logger.debug(f"Candidate {username} already has full metrics")
+            return influencer
+
+        try:
+            # Search Primetag to get the encrypted username
+            search_results = await self.primetag.search_media_kits(
+                username,
+                platform_type=PrimeTagClient.PLATFORM_INSTAGRAM,
+                limit=5
+            )
+
+            # Find exact match
+            exact_match = None
+            for result in search_results:
+                if result.username.lower() == username.lower():
+                    exact_match = result
+                    break
+
+            if not exact_match:
+                logger.warning(f"Verification failed: {username} not found in Primetag")
+                return None
+
+            # Extract encrypted username from mediakit_url
+            username_encrypted = PrimeTagClient.extract_encrypted_username(exact_match.mediakit_url)
+            if not username_encrypted:
+                username_encrypted = exact_match.external_social_profile_id or username
+
+            # Fetch FULL metrics from detail endpoint
+            detail = await self.primetag.get_media_kit_detail(
+                username_encrypted,
+                PrimeTagClient.PLATFORM_INSTAGRAM
+            )
+            metrics = self.primetag.extract_metrics(detail)
+
+            # Add follower count from search result if not in detail
+            if not metrics.get('follower_count'):
+                metrics['follower_count'] = exact_match.audience_size
+
+            # Update cache with verified data
+            verified = await self.cache_service.upsert_influencer(exact_match, metrics)
+            logger.info(f"Verified {username}: Spain={metrics.get('audience_geography', {}).get('ES', 0)}%, "
+                       f"Cred={metrics.get('credibility_score')}, ER={metrics.get('engagement_rate')}")
+            return verified
+
+        except Exception as e:
+            logger.warning(f"Verification failed for {username}: {e}")
+            return None
+
+    async def _verify_candidates_batch(
+        self,
+        candidates: List[Influencer],
+        max_concurrent: int = 5
+    ) -> tuple[List[Influencer], int]:
+        """
+        Verify multiple candidates in parallel with bounded concurrency.
+
+        Returns (verified_candidates, failed_count)
+        """
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def verify_one(candidate: Influencer) -> Optional[Influencer]:
+            async with semaphore:
+                return await self._verify_candidate(candidate)
+
+        tasks = [verify_one(c) for c in candidates]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        verified = []
+        failed = 0
+        for result in results:
+            if isinstance(result, Influencer):
+                verified.append(result)
+            else:
+                failed += 1
+
+        return verified, failed
 
     def _merge_filters(
         self,

@@ -69,16 +69,39 @@ If cache insufficient:
 - 30-second timeout per request
 - Implement exponential backoff on failures
 
-### Step 4: Filtering (Execution Layer)
+### Step 4: Primetag Verification Gate (NEW)
+**Script:** `backend/app/services/search_service.py` → `_verify_candidates_batch()`
+
+**Every candidate must be verified via Primetag API** before filtering:
+1. For each discovered candidate, call `get_media_kit_detail()` to fetch full metrics
+2. Parallel verification with bounded concurrency (max 5 concurrent)
+3. Candidates without full metrics are discarded
+4. Verified data is cached for future searches
+
+**Required Metrics (from Primetag):**
+- `audience_geography["ES"]` - Spain audience %
+- `credibility_score` - Credibility % (Instagram only)
+- `engagement_rate` - ER %
+- `audience_genders` - Gender distribution
+- `audience_age_distribution` - Age breakdown
+
+**Verification Result:**
+- Verified candidates proceed to filtering
+- Failed candidates (not found, API error, missing metrics) are discarded
+- `VerificationStats` tracks: total_candidates, verified, failed_verification, passed_filters
+
+### Step 5: Strict Filtering (Execution Layer)
 **Script:** `backend/app/services/filter_service.py`
 
-Apply filters in order:
-1. Credibility score >= threshold (default 70%)
-2. Spain audience >= threshold (default 60%)
-3. Engagement rate >= threshold (if specified)
+Apply filters in **strict mode** (`lenient_mode=False`):
+1. Credibility score >= threshold (default 70%) - **must have data**
+2. Spain audience >= threshold (default 60%) - **must have data**
+3. Engagement rate >= threshold (if specified) - **must have data**
 4. Audience gender match (if specified)
 
-### Step 5: Ranking (Execution Layer)
+**Note:** No lenient mode - candidates without real Primetag data are rejected.
+
+### Step 6: Ranking (Execution Layer)
 **Script:** `backend/app/services/ranking_service.py`
 
 Calculate weighted relevance score using **8 factors**:
@@ -110,7 +133,7 @@ score = (
 
 LLM adjusts weights based on brief context (more brand info → higher brand_affinity weight).
 
-### Step 6: Persistence (Execution Layer)
+### Step 7: Persistence (Execution Layer)
 **Script:** `backend/app/services/search_service.py`
 
 Save to database:
@@ -121,6 +144,7 @@ Save to database:
 ## Output
 - Search ID (UUID)
 - Parsed query details (including extracted brand/creative/niche context)
+- **Verification stats** (total_candidates, verified, failed_verification, passed_filters)
 - Ranked list of influencers with:
   - Relevance score (0-1)
   - All 8 score components for transparency
@@ -202,9 +226,10 @@ parsed = await parse_search_query(brief)
 **File:** `backend/app/schemas/search.py`
 
 - `SearchRequest` - Query, filters, ranking weights
-- `SearchResponse` - Full response with parsed query, results
+- `SearchResponse` - Full response with parsed query, results, verification_stats
 - `FilterConfig` - Configurable thresholds
 - `RankingWeights` - 8 weight factors (including brand_affinity, creative_fit, niche_match)
+- `VerificationStats` - Tracks verification funnel (total, verified, failed, passed filters)
 
 **File:** `backend/app/schemas/llm.py`
 

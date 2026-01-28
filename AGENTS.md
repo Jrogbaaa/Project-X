@@ -125,7 +125,7 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 | Service | File | Purpose |
 |---------|------|---------|
 | PrimeTag Client | `primetag_client.py` | API integration for influencer data (metrics, interests, brand mentions) |
-| Search Service | `search_service.py` | Main search orchestration |
+| Search Service | `search_service.py` | Main search orchestration with **Primetag verification gate** |
 | Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, etc.) |
 | Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
 | Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) |

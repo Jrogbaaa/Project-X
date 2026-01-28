@@ -120,6 +120,15 @@ Execute an influencer search by pasting a brand brief or natural language query.
   ],
   "total_candidates": 50,
   "total_after_filter": 15,
+  "verification_stats": {
+    "total_candidates": 50,
+    "verified": 45,
+    "failed_verification": 5,
+    "passed_filters": 15,
+    "rejected_spain_pct": 10,
+    "rejected_credibility": 15,
+    "rejected_engagement": 5
+  },
   "executed_at": "2025-01-20T12:00:00Z"
 }
 ```
@@ -385,6 +394,19 @@ All endpoints return errors in the following format:
   brand_affinity: number; // 0-1, audience overlap with target brand (0.5 = neutral)
   creative_fit: number;   // 0-1, alignment with creative concept (0.5 = neutral)
   niche_match: number;    // 0-1, content niche match (0.5 = neutral)
+}
+```
+
+### VerificationStats
+```typescript
+{
+  total_candidates: number;      // Found in discovery phase
+  verified: number;              // Successfully verified via Primetag API
+  failed_verification: number;   // Not found or API error
+  passed_filters: number;        // Passed hard filters (Spain %, credibility, ER)
+  rejected_spain_pct?: number;   // Rejected for Spain audience < threshold
+  rejected_credibility?: number; // Rejected for low credibility
+  rejected_engagement?: number;  // Rejected for low engagement
 }
 ```
 
