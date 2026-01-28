@@ -357,3 +357,185 @@ class CacheService:
 
         await self.db.commit()
         return len(expired)
+
+    async def get_expiring_soon(
+        self,
+        days_until_expiry: int = 1,
+        limit: int = 100
+    ) -> List[Influencer]:
+        """
+        Get influencers whose cache expires within N days.
+        Useful for proactive cache warming.
+        
+        Args:
+            days_until_expiry: Find entries expiring within this many days
+            limit: Maximum results to return
+            
+        Returns:
+            List of influencers with expiring cache
+        """
+        now = datetime.utcnow()
+        expiry_threshold = now + timedelta(days=days_until_expiry)
+        
+        query = (
+            select(Influencer)
+            .where(
+                and_(
+                    Influencer.cache_expires_at > now,  # Not yet expired
+                    Influencer.cache_expires_at <= expiry_threshold,  # But expiring soon
+                )
+            )
+            .order_by(Influencer.cache_expires_at.asc())  # Soonest first
+            .limit(limit)
+        )
+        
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def upsert_influencers_bulk(
+        self,
+        influencers_data: List[Dict[str, Any]],
+        platform_type: str = "instagram"
+    ) -> int:
+        """
+        Bulk upsert influencers using PostgreSQL ON CONFLICT.
+        More efficient than individual upserts for large batches.
+        
+        Args:
+            influencers_data: List of dicts with influencer data
+                Each dict should have 'username' and 'metrics' keys
+            platform_type: Platform type for all influencers
+            
+        Returns:
+            Number of influencers upserted
+        """
+        if not influencers_data:
+            return 0
+        
+        now = datetime.utcnow()
+        expires_at = now + self.cache_duration
+        
+        # Prepare values for bulk insert
+        values = []
+        for data in influencers_data:
+            username = data.get('username')
+            metrics = data.get('metrics', {})
+            
+            if not username:
+                continue
+                
+            values.append({
+                'platform_type': platform_type,
+                'username': username,
+                'display_name': metrics.get('display_name'),
+                'profile_picture_url': metrics.get('profile_picture_url'),
+                'bio': metrics.get('bio'),
+                'is_verified': metrics.get('is_verified', False),
+                'follower_count': metrics.get('follower_count'),
+                'credibility_score': metrics.get('credibility_score'),
+                'engagement_rate': metrics.get('engagement_rate'),
+                'follower_growth_rate_6m': metrics.get('follower_growth_rate_6m'),
+                'avg_likes': metrics.get('avg_likes'),
+                'avg_comments': metrics.get('avg_comments'),
+                'avg_views': metrics.get('avg_views'),
+                'audience_genders': metrics.get('audience_genders'),
+                'audience_age_distribution': metrics.get('audience_age_distribution'),
+                'audience_geography': metrics.get('audience_geography'),
+                'interests': metrics.get('interests'),
+                'brand_mentions': metrics.get('brand_mentions'),
+                'country': metrics.get('country'),
+                'cached_at': now,
+                'cache_expires_at': expires_at,
+                'updated_at': now,
+            })
+        
+        if not values:
+            return 0
+        
+        # Use PostgreSQL INSERT ... ON CONFLICT for efficient upsert
+        stmt = insert(Influencer).values(values)
+        
+        # On conflict, update all fields except id and created_at
+        update_dict = {
+            'display_name': stmt.excluded.display_name,
+            'profile_picture_url': stmt.excluded.profile_picture_url,
+            'bio': stmt.excluded.bio,
+            'is_verified': stmt.excluded.is_verified,
+            'follower_count': stmt.excluded.follower_count,
+            'credibility_score': stmt.excluded.credibility_score,
+            'engagement_rate': stmt.excluded.engagement_rate,
+            'follower_growth_rate_6m': stmt.excluded.follower_growth_rate_6m,
+            'avg_likes': stmt.excluded.avg_likes,
+            'avg_comments': stmt.excluded.avg_comments,
+            'avg_views': stmt.excluded.avg_views,
+            'audience_genders': stmt.excluded.audience_genders,
+            'audience_age_distribution': stmt.excluded.audience_age_distribution,
+            'audience_geography': stmt.excluded.audience_geography,
+            'interests': stmt.excluded.interests,
+            'brand_mentions': stmt.excluded.brand_mentions,
+            'country': stmt.excluded.country,
+            'cached_at': stmt.excluded.cached_at,
+            'cache_expires_at': stmt.excluded.cache_expires_at,
+            'updated_at': stmt.excluded.updated_at,
+        }
+        
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['platform_type', 'username'],
+            set_=update_dict
+        )
+        
+        await self.db.execute(stmt)
+        await self.db.flush()
+        
+        return len(values)
+
+    async def get_cache_stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics for monitoring.
+        
+        Returns:
+            Dict with cache statistics
+        """
+        now = datetime.utcnow()
+        
+        # Total cached
+        total_query = select(func.count(Influencer.id))
+        total_result = await self.db.execute(total_query)
+        total_cached = total_result.scalar() or 0
+        
+        # Active (not expired)
+        active_query = select(func.count(Influencer.id)).where(
+            Influencer.cache_expires_at > now
+        )
+        active_result = await self.db.execute(active_query)
+        active_count = active_result.scalar() or 0
+        
+        # Expiring within 24 hours
+        expiring_soon_query = select(func.count(Influencer.id)).where(
+            and_(
+                Influencer.cache_expires_at > now,
+                Influencer.cache_expires_at <= now + timedelta(hours=24)
+            )
+        )
+        expiring_soon_result = await self.db.execute(expiring_soon_query)
+        expiring_soon = expiring_soon_result.scalar() or 0
+        
+        # With full metrics (credibility score not null)
+        with_metrics_query = select(func.count(Influencer.id)).where(
+            and_(
+                Influencer.cache_expires_at > now,
+                Influencer.credibility_score.isnot(None)
+            )
+        )
+        with_metrics_result = await self.db.execute(with_metrics_query)
+        with_full_metrics = with_metrics_result.scalar() or 0
+        
+        return {
+            'total_cached': total_cached,
+            'active_count': active_count,
+            'expired_count': total_cached - active_count,
+            'expiring_within_24h': expiring_soon,
+            'with_full_metrics': with_full_metrics,
+            'partial_data_only': active_count - with_full_metrics,
+            'cache_ttl_hours': self.settings.influencer_cache_hours,
+        }

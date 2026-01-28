@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { SearchBar } from '@/components/search/SearchBar';
+import { useState, useRef } from 'react';
+import { SearchBar, SearchBarRef } from '@/components/search/SearchBar';
 import { FilterPanel } from '@/components/search/FilterPanel';
 import { ResultsGrid } from '@/components/results/ResultsGrid';
 import { SearchResponse, FilterConfig } from '@/types/search';
@@ -15,12 +15,17 @@ export default function Home() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const searchBarRef = useRef<SearchBarRef>(null);
 
   const exampleSearches = [
     'Adidas padel campaign, documentary style',
     '10 lifestyle creators for IKEA',
     'Nike running, authentic tone, 100K-2M followers',
   ];
+
+  const handleExampleClick = (example: string) => {
+    searchBarRef.current?.setQueryAndSearch(example);
+  };
 
   return (
     <main className="min-h-screen bg-dark-primary">
@@ -77,6 +82,7 @@ export default function Home() {
           {/* Search Bar */}
           <div className="animate-scale-in" style={{ animationDelay: '200ms' }}>
             <SearchBar
+              ref={searchBarRef}
               onResults={setSearchResults}
               filters={filters}
               onLoadingChange={setIsLoading}
@@ -107,7 +113,11 @@ export default function Home() {
               {exampleSearches.map((example, i) => (
                 <button
                   key={i}
-                  className="px-3 py-1.5 rounded-full bg-dark-secondary/50 text-light-secondary hover:text-accent-gold hover:bg-dark-secondary transition-all text-xs border border-dark-border/50 hover:border-accent-gold/30"
+                  onClick={() => handleExampleClick(example)}
+                  disabled={isLoading}
+                  className="px-3 py-1.5 rounded-full bg-dark-secondary/50 text-light-secondary hover:text-accent-gold hover:bg-dark-secondary transition-all text-xs border border-dark-border/50 hover:border-accent-gold/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={`Search for: ${example}`}
+                  tabIndex={0}
                 >
                   {example}
                 </button>

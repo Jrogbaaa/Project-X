@@ -417,6 +417,71 @@ Get a specific brand by ID.
 
 ---
 
+### Cache Management
+
+#### Get Cache Statistics
+`GET /influencers/cache/stats`
+
+Get cache statistics for monitoring.
+
+**Response:**
+```json
+{
+  "total_cached": 1500,
+  "active_count": 1200,
+  "expired_count": 300,
+  "expiring_within_24h": 50,
+  "with_full_metrics": 800,
+  "partial_data_only": 400,
+  "cache_ttl_hours": 24
+}
+```
+
+---
+
+#### Warm Cache
+`POST /influencers/cache/warm`
+
+Pre-emptively refresh cache entries close to expiration. Useful for maintaining fresh data and reducing API calls during searches.
+
+**Request Body:**
+```json
+{
+  "limit": 100,
+  "days_until_expiry": 1
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Cache warming completed for 45 influencers",
+  "influencers_queued": 50,
+  "refreshed_count": 45,
+  "failed_count": 5
+}
+```
+
+---
+
+#### Cleanup Expired Cache
+`DELETE /influencers/cache/expired`
+
+Remove expired cache entries. Maintenance endpoint to clean up stale data.
+
+**Query Parameters:**
+- `limit` (int, optional, default=1000): Maximum entries to delete
+
+**Response:**
+```json
+{
+  "message": "Deleted 150 expired cache entries",
+  "deleted_count": 150
+}
+```
+
+---
+
 ### Health
 
 #### Health Check

@@ -124,12 +124,12 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 
 | Service | File | Purpose |
 |---------|------|---------|
-| PrimeTag Client | `primetag_client.py` | API integration for influencer data (metrics, interests, brand mentions) |
+| PrimeTag Client | `primetag_client.py` | API integration for influencer data with **exponential backoff retry** (3 retries, handles 429/5xx) |
 | Search Service | `search_service.py` | Main search orchestration with **Primetag verification gate** |
 | Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
 | Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
-| **Brand Intelligence** | `brand_intelligence_service.py` | **NEW**: Competitor detection, ambassador tracking, niche relevance scoring |
-| Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) |
+| **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, niche relevance scoring |
+| Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) + **bulk upsert & cache warming** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for GENRE—see directive) |
 | Import Service | `import_influencers.py` | Import enriched CSV into database with interests/country parsing |
@@ -150,6 +150,9 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 | GET | `/search/saved/list` | List all saved searches |
 | GET | `/search/history/list` | Get recent search history |
 | GET | `/influencers/{id}` | Get influencer details |
+| GET | `/influencers/cache/stats` | Cache statistics (total, active, expiring) |
+| POST | `/influencers/cache/warm` | Pre-warm expiring cache entries |
+| DELETE | `/influencers/cache/expired` | Clean up expired cache entries |
 | GET | `/exports/{search_id}/csv` | Export results as CSV |
 | GET | `/exports/{search_id}/excel` | Export results as Excel |
 | GET | `/health` | Health check |

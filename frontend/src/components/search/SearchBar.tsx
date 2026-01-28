@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import { searchInfluencers } from '@/lib/api';
@@ -12,7 +12,12 @@ interface SearchBarProps {
   onLoadingChange: (loading: boolean) => void;
 }
 
-export function SearchBar({ onResults, filters, onLoadingChange }: SearchBarProps) {
+export interface SearchBarRef {
+  setQueryAndSearch: (query: string) => void;
+}
+
+export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
+  function SearchBar({ onResults, filters, onLoadingChange }, ref) {
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -33,18 +38,32 @@ export function SearchBar({ onResults, filters, onLoadingChange }: SearchBarProp
     },
   });
 
-  const handleSearch = useCallback(() => {
-    if (query.trim().length < 3) {
+  const executeSearch = useCallback((searchQuery: string) => {
+    if (searchQuery.trim().length < 3) {
       setError('Please enter at least 3 characters');
       return;
     }
 
     searchMutation.mutate({
-      query: query.trim(),
+      query: searchQuery.trim(),
       filters,
       limit: 10,
     });
-  }, [query, filters, searchMutation]);
+  }, [filters, searchMutation]);
+
+  const handleSearch = useCallback(() => {
+    executeSearch(query);
+  }, [query, executeSearch]);
+
+  // Expose setQueryAndSearch method to parent via ref
+  useImperativeHandle(ref, () => ({
+    setQueryAndSearch: (newQuery: string) => {
+      setQuery(newQuery);
+      setError(null);
+      // Execute search with the new query directly (state update is async)
+      executeSearch(newQuery);
+    },
+  }), [executeSearch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -144,4 +163,4 @@ export function SearchBar({ onResults, filters, onLoadingChange }: SearchBarProp
       )}
     </div>
   );
-}
+});
