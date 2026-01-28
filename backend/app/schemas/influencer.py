@@ -104,6 +104,7 @@ class InfluencerData(BaseModel):
     # Metadata
     platform_type: str = "instagram"
     cached_at: Optional[datetime] = None
+    mediakit_url: Optional[str] = None
 
     class Config:
         from_attributes = True

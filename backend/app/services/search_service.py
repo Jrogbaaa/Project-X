@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants for batch verification approach
 CANDIDATE_POOL_SIZE = 200  # Fixed pool size for predictable performance
-MAX_CANDIDATES_TO_VERIFY = 50  # Max candidates to verify via API (controls cost)
+MAX_CANDIDATES_TO_VERIFY = 15  # Max candidates to verify via API (controls cost, caps at 15-30 calls)
 MAX_CONCURRENT_VERIFICATION = 5  # Parallel API calls for verification
 
 
@@ -126,15 +126,38 @@ class SearchService:
             logger.info(f"Soft pre-filter: {len(prefiltered)} candidates selected for verification (from {total_candidates})")
 
             # ============================================================
-            # Step 6: VERIFICATION GATE - Verify pre-filtered candidates via Primetag
-            # Only verifies MAX_CANDIDATES_TO_VERIFY (50) candidates max
+            # Step 6: VERIFICATION GATE - Split candidates before batch verification
+            # Skip already-verified candidates to reduce API calls to near-zero for cached searches
             # ============================================================
-            logger.info(f"Verifying {len(prefiltered)} candidates via Primetag API...")
-            verified_candidates, failed_count = await self._verify_candidates_batch(
-                prefiltered,
-                max_concurrent=MAX_CONCURRENT_VERIFICATION
-            )
-            logger.info(f"Verification complete: {len(verified_candidates)} verified, {failed_count} failed")
+            already_verified = []
+            needs_verification = []
+            
+            for candidate in prefiltered:
+                # Check if candidate has full metrics AND fresh cache
+                if (self._has_full_metrics(candidate) and 
+                    candidate.cache_expires_at and 
+                    candidate.cache_expires_at > datetime.utcnow()):
+                    already_verified.append(candidate)
+                else:
+                    needs_verification.append(candidate)
+            
+            logger.info(f"Verification split: {len(already_verified)} already verified (cache hit), "
+                       f"{len(needs_verification)} need API verification")
+            
+            # Only verify candidates that actually need it
+            if needs_verification:
+                verified_from_api, failed_count = await self._verify_candidates_batch(
+                    needs_verification[:MAX_CANDIDATES_TO_VERIFY],
+                    max_concurrent=MAX_CONCURRENT_VERIFICATION
+                )
+            else:
+                verified_from_api = []
+                failed_count = 0
+            
+            # Combine already-verified with newly-verified
+            verified_candidates = already_verified + verified_from_api
+            logger.info(f"Verification complete: {len(verified_candidates)} total verified "
+                       f"({len(already_verified)} cached, {len(verified_from_api)} from API, {failed_count} failed)")
 
             # ============================================================
             # Step 7: Apply STRICT hard filters (no lenient mode)

@@ -187,15 +187,32 @@ export function InfluencerCard({ influencer, index = 0 }: InfluencerCardProps) {
           Avg: <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_likes)}</span> likes,{' '}
           <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_comments)}</span> comments
         </div>
-        <a
-          href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-accent-gold hover:text-accent-gold-light text-sm font-medium transition-colors"
-        >
-          Profile
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        <div className="flex items-center gap-3">
+          {raw_data.mediakit_url && (
+            <a
+              href={raw_data.mediakit_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-light-secondary hover:text-light-primary text-sm font-medium transition-colors"
+              aria-label={`View MediaKit for ${raw_data.username}`}
+              tabIndex={0}
+            >
+              MediaKit
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <a
+            href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-accent-gold hover:text-accent-gold-light text-sm font-medium transition-colors"
+            aria-label={`View Instagram profile for ${raw_data.username}`}
+            tabIndex={0}
+          >
+            Profile
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
       </div>
     </div>
   );

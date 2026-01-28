@@ -22,15 +22,17 @@ The search flow uses a **batch verification architecture** to ensure predictable
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  2. Soft pre-filter using cached metrics (select top 50)        │
+│  2. Soft pre-filter using cached metrics (select top 15)        │
 │     Scores candidates by likelihood of passing verification     │
 │     Fast, local operation - no API calls                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  3. Batch verify top 50 via PrimeTag API                        │
-│     MAX 50 API calls per search (predictable cost)              │
-│     5 concurrent requests with exponential backoff              │
+│  3. Cache-first verification split                              │
+│     - Already verified (full metrics + fresh cache) → skip API  │
+│     - Needs verification → batch verify via PrimeTag API        │
+│     - MAX 15 API calls per search (predictable cost)            │
+│     - 5 concurrent requests with exponential backoff            │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -40,7 +42,8 @@ The search flow uses a **batch verification architecture** to ensure predictable
 ```
 
 **Why this approach?** Previous loop-based verification (verify → filter → if not enough → repeat) was slow and expensive. This batch approach ensures:
-- Predictable latency (~50 API calls max)
+- **Cache-first**: Already-verified candidates skip API calls entirely (0 calls for repeat searches)
+- Predictable latency (~15-30 API calls max for new candidates)
 - Predictable cost per search
 - No runaway loops when filter rejection rate is high
 
@@ -100,12 +103,16 @@ Score candidates using cached/imported data **before** expensive API verificatio
 - Interest/niche match bonuses applied
 - Excluded niche penalties applied
 
-**Configuration:** `MAX_CANDIDATES_TO_VERIFY = 50` (controls API cost)
+**Configuration:** `MAX_CANDIDATES_TO_VERIFY = 15` (controls API cost, caps at 15-30 calls max)
 
 ### Step 4: Primetag Verification Gate (Execution Layer)
 **Script:** `backend/app/services/search_service.py` → `_verify_candidates_batch()`
 
-Verify **only the top 50 candidates** from soft pre-filter:
+**Cache-First Optimization:** Before batch verification, candidates are split:
+- **Already verified** (full metrics + fresh cache) → skip API entirely
+- **Needs verification** → proceed to batch API calls
+
+Verify **only candidates needing verification** (up to 15 max):
 1. Check if candidate already has full cached metrics (skip API call)
 2. If cached `primetag_encrypted_username` exists, call detail endpoint directly (1 API call)
 3. Otherwise, search + detail (2 API calls)
@@ -192,7 +199,7 @@ Save to database:
 - Ranked list of influencers with:
   - Relevance score (0-1)
   - All 8 score components for transparency
-  - Full influencer data (including `interests`, `brand_mentions`)
+  - Full influencer data (including `interests`, `brand_mentions`, `mediakit_url`)
 
 ## Edge Cases
 

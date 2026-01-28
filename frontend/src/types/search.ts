@@ -89,6 +89,9 @@ export interface InfluencerData {
   brand_warning_type?: 'competitor_conflict' | 'saturation' | null;
   brand_warning_message?: string | null;
   niche_warning?: string | null;
+
+  // MediaKit URL for PrimeTag data
+  mediakit_url?: string | null;
 }
 
 export interface RankedInfluencer {

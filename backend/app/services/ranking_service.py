@@ -106,6 +106,10 @@ class RankingService:
             else:
                 raw_data = self._extract_raw_data(inf)
 
+            # Construct mediakit_url from encrypted username if available
+            encrypted_username = raw_data.get('primetag_encrypted_username')
+            mediakit_url = f"https://mediakit.primetag.com/instagram/{encrypted_username}" if encrypted_username else None
+
             # Convert to InfluencerData - handle None values from database
             influencer_data = InfluencerData(
                 id=raw_data.get('id', ''),
@@ -129,6 +133,8 @@ class RankingService:
                 brand_warning_type=brand_warning_type,
                 brand_warning_message=brand_warning_message,
                 niche_warning=niche_warning,
+                # MediaKit URL for PrimeTag data
+                mediakit_url=mediakit_url,
             )
 
             ranked.append(RankedInfluencer(
@@ -308,7 +314,7 @@ class RankingService:
                      'is_verified', 'follower_count', 'credibility_score', 'engagement_rate',
                      'follower_growth_rate_6m', 'avg_likes', 'avg_comments',
                      'audience_genders', 'audience_age_distribution', 'audience_geography',
-                     'interests', 'brand_mentions']:
+                     'interests', 'brand_mentions', 'primetag_encrypted_username']:
             if hasattr(obj, attr):
                 data[attr] = getattr(obj, attr)
         return data

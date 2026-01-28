@@ -126,7 +126,8 @@ Execute an influencer search by pasting a brand brief or natural language query.
         "brand_mentions": ["nike", "head"],
         "brand_warning_type": null,
         "brand_warning_message": null,
-        "niche_warning": null
+        "niche_warning": null,
+        "mediakit_url": "https://mediakit.primetag.com/instagram/Z0FBQ..."
       }
     }
   ],
