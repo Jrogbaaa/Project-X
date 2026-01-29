@@ -165,7 +165,9 @@ class ApifyInstagramClient:
         timeout_secs: int
     ) -> Dict[str, Any]:
         """Start an actor run and return run info."""
-        url = f"{self.BASE_URL}/acts/{self.ACTOR_ID}/runs"
+        # Apify requires ~ instead of / in actor ID for URL path
+        actor_id_url = self.ACTOR_ID.replace("/", "~")
+        url = f"{self.BASE_URL}/acts/{actor_id_url}/runs"
 
         async with httpx.AsyncClient() as client:
             response = await client.post(

@@ -82,9 +82,14 @@ class ParsedSearchQuery(BaseModel):
         description="The campaign creative brief or concept description"
     )
 
+    creative_format: Optional[str] = Field(
+        default=None,
+        description="Content format requested: documentary, day_in_the_life, tutorial, challenge, testimonial, storytelling, lifestyle"
+    )
+
     creative_tone: List[str] = Field(
         default_factory=list,
-        description="Tone/style keywords: authentic, humorous, luxury, edgy, casual, documentary, inspirational, gritty"
+        description="Tone/style keywords: authentic, humorous, luxury, edgy, casual, inspirational, gritty, polished, raw"
     )
 
     creative_themes: List[str] = Field(
@@ -183,11 +188,11 @@ class ParsedSearchQuery(BaseModel):
 
     def has_creative_context(self) -> bool:
         """Check if creative concept was provided for fit scoring."""
-        return bool(self.creative_concept or self.creative_tone or self.creative_themes)
+        return bool(self.creative_concept or self.creative_format or self.creative_tone or self.creative_themes)
 
     def has_niche_context(self) -> bool:
         """Check if niche targeting was specified."""
-        return bool(self.campaign_topics or self.exclude_niches)
+        return bool(self.campaign_niche or self.campaign_topics or self.exclude_niches)
 
     def get_follower_range(self) -> Optional[Tuple[int, int]]:
         """Get preferred follower range if specified."""

@@ -36,18 +36,28 @@ TONE_KEYWORDS = {
 
 
 class RankingService:
-    """Service for ranking influencer candidates with brand affinity and creative fit."""
+    """Service for ranking influencer candidates with brand affinity and creative fit.
+    
+    Simplified ranking focuses on 3 main factors using data from Apify scraping:
+    - niche_match (40%): Uses primary_niche column for exact/related niche matching
+    - creative_fit (35%): Uses content_themes column for format/style matching  
+    - brand_affinity (25%): Uses detected_brands column for brand mention matching
+    
+    Other factors (credibility, engagement, demographics) come from PrimeTag verification
+    AFTER initial matching and are used for display/filtering, not ranking.
+    """
 
-    # Updated default weights including new factors
+    # Simplified weights focusing on data we have (from Apify scrape)
+    # Other factors (credibility, engagement, etc.) will be populated by PrimeTag later
     DEFAULT_WEIGHTS = RankingWeights(
-        credibility=0.15,
-        engagement=0.20,
-        audience_match=0.15,
-        growth=0.05,
-        geography=0.10,
-        brand_affinity=0.15,
-        creative_fit=0.15,
-        niche_match=0.05
+        credibility=0.00,      # From PrimeTag (not used in initial ranking)
+        engagement=0.00,       # From PrimeTag (not used in initial ranking)
+        audience_match=0.00,   # From PrimeTag (not used in initial ranking)
+        growth=0.00,           # From PrimeTag (not used in initial ranking)
+        geography=0.00,        # All influencers are Spanish (not useful)
+        brand_affinity=0.25,   # Uses detected_brands from scrape
+        creative_fit=0.35,     # Uses content_themes from scrape
+        niche_match=0.40       # Uses primary_niche from scrape
     )
 
     def __init__(self, weights: RankingWeights = None):
@@ -237,10 +247,12 @@ class RankingService:
         )
 
         # Creative Fit: alignment with campaign creative concept
+        # Now uses content_themes column from Apify scrape
         creative_fit = self._calculate_creative_fit(
             influencer,
             parsed_query.creative_tone,
-            parsed_query.creative_themes
+            parsed_query.creative_themes,
+            getattr(parsed_query, 'creative_format', None)
         )
 
         # Niche Match: content niche alignment with campaign topics
@@ -315,7 +327,10 @@ class RankingService:
                      'follower_growth_rate_6m', 'avg_likes', 'avg_comments',
                      'audience_genders', 'audience_age_distribution', 'audience_geography',
                      'interests', 'brand_mentions', 'primetag_encrypted_username',
-                     'post_content_aggregated']:
+                     'post_content_aggregated',
+                     # New niche detection columns from Apify scrape
+                     'primary_niche', 'niche_confidence', 'detected_brands',
+                     'sponsored_ratio', 'content_language', 'content_themes']:
             if hasattr(obj, attr):
                 data[attr] = getattr(obj, attr)
         return data
@@ -331,11 +346,14 @@ class RankingService:
         """
         Calculate brand affinity score with conflict detection and saturation warnings.
 
-        NEW LOGIC:
+        USES NEW COLUMN FROM APIFY SCRAPE:
+        - detected_brands: Brands mentioned in posts (more accurate than bio-based brand_mentions)
+
+        Logic:
         - Check for competitor ambassador conflicts (Messi for Nike = 0.05)
         - Check for competitor brand mentions (0.25-0.45 depending on severity)
         - Check for brand saturation (already ambassador = 0.35-0.45)
-        - Then apply original boost logic for positive signals
+        - Boost if target brand is in detected_brands
 
         Args:
             influencer: Influencer data
@@ -352,9 +370,16 @@ class RankingService:
         if not brand_handle:
             return 0.5, None, None
 
-        # Get influencer data
+        # Get influencer data - prefer detected_brands from scrape over brand_mentions
         username = self._get_value(influencer, 'username', '').lower()
-        brand_mentions = self._get_value(influencer, 'brand_mentions', [])
+        detected_brands = self._get_value(influencer, 'detected_brands', []) or []
+        brand_mentions = self._get_value(influencer, 'brand_mentions', []) or []
+        
+        # Combine both sources, preferring detected_brands (from actual posts)
+        all_brand_mentions = list(set(
+            [b.lower() for b in detected_brands] + 
+            [b.lower() for b in brand_mentions]
+        ))
 
         # Get influencer overlap data if available
         influencer_overlap = None
@@ -365,10 +390,16 @@ class RankingService:
         brand_intel = get_brand_intelligence_service()
         score, warning_type, warning_message = brand_intel.calculate_brand_affinity_score(
             influencer_username=username,
-            influencer_brand_mentions=brand_mentions,
+            influencer_brand_mentions=all_brand_mentions,
             target_brand=brand_handle,
             overlap_data=influencer_overlap
         )
+        
+        # Boost score if target brand is directly mentioned in detected_brands
+        brand_handle_clean = brand_handle.lower().lstrip('@')
+        if brand_handle_clean in [b.lower() for b in detected_brands]:
+            # Direct mention of target brand - strong positive signal
+            score = min(score + 0.25, 1.0)
 
         return score, warning_type, warning_message
 
@@ -376,46 +407,97 @@ class RankingService:
         self,
         influencer: Any,
         creative_tone: List[str],
-        creative_themes: List[str]
+        creative_themes: List[str],
+        creative_format: Optional[str] = None
     ) -> float:
         """
         Calculate how well influencer matches the creative concept.
 
-        Analyzes:
-        - Content style alignment from bio/interests
-        - Past campaign relevance from brand_mentions
-        - Theme alignment
+        USES NEW COLUMNS FROM APIFY SCRAPE:
+        - content_themes: Detected themes like "training", "behind_the_scenes", etc.
+        - content_themes.narrative_style: "storytelling", "casual", "promotional"
+        - content_themes.format_preference: Post formats used (Reel, Sidecar, etc.)
 
         Returns:
             Score from 0-1 (0.5 = neutral/no creative context)
         """
         # Return neutral if no creative context
-        if not creative_tone and not creative_themes:
+        if not creative_tone and not creative_themes and not creative_format:
             return 0.5
 
         score_components = []
 
-        # Get influencer data
+        # Get new content_themes column from scrape
+        content_themes = self._get_value(influencer, 'content_themes', None)
+        
+        # Fallback data
         interests = self._get_value(influencer, 'interests', [])
         bio = self._get_value(influencer, 'bio', '') or ''
         bio_lower = bio.lower()
         brand_mentions = self._get_value(influencer, 'brand_mentions', [])
+        detected_brands = self._get_value(influencer, 'detected_brands', []) or []
 
         # Normalize interests to lowercase strings
         interests_lower = [str(i).lower() for i in interests]
         interests_text = ' '.join(interests_lower)
 
-        # 1. Theme alignment from interests/bio
+        # 1. Theme alignment - USE content_themes.detected_themes if available
         if creative_themes:
             theme_matches = 0
-            for theme in creative_themes:
-                theme_lower = theme.lower()
-                if theme_lower in bio_lower or theme_lower in interests_text:
-                    theme_matches += 1
+            
+            if content_themes and content_themes.get('detected_themes'):
+                # Use scraped content themes for matching
+                detected = [t.lower() for t in content_themes.get('detected_themes', [])]
+                for theme in creative_themes:
+                    theme_lower = theme.lower()
+                    # Check for exact or partial match in detected themes
+                    if theme_lower in detected or any(theme_lower in d for d in detected):
+                        theme_matches += 1
+                    # Also check bio/interests as fallback
+                    elif theme_lower in bio_lower or theme_lower in interests_text:
+                        theme_matches += 0.5
+            else:
+                # Fallback to bio/interests matching
+                for theme in creative_themes:
+                    theme_lower = theme.lower()
+                    if theme_lower in bio_lower or theme_lower in interests_text:
+                        theme_matches += 1
+                        
             theme_score = theme_matches / len(creative_themes) if creative_themes else 0
-            score_components.append(('theme', theme_score, 0.4))
+            score_components.append(('theme', theme_score, 0.35))
 
-        # 2. Tone alignment using keyword matching
+        # 2. Narrative style / format alignment - USE content_themes.narrative_style
+        format_score = 0.5  # Neutral default
+        if content_themes:
+            narrative_style = content_themes.get('narrative_style', '')
+            format_preference = content_themes.get('format_preference', [])
+            
+            # Match creative format to narrative style
+            if creative_format:
+                format_map = {
+                    'documentary': 'storytelling',
+                    'day_in_the_life': 'storytelling',
+                    'storytelling': 'storytelling',
+                    'tutorial': 'casual',
+                    'challenge': 'casual',
+                    'lifestyle': 'casual',
+                    'testimonial': 'promotional',
+                }
+                expected_style = format_map.get(creative_format, '')
+                if narrative_style == expected_style:
+                    format_score = 0.9
+                elif narrative_style == 'storytelling' and creative_format in ['documentary', 'day_in_the_life']:
+                    format_score = 0.85
+                elif narrative_style != 'promotional' and creative_format != 'testimonial':
+                    format_score = 0.6
+            
+            # Boost for Reels if challenge/tutorial format
+            if creative_format in ['challenge', 'tutorial'] and 'Reel' in format_preference:
+                format_score = min(format_score + 0.15, 1.0)
+                
+        score_components.append(('format', format_score, 0.30))
+
+        # 3. Tone alignment using keyword matching
         if creative_tone:
             tone_matches = 0
             for tone in creative_tone:
@@ -423,13 +505,20 @@ class RankingService:
                 keywords = TONE_KEYWORDS.get(tone_lower, [tone_lower])
                 if any(kw in bio_lower or kw in interests_text for kw in keywords):
                     tone_matches += 1
-            tone_score = tone_matches / len(creative_tone) if creative_tone else 0
-            score_components.append(('tone', tone_score, 0.3))
+                # Also check if narrative style aligns with tone
+                if content_themes:
+                    narrative = content_themes.get('narrative_style', '')
+                    if tone_lower in ['authentic', 'raw', 'documentary'] and narrative == 'storytelling':
+                        tone_matches += 0.5
+                    elif tone_lower in ['polished', 'luxury'] and narrative == 'promotional':
+                        tone_matches += 0.3
+            tone_score = min(tone_matches / len(creative_tone), 1.0) if creative_tone else 0
+            score_components.append(('tone', tone_score, 0.20))
 
-        # 3. Past campaign experience
-        has_experience = len(brand_mentions) > 0
+        # 4. Past brand experience - USE detected_brands
+        has_experience = len(brand_mentions) > 0 or len(detected_brands) > 0
         experience_score = 0.7 if has_experience else 0.5
-        score_components.append(('experience', experience_score, 0.3))
+        score_components.append(('experience', experience_score, 0.15))
 
         # Calculate weighted score
         if not score_components:
@@ -450,17 +539,21 @@ class RankingService:
         """
         Calculate content niche alignment with campaign topics.
 
-        NEW LOGIC (Messi/Padel problem):
-        - Uses brand intelligence service for niche taxonomy
-        - Detects conflicting niches (football influencer for padel campaign)
-        - Applies celebrity penalty for large accounts in wrong niche
-        - Uses post content (hashtags, captions) from Apify for enhanced detection
+        USES NEW COLUMNS FROM APIFY SCRAPE:
+        - primary_niche: Directly compare influencer's detected niche to campaign niche
+        - niche_confidence: Weight the score by detection confidence
+        - Falls back to brand intelligence service for taxonomy matching
 
         Returns:
             Tuple of (score, warning_message):
             - score: 0.15-0.95 based on niche relevance
             - warning: Human-readable warning if mismatch detected
         """
+        # Get new niche columns from scrape
+        primary_niche = self._get_value(influencer, 'primary_niche', None)
+        niche_confidence = self._get_value(influencer, 'niche_confidence', 0.5) or 0.5
+        
+        # Fallback data
         interests = self._get_value(influencer, 'interests', [])
         bio = self._get_value(influencer, 'bio', '') or ''
         follower_count = self._get_value(influencer, 'follower_count', 0)
@@ -468,27 +561,66 @@ class RankingService:
 
         warning = None
 
-        # If we have a campaign niche, use the brand intelligence service
+        # If we have a campaign niche, try direct matching first
         if campaign_niche:
+            campaign_niche_lower = campaign_niche.lower()
+            
+            # FAST PATH: Use primary_niche column if available
+            if primary_niche:
+                primary_niche_lower = primary_niche.lower()
+                
+                # Exact match - highest score
+                if primary_niche_lower == campaign_niche_lower:
+                    final_score = 0.95 * niche_confidence
+                    return min(final_score, 1.0), None
+                
+                # Check for related/conflicting niches via taxonomy
+                brand_intel = get_brand_intelligence_service()
+                niche_info = brand_intel.get_niche(campaign_niche_lower)
+                
+                if niche_info:
+                    # Check for related niche
+                    if primary_niche_lower in [n.lower() for n in niche_info.related_niches]:
+                        final_score = 0.70 * niche_confidence
+                        return final_score, None
+                    
+                    # Check for conflicting niche
+                    if primary_niche_lower in [n.lower() for n in niche_info.conflicting_niches]:
+                        warning = f"Conflicting niche: {primary_niche} conflicts with {campaign_niche}"
+                        # Apply celebrity penalty for large accounts in wrong niche
+                        if follower_count and follower_count > 5_000_000:
+                            return 0.05, warning
+                        return 0.20, warning
+                
+                # No direct relationship - neutral with some penalty
+                final_score = 0.40 * niche_confidence
+                
+                # Apply exclude_niches penalty
+                if exclude_niches:
+                    if primary_niche_lower in [n.lower() for n in exclude_niches]:
+                        warning = f"Excluded niche: {primary_niche}"
+                        return 0.10, warning
+                
+                return final_score, warning
+            
+            # SLOW PATH: No primary_niche, use full taxonomy matching
             brand_intel = get_brand_intelligence_service()
             relevance = brand_intel.check_niche_relevance(
                 influencer_interests=interests,
                 influencer_bio=bio,
                 campaign_niche=campaign_niche,
                 follower_count=follower_count,
-                post_content=post_content  # Pass post content for enhanced detection
+                post_content=post_content
             )
 
             if relevance.match_type == "conflicting" or relevance.is_celebrity_mismatch:
                 warning = relevance.details
 
-            # Blend with topic matching for comprehensive score
             niche_score = relevance.score
 
             # If also have campaign_topics, blend the scores
             if campaign_topics:
                 topic_score = self._calculate_topic_match(influencer, campaign_topics)
-                # Weight niche matching more heavily (70/30)
                 final_score = (niche_score * 0.7) + (topic_score * 0.3)
             else:
                 final_score = niche_score

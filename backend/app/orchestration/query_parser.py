@@ -31,12 +31,30 @@ Brand category mappings:
 ### Creative Concept Extraction
 Extract the creative/campaign concept if described:
 1. creative_concept: The full campaign idea or creative brief
-2. creative_tone: Style keywords like "authentic", "humorous", "luxury", "edgy", "casual", "documentary", "inspirational", "gritty", "polished", "raw"
-3. creative_themes: Key values/themes like "dedication", "family", "adventure", "innovation", "rising stars", "everyday heroes", "transformation"
+2. creative_format: The content format being requested. Choose from:
+   - "documentary" - Behind-the-scenes, journey, making-of style
+   - "day_in_the_life" - Daily routine, lifestyle focused
+   - "tutorial" - How-to, educational content
+   - "challenge" - Viral challenge, user participation
+   - "testimonial" - Review, endorsement style
+   - "storytelling" - Narrative, emotional arc
+   - "lifestyle" - Casual, everyday moments
+   - null if not specified
+3. creative_tone: Style keywords like "authentic", "humorous", "luxury", "edgy", "casual", "inspirational", "gritty", "polished", "raw"
+4. creative_themes: Key values/themes like "dedication", "family", "adventure", "innovation", "rising stars", "everyday heroes", "transformation"
 
 ### Niche/Topic Targeting
-1. campaign_topics: Specific niches relevant to the campaign (e.g., "padel", "tennis", "skincare", "cooking")
-2. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
+1. campaign_niche: The PRIMARY niche for this campaign (SINGLE value, most important one). Choose from the taxonomy:
+   - Sports: "padel", "tennis", "football", "basketball", "golf", "running", "cycling", "swimming", "triathlon", "motorsport", "fitness", "crossfit"
+   - Lifestyle: "fashion", "beauty", "luxury", "lifestyle", "travel", "food"
+   - Wellness: "yoga", "wellness", "nutrition"
+   - Entertainment: "music", "gaming", "comedy"
+   - Family: "parenting"
+   - Business: "tech", "business", "finance"
+   - Other: "automotive"
+   This will be matched against influencers' primary_niche column.
+2. campaign_topics: Additional specific topics relevant to the campaign (array)
+3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
 
 ### Size Preferences (Anti-Celebrity Bias)
 If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:
@@ -123,10 +141,15 @@ RESPONSE_FORMAT = {
                     "type": ["string", "null"],
                     "description": "The campaign creative brief or concept"
                 },
+                "creative_format": {
+                    "type": ["string", "null"],
+                    "enum": ["documentary", "day_in_the_life", "tutorial", "challenge", "testimonial", "storytelling", "lifestyle", None],
+                    "description": "The content format requested: documentary, day_in_the_life, tutorial, challenge, testimonial, storytelling, lifestyle"
+                },
                 "creative_tone": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Tone keywords: authentic, humorous, luxury, edgy, casual, documentary, etc."
+                    "description": "Tone keywords: authentic, humorous, luxury, edgy, casual, inspirational, etc."
                 },
                 "creative_themes": {
                     "type": "array",
@@ -134,10 +157,14 @@ RESPONSE_FORMAT = {
                     "description": "Key themes: dedication, family, adventure, innovation, etc."
                 },
                 # Niche targeting
+                "campaign_niche": {
+                    "type": ["string", "null"],
+                    "description": "PRIMARY niche for the campaign (single value): padel, tennis, football, fitness, fashion, beauty, etc."
+                },
                 "campaign_topics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Specific niches for the campaign (padel, skincare, cooking)"
+                    "description": "Additional specific topics for the campaign"
                 },
                 "exclude_niches": {
                     "type": "array",
@@ -223,8 +250,10 @@ RESPONSE_FORMAT = {
                 "brand_handle",
                 "brand_category",
                 "creative_concept",
+                "creative_format",
                 "creative_tone",
                 "creative_themes",
+                "campaign_niche",
                 "campaign_topics",
                 "exclude_niches",
                 "content_themes",
@@ -287,10 +316,12 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
 
             # Creative concept
             creative_concept=parsed_data.get("creative_concept"),
+            creative_format=parsed_data.get("creative_format"),
             creative_tone=parsed_data.get("creative_tone", []),
             creative_themes=parsed_data.get("creative_themes", []),
 
             # Niche targeting
+            campaign_niche=parsed_data.get("campaign_niche"),
             campaign_topics=parsed_data.get("campaign_topics", []),
             exclude_niches=parsed_data.get("exclude_niches", []),
             content_themes=parsed_data.get("content_themes", []),

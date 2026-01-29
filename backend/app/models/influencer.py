@@ -58,6 +58,17 @@ class Influencer(Base):
     # Structure: {"top_hashtags": {...}, "caption_keywords": {...}, "scrape_status": "complete"}
     post_content_aggregated = Column(JSONB, nullable=True)
 
+    # Niche detection (from Apify scrape analysis)
+    primary_niche = Column(String(50), nullable=True)  # "padel", "football", "fitness"
+    niche_confidence = Column(Float, nullable=True)  # 0.0-1.0 confidence score
+    detected_brands = Column(JSONB, nullable=True)  # ["bullpadel", "nike", "adidas"]
+    sponsored_ratio = Column(Float, nullable=True)  # 0.0-1.0 (% of sponsored posts)
+    content_language = Column(String(10), nullable=True)  # "es", "en", "ca"
+
+    # Content themes for creative matching (from Apify scrape analysis)
+    # Structure: {"detected_themes": [...], "narrative_style": "...", "format_preference": [...], "avg_caption_length": N}
+    content_themes = Column(JSONB, nullable=True)
+
     # Relationship to posts
     posts = relationship("InfluencerPost", back_populates="influencer", cascade="all, delete-orphan")
 
@@ -78,6 +89,12 @@ class Influencer(Base):
         Index("idx_influencers_country", "country"),
         Index("idx_influencers_interests", "interests", postgresql_using="gin"),
         Index("idx_influencers_brand_mentions", "brand_mentions", postgresql_using="gin"),
+        # Niche detection indexes
+        Index("idx_influencers_primary_niche", "primary_niche"),
+        Index("idx_influencers_niche_confidence", "niche_confidence"),
+        Index("idx_influencers_detected_brands", "detected_brands", postgresql_using="gin"),
+        Index("idx_influencers_content_language", "content_language"),
+        Index("idx_influencers_content_themes", "content_themes", postgresql_using="gin"),
     )
 
     def to_dict(self) -> dict:
@@ -104,5 +121,12 @@ class Influencer(Base):
             "brand_mentions": self.brand_mentions or [],
             "country": self.country,
             "post_content_aggregated": self.post_content_aggregated,
+            # Niche detection fields
+            "primary_niche": self.primary_niche,
+            "niche_confidence": self.niche_confidence,
+            "detected_brands": self.detected_brands or [],
+            "sponsored_ratio": self.sponsored_ratio,
+            "content_language": self.content_language,
+            "content_themes": self.content_themes,
             "cached_at": self.cached_at.isoformat() if self.cached_at else None,
         }
