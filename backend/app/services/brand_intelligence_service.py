@@ -353,6 +353,74 @@ class BrandIntelligenceService:
             )
         return None
 
+    def get_niche_relationships(self, niche_key: str) -> Dict[str, List[str]]:
+        """
+        Get related and conflicting niches for a given niche.
+
+        Args:
+            niche_key: The niche to look up (e.g., "padel")
+
+        Returns:
+            Dict with "related" and "conflicting" lists, or empty lists if niche not found
+        """
+        niche = self.get_niche(niche_key)
+        if niche:
+            return {
+                "related": niche.related_niches,
+                "conflicting": niche.conflicting_niches
+            }
+        return {"related": [], "conflicting": []}
+
+    def get_all_allowed_niches(self, campaign_niche: str) -> Set[str]:
+        """
+        Get all niches that are allowed for a campaign (exact + related).
+
+        Args:
+            campaign_niche: The primary niche for the campaign (e.g., "padel")
+
+        Returns:
+            Set of allowed niche keys including the campaign niche and related niches
+        """
+        allowed = {campaign_niche.lower()}
+        relationships = self.get_niche_relationships(campaign_niche)
+        allowed.update(r.lower() for r in relationships["related"])
+        return allowed
+
+    def get_all_excluded_niches(
+        self,
+        campaign_niche: str,
+        explicit_excludes: Optional[List[str]] = None
+    ) -> Set[str]:
+        """
+        Get all niches that should be excluded for a campaign.
+
+        Combines:
+        1. Taxonomy-defined conflicting niches for the campaign niche
+        2. User-specified explicit exclusions from the search query
+
+        Args:
+            campaign_niche: The primary niche for the campaign (e.g., "padel")
+            explicit_excludes: Additional niches to exclude (from user query)
+
+        Returns:
+            Set of excluded niche keys
+        """
+        excluded = set()
+
+        # Add taxonomy-defined conflicts
+        relationships = self.get_niche_relationships(campaign_niche)
+        excluded.update(c.lower() for c in relationships["conflicting"])
+
+        # Add user-specified excludes
+        if explicit_excludes:
+            excluded.update(e.lower() for e in explicit_excludes)
+
+        return excluded
+
+    def get_all_niche_keys(self) -> List[str]:
+        """Get all available niche keys from the taxonomy."""
+        return list(self._niche_data.get('niches', {}).keys())
+
     def detect_influencer_niche(
         self,
         interests: List[str],

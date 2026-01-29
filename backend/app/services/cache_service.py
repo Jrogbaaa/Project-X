@@ -1,13 +1,17 @@
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set, Tuple
 from uuid import UUID
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import select, and_, or_, func, not_
 from sqlalchemy.dialects.postgresql import insert
+import logging
 
 from app.models.influencer import Influencer
 from app.config import get_settings
+from app.services.brand_intelligence_service import get_brand_intelligence_service
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
@@ -160,6 +164,165 @@ class CacheService:
         # Sort by score and return top results
         scored.sort(key=lambda x: x[1], reverse=True)
         return [inf for inf, _ in scored[:limit]]
+
+    async def find_by_niche(
+        self,
+        campaign_niche: str,
+        exclude_niches: Optional[List[str]] = None,
+        country: Optional[str] = None,
+        limit: int = 200
+    ) -> Tuple[List[Influencer], List[Influencer]]:
+        """
+        Find influencers by niche using taxonomy-aware matching with hard exclusion.
+
+        This method uses `primary_niche` as the authoritative source and applies
+        taxonomy relationships for matching (related niches are included) and
+        exclusion (conflicting niches are hard-filtered out).
+
+        Args:
+            campaign_niche: Primary niche for the campaign (e.g., "padel")
+            exclude_niches: Additional niches to exclude beyond taxonomy conflicts
+            country: Filter by country (e.g., "Spain")
+            limit: Maximum results to return
+
+        Returns:
+            Tuple of (primary_niche_matches, fallback_matches)
+            - primary_niche_matches: Influencers with matching primary_niche
+            - fallback_matches: Influencers without primary_niche (matched by interests)
+        """
+        now = datetime.utcnow()
+        brand_intel = get_brand_intelligence_service()
+
+        # Get taxonomy relationships
+        allowed_niches = brand_intel.get_all_allowed_niches(campaign_niche)
+        excluded_niches = brand_intel.get_all_excluded_niches(campaign_niche, exclude_niches)
+
+        logger.info(
+            f"Niche discovery for '{campaign_niche}': "
+            f"allowed={allowed_niches}, excluded={excluded_niches}"
+        )
+
+        # ========== QUERY 1: Influencers WITH primary_niche ==========
+        # These are high-confidence matches based on post content analysis
+
+        primary_conditions = [
+            Influencer.cache_expires_at > now,
+            Influencer.primary_niche.isnot(None),
+        ]
+
+        # Include exact match + related niches
+        primary_conditions.append(
+            func.lower(Influencer.primary_niche).in_(allowed_niches)
+        )
+
+        # Hard exclude conflicting niches
+        if excluded_niches:
+            primary_conditions.append(
+                not_(func.lower(Influencer.primary_niche).in_(excluded_niches))
+            )
+
+        # Filter by country if specified
+        if country:
+            primary_conditions.append(
+                func.lower(Influencer.country) == country.lower()
+            )
+
+        primary_query = (
+            select(Influencer)
+            .where(and_(*primary_conditions))
+            .order_by(Influencer.niche_confidence.desc().nullslast())
+            .limit(limit)
+        )
+
+        primary_result = await self.db.execute(primary_query)
+        primary_matches = list(primary_result.scalars().all())
+
+        logger.info(f"Found {len(primary_matches)} influencers with matching primary_niche")
+
+        # ========== QUERY 2: Influencers WITHOUT primary_niche ==========
+        # These need fallback matching via interests field
+        # Only fetch if we need more candidates
+
+        fallback_matches = []
+        remaining_slots = limit - len(primary_matches)
+
+        if remaining_slots > 0:
+            fallback_conditions = [
+                Influencer.cache_expires_at > now,
+                Influencer.primary_niche.is_(None),
+                Influencer.interests.isnot(None),
+            ]
+
+            if country:
+                fallback_conditions.append(
+                    func.lower(Influencer.country) == country.lower()
+                )
+
+            fallback_query = (
+                select(Influencer)
+                .where(and_(*fallback_conditions))
+                .limit(remaining_slots * 3)  # Fetch more for Python filtering
+            )
+
+            fallback_result = await self.db.execute(fallback_query)
+            fallback_candidates = list(fallback_result.scalars().all())
+
+            # Score fallback candidates using interests matching
+            # and apply exclusion filtering
+            niche_info = brand_intel.get_niche(campaign_niche)
+            niche_keywords = niche_info.keywords if niche_info else [campaign_niche]
+
+            scored_fallbacks = []
+            for inf in fallback_candidates:
+                inf_interests = inf.interests or []
+                inf_interests_lower = [i.lower() for i in inf_interests]
+                inf_bio = (inf.bio or "").lower()
+                searchable = inf_bio + " " + " ".join(inf_interests_lower)
+
+                # Check for exclusion first (hard filter)
+                is_excluded = False
+                for exclude_niche in excluded_niches:
+                    exclude_info = brand_intel.get_niche(exclude_niche)
+                    if exclude_info:
+                        # Check if any excluded niche keywords appear
+                        for kw in exclude_info.keywords:
+                            if kw.lower() in searchable:
+                                is_excluded = True
+                                break
+                    if is_excluded:
+                        break
+
+                if is_excluded:
+                    continue
+
+                # Score based on campaign niche keywords
+                score = 0
+                for kw in niche_keywords:
+                    kw_lower = kw.lower()
+                    if kw_lower in searchable:
+                        score += 2
+
+                # Also check related niche keywords
+                for related in allowed_niches:
+                    related_info = brand_intel.get_niche(related)
+                    if related_info:
+                        for kw in related_info.keywords:
+                            if kw.lower() in searchable:
+                                score += 1
+
+                if score > 0:
+                    scored_fallbacks.append((inf, score))
+
+            # Sort by score and take top results
+            scored_fallbacks.sort(key=lambda x: x[1], reverse=True)
+            fallback_matches = [inf for inf, _ in scored_fallbacks[:remaining_slots]]
+
+            logger.info(
+                f"Found {len(fallback_matches)} fallback matches "
+                f"(from {len(fallback_candidates)} candidates without primary_niche)"
+            )
+
+        return primary_matches, fallback_matches
 
     async def search_by_keywords(
         self,

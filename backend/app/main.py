@@ -1,3 +1,5 @@
+import logging
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,6 +7,35 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.core.database import init_db
 from app.api.routes import search_router, influencers_router, exports_router, health_router, brands_router
+
+
+def setup_logging():
+    """Configure logging to show detailed search progress in terminal."""
+    # Create a custom formatter for clean output
+    formatter = logging.Formatter(
+        fmt="%(message)s",  # Clean output for our formatted logs
+        datefmt="%H:%M:%S"
+    )
+    
+    # Console handler for stdout
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    
+    # Configure the app logger (covers all app.* modules)
+    app_logger = logging.getLogger("app")
+    app_logger.setLevel(logging.INFO)
+    app_logger.handlers = []  # Clear any existing handlers
+    app_logger.addHandler(console_handler)
+    app_logger.propagate = False  # Don't propagate to root logger
+    
+    # Also log uvicorn access at INFO level (optional)
+    uvicorn_logger = logging.getLogger("uvicorn.access")
+    uvicorn_logger.setLevel(logging.INFO)
+
+
+# Initialize logging on module load
+setup_logging()
 
 
 @asynccontextmanager

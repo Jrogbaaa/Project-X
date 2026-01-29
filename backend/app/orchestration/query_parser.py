@@ -48,10 +48,13 @@ Extract the creative/campaign concept if described:
    - Sports: "padel", "tennis", "football", "basketball", "golf", "running", "cycling", "swimming", "triathlon", "motorsport", "fitness", "crossfit"
    - Lifestyle: "fashion", "beauty", "luxury", "lifestyle", "travel", "food"
    - Wellness: "yoga", "wellness", "nutrition"
-   - Entertainment: "music", "gaming", "comedy"
+   - Entertainment: "music", "gaming", "comedy", "nightlife"
    - Family: "parenting"
-   - Business: "tech", "business", "finance"
-   - Other: "automotive"
+   - Business: "tech", "business", "finance", "ecommerce"
+   - Home & Living: "home_decor", "diy"
+   - Food & Beverages: "alcoholic_beverages", "soft_drinks"
+   - Retail: "retail", "ecommerce"
+   - Automotive: "automotive"
    This will be matched against influencers' primary_niche column.
 2. campaign_topics: Additional specific topics relevant to the campaign (array)
 3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)

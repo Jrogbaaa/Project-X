@@ -538,6 +538,150 @@ niches:
     conflicting_niches: []
     parent_category: "automotive"
 
+  # ==================== HOME & LIVING ====================
+  home_decor:
+    keywords:
+      - "home"
+      - "hogar"
+      - "decor"
+      - "decoracion"
+      - "decoración"
+      - "interior design"
+      - "interiorismo"
+      - "furniture"
+      - "muebles"
+      - "home decor"
+      - "casa"
+      - "living"
+      - "salon"
+      - "dormitorio"
+      - "cocina"
+      - "garden"
+      - "jardin"
+      - "diy"
+      - "renovation"
+      - "reforma"
+    related_niches:
+      - lifestyle
+      - diy
+    conflicting_niches: []
+    parent_category: "home_living"
+
+  diy:
+    keywords:
+      - "diy"
+      - "do it yourself"
+      - "crafts"
+      - "manualidades"
+      - "handmade"
+      - "hecho a mano"
+      - "bricolaje"
+      - "tutorial"
+    related_niches:
+      - home_decor
+      - lifestyle
+    conflicting_niches: []
+    parent_category: "home_living"
+
+  # ==================== FOOD & BEVERAGES ====================
+  alcoholic_beverages:
+    keywords:
+      - "beer"
+      - "cerveza"
+      - "wine"
+      - "vino"
+      - "cocktails"
+      - "cocteles"
+      - "spirits"
+      - "whisky"
+      - "gin"
+      - "rum"
+      - "ron"
+      - "sommelier"
+      - "bartender"
+      - "mixology"
+    related_niches:
+      - food
+      - lifestyle
+      - nightlife
+    conflicting_niches:
+      - parenting
+      - fitness
+      - wellness
+    parent_category: "food_beverages"
+
+  soft_drinks:
+    keywords:
+      - "drinks"
+      - "bebidas"
+      - "soda"
+      - "refrescos"
+      - "energy drinks"
+      - "juice"
+      - "zumo"
+      - "smoothie"
+      - "batido"
+      - "hydration"
+      - "hidratacion"
+    related_niches:
+      - food
+      - fitness
+      - lifestyle
+    conflicting_niches: []
+    parent_category: "food_beverages"
+
+  # ==================== RETAIL & SHOPPING ====================
+  retail:
+    keywords:
+      - "shopping"
+      - "compras"
+      - "haul"
+      - "unboxing"
+      - "deals"
+      - "ofertas"
+      - "reviews"
+      - "reseñas"
+      - "products"
+      - "productos"
+    related_niches:
+      - fashion
+      - lifestyle
+      - beauty
+    conflicting_niches: []
+    parent_category: "retail"
+
+  ecommerce:
+    keywords:
+      - "ecommerce"
+      - "online shopping"
+      - "tienda online"
+      - "amazon"
+      - "marketplace"
+    related_niches:
+      - retail
+      - tech
+      - business
+    conflicting_niches: []
+    parent_category: "retail"
+
+  # ==================== NIGHTLIFE ====================
+  nightlife:
+    keywords:
+      - "nightlife"
+      - "club"
+      - "party"
+      - "fiesta"
+      - "discoteca"
+      - "dj"
+      - "electronic music"
+    related_niches:
+      - music
+      - alcoholic_beverages
+      - lifestyle
+    conflicting_niches:
+      - parenting
+    parent_category: "entertainment"
+
 # Parent categories for fallback matching
 categories:
   sports:
@@ -583,6 +727,7 @@ categories:
       - music
       - gaming
       - comedy
+      - nightlife
 
   family:
     description: "Family and parenting"
@@ -595,12 +740,32 @@ categories:
       - tech
       - business
       - finance
+      - ecommerce
 
   automotive:
     description: "Cars and vehicles"
     niches:
       - automotive
       - motorsport
+
+  home_living:
+    description: "Home, decor and DIY"
+    niches:
+      - home_decor
+      - diy
+
+  food_beverages:
+    description: "Food and beverages"
+    niches:
+      - food
+      - alcoholic_beverages
+      - soft_drinks
+
+  retail:
+    description: "Retail and shopping"
+    niches:
+      - retail
+      - ecommerce
 
 # Special handling rules
 rules:

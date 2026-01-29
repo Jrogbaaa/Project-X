@@ -79,7 +79,37 @@ class SearchService:
 
             # Step 2: Discover candidates from local DB (get large pool)
             logger.info(f"⏳ Step 2/6: Discovering candidates from database...")
-            if parsed_query.campaign_topics:
+            
+            # PRIORITY: Use taxonomy-aware niche matching if campaign_niche is set
+            # This applies hard exclusion of conflicting niches (e.g., soccer players excluded from padel)
+            if parsed_query.campaign_niche:
+                logger.info(f"   → Searching by niche (taxonomy-aware): {parsed_query.campaign_niche}")
+                if parsed_query.exclude_niches:
+                    logger.info(f"   → Explicit exclusions: {parsed_query.exclude_niches}")
+                
+                primary_matches, fallback_matches = await self.cache_service.find_by_niche(
+                    campaign_niche=parsed_query.campaign_niche,
+                    exclude_niches=parsed_query.exclude_niches,
+                    country="Spain",
+                    limit=CANDIDATE_POOL_SIZE
+                )
+                
+                # Add primary niche matches first (higher confidence)
+                for inf in primary_matches:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                
+                # Add fallback matches (interest-based, lower confidence)
+                for inf in fallback_matches:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                
+                logger.info(f"   ✓ Found {len(primary_matches)} by primary_niche, {len(fallback_matches)} by interests")
+            
+            # Fallback: Use interest-based matching if no campaign_niche
+            elif parsed_query.campaign_topics:
                 logger.info(f"   → Searching by interests: {parsed_query.campaign_topics}")
                 interest_matches = await self.cache_service.find_by_interests(
                     interests=parsed_query.campaign_topics,

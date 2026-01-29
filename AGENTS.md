@@ -93,7 +93,19 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 - A **health food brand** should match with **fitness/nutrition influencers**
 - A **padel equipment brand** should match with **padel/racket sports influencers** (not soccer players)
 
-Each influencer in our database has a `interests` field containing their content niches (e.g., "Home Decor, Furniture & Garden", "Fitness & Yoga", "Sports, Soccer"). The ranking algorithm scores how well these niches align with the brand's category.
+**Taxonomy-Aware Matching:** The system uses `niche_taxonomy.yaml` which defines relationships between niches:
+- **Related niches**: Similar content areas that are good matches (e.g., padel ↔ tennis ↔ fitness)
+- **Conflicting niches**: Content areas that should be excluded (e.g., padel ✗ football/soccer)
+
+**Discovery Pipeline:**
+1. LLM extracts `campaign_niche` and `exclude_niches` from the brief
+2. `find_by_niche()` queries by `primary_niche` column (exact + related matches)
+3. Conflicting niches are **hard-excluded** at database level (not just penalized)
+4. Falls back to `interests` field matching when `primary_niche` is not set
+
+Each influencer has:
+- `primary_niche`: Detected niche from post content analysis (e.g., "padel", "football")
+- `interests`: Coarse categories from PrimeTag API (e.g., "Sports", "Soccer")
 
 ### Architecture Overview
 
