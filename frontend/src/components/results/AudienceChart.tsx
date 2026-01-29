@@ -64,7 +64,7 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
   if (!hasGenderData && !hasAgeData) {
     return (
       <div className="text-center py-6 text-light-tertiary text-sm">
-        No audience demographic data available
+        Sin datos demográficos de audiencia
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
     <div className="space-y-4">
       {/* Header */}
       <h4 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
-        Audience Demographics
+        Demografía de Audiencia
       </h4>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -81,7 +81,7 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
         {hasGenderData && (
           <div className="bg-dark-tertiary/30 rounded-lg p-4">
             <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
-              Gender
+              Género
             </h5>
             <div className="flex items-center gap-4">
               <div className="w-20 h-20">
@@ -128,7 +128,7 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
         {hasAgeData && (
           <div className="bg-dark-tertiary/30 rounded-lg p-4">
             <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
-              Age Groups
+              Grupos de Edad
             </h5>
             <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">

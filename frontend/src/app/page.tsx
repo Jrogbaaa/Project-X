@@ -76,7 +76,7 @@ export default function Home() {
         if (selectedIndex >= 0 && selectedIndex <= maxIndex) {
           const influencer = searchResults.results[selectedIndex];
           navigator.clipboard.writeText(`@${influencer.raw_data.username}`);
-          toast('Username copied', 'success');
+          toast('Usuario copiado', 'success');
         }
         break;
       case 'o': // Open profile
@@ -111,9 +111,9 @@ export default function Home() {
   }, [searchResults]);
 
   const exampleSearches = [
-    'Adidas padel campaign, documentary style',
-    '10 lifestyle creators for IKEA',
-    'Nike running, authentic tone, 100K-2M followers',
+    'Campaña Adidas padel, estilo documental',
+    '10 creadores lifestyle para IKEA',
+    'Nike running, tono auténtico, 100K-2M seguidores',
   ];
 
   const handleExampleClick = (example: string) => {
@@ -137,7 +137,7 @@ export default function Home() {
                 <Sparkles className="w-4 h-4 text-accent-gold" />
               </div>
               <span className="font-serif text-lg text-light-primary tracking-tight">
-                Influencer Discovery
+                Descubrimiento de Influencers
               </span>
             </div>
 
@@ -145,11 +145,11 @@ export default function Home() {
             <div className="flex items-center gap-6">
               <button className="flex items-center gap-2 text-light-secondary hover:text-light-primary transition-colors text-sm">
                 <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">History</span>
+                <span className="hidden sm:inline">Historial</span>
               </button>
               <button className="flex items-center gap-2 text-light-secondary hover:text-light-primary transition-colors text-sm">
                 <Bookmark className="w-4 h-4" />
-                <span className="hidden sm:inline">Saved</span>
+                <span className="hidden sm:inline">Guardados</span>
               </button>
             </div>
           </div>
@@ -161,15 +161,15 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           {/* Headline */}
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-hero text-light-primary mb-4 animate-fade-in">
-            Discover
+            Descubre
           </h1>
           <p className="text-light-secondary text-lg sm:text-xl mb-4 max-w-2xl mx-auto animate-fade-in"
              style={{ animationDelay: '100ms' }}>
-            Paste your brand brief and find perfectly matched influencers
+            Pega tu brief de marca y encuentra influencers perfectamente alineados
           </p>
           <p className="text-light-tertiary text-sm mb-10 max-w-xl mx-auto animate-fade-in"
              style={{ animationDelay: '150ms' }}>
-            Include brand name and campaign details — our AI matches influencers based on their content niche, brand affinity, and creative fit.
+            Incluye el nombre de la marca y los detalles de la campaña — nuestra IA encuentra influencers basándose en su nicho, afinidad de marca y encaje creativo.
           </p>
 
           {/* Search Bar */}
@@ -196,13 +196,13 @@ export default function Home() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
-              Filters
+              Filtros
             </button>
 
             <div className="hidden sm:block w-px h-4 bg-dark-border" />
 
             <div className="flex items-center gap-2 text-sm text-light-tertiary">
-              <span>Try:</span>
+              <span>Prueba:</span>
               {exampleSearches.map((example, i) => (
                 <button
                   key={i}
@@ -241,23 +241,23 @@ export default function Home() {
                 
                 {/* Loading Steps */}
                 <div className="flex flex-col gap-2">
-                  <LoadingStepIndicator 
-                    step="parsing" 
-                    label="Parsing brief..." 
-                    isActive={loadingStep === 'parsing'} 
-                    isComplete={loadingStep === 'searching' || loadingStep === 'ranking'} 
+                  <LoadingStepIndicator
+                    step="parsing"
+                    label="Analizando brief..."
+                    isActive={loadingStep === 'parsing'}
+                    isComplete={loadingStep === 'searching' || loadingStep === 'ranking'}
                   />
-                  <LoadingStepIndicator 
-                    step="searching" 
-                    label="Searching PrimeTag..." 
-                    isActive={loadingStep === 'searching'} 
-                    isComplete={loadingStep === 'ranking'} 
+                  <LoadingStepIndicator
+                    step="searching"
+                    label="Buscando en PrimeTag..."
+                    isActive={loadingStep === 'searching'}
+                    isComplete={loadingStep === 'ranking'}
                   />
-                  <LoadingStepIndicator 
-                    step="ranking" 
-                    label="Ranking results..." 
-                    isActive={loadingStep === 'ranking'} 
-                    isComplete={false} 
+                  <LoadingStepIndicator
+                    step="ranking"
+                    label="Clasificando resultados..."
+                    isActive={loadingStep === 'ranking'}
+                    isComplete={false}
                   />
                 </div>
               </div>
@@ -283,15 +283,15 @@ export default function Home() {
                   <Sparkles className="w-8 h-8 text-accent-gold/50" />
                 </div>
                 <h3 className="font-serif text-xl text-light-primary mb-2">
-                  Ready to discover
+                  Listo para descubrir
                 </h3>
                 <p className="text-light-secondary text-sm leading-relaxed mb-6">
-                  Paste your brand brief above. Our AI extracts brand context, creative concepts, and campaign requirements to find the best-matched influencers.
+                  Pega tu brief de marca arriba. Nuestra IA extrae el contexto de marca, conceptos creativos y requisitos de campaña para encontrar los influencers más alineados.
                 </p>
                 <div className="bg-dark-secondary/50 rounded-xl p-4 text-left border border-dark-border/50">
-                  <p className="text-xs text-light-tertiary mb-2 uppercase tracking-wider">Example brief:</p>
+                  <p className="text-xs text-light-tertiary mb-2 uppercase tracking-wider">Ejemplo de brief:</p>
                   <p className="text-sm text-light-secondary italic">
-                    &quot;Find 5 Spanish influencers for Adidas padel campaign. Creative concept: &apos;Rising Stars&apos; series featuring up-and-coming athletes in authentic training moments, documentary style. Prefer mid-tier influencers (100K-2M followers).&quot;
+                    &quot;Buscar 5 influencers españoles para campaña de Adidas padel. Concepto creativo: serie &apos;Rising Stars&apos; con atletas emergentes en momentos auténticos de entrenamiento, estilo documental. Preferir influencers mid-tier (100K-2M seguidores).&quot;
                   </p>
                 </div>
               </div>
@@ -305,18 +305,18 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <p className="text-xs text-light-tertiary">
-              Powered by PrimeTag API
+              Impulsado por PrimeTag API
             </p>
             <p className="text-xs text-light-tertiary hidden sm:block">
               <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">j</kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono ml-1">k</kbd>
-              <span className="ml-2">navigate</span>
+              <span className="ml-2">navegar</span>
               <span className="mx-2">|</span>
               <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">c</kbd>
-              <span className="ml-2">copy</span>
+              <span className="ml-2">copiar</span>
               <span className="mx-2">|</span>
               <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">o</kbd>
-              <span className="ml-2">open</span>
+              <span className="ml-2">abrir</span>
             </p>
           </div>
         </div>

@@ -44,7 +44,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      onCopy?.(field === 'username' ? 'Username copied' : 'MediaKit URL copied');
+      onCopy?.(field === 'username' ? 'Usuario copiado' : 'URL MediaKit copiada');
       setTimeout(() => setCopiedField(null), 1500);
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -118,7 +118,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
                 <button
                   onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
                   className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all ml-0.5"
-                  aria-label="Copy username"
+                  aria-label="Copiar usuario"
                   tabIndex={0}
                 >
                   {copiedField === 'username' ? (
@@ -134,7 +134,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
                 </p>
               )}
               <p className="text-light-secondary text-xs mt-0.5">
-                <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> followers
+                <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
               </p>
               {/* Niche Tags - Show first 2 */}
               {raw_data.interests && raw_data.interests.length > 0 && (
@@ -182,12 +182,12 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
             metricClass={getMetricClass(engagementRate, 'engagement')}
           />
           <MetricPill
-            label="Spain"
+            label="España"
             value={`${spainPct.toFixed(0)}%`}
             metricClass={getMetricClass(spainPct, 'spain')}
           />
           <MetricPill
-            label="Growth"
+            label="Crec."
             value={growthRate ? `${(growthRate * 100).toFixed(0)}%` : 'N/A'}
             metricClass={getMetricClass(growthRate ? growthRate * 100 : null, 'growth')}
             icon={growthRate !== null && growthRate !== undefined && (
@@ -201,7 +201,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           onClick={handleExpandToggle}
           className="w-full flex items-center justify-center gap-2 py-2 text-sm text-light-tertiary hover:text-light-secondary transition-colors"
         >
-          <span>{isExpanded ? 'Hide details' : 'View details'}</span>
+          <span>{isExpanded ? 'Ocultar detalles' : 'Ver detalles'}</span>
           <ChevronDown
             className={cn(
               'w-4 h-4 transition-transform duration-300',
@@ -230,7 +230,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           {raw_data.interests && raw_data.interests.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-light-tertiary uppercase tracking-wider mb-2">
-                Content Niches
+                Nichos de Contenido
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {raw_data.interests.map((interest, i) => (
@@ -259,8 +259,8 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
       {/* Footer */}
       <div className="px-5 py-3 bg-dark-tertiary/50 border-t border-dark-border/30 flex items-center justify-between">
         <div className="text-xs text-light-tertiary">
-          Avg: <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_likes)}</span> likes,{' '}
-          <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_comments)}</span> comments
+          Media: <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_likes)}</span> likes,{' '}
+          <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_comments)}</span> comentarios
         </div>
         <div className="flex items-center gap-3">
           {raw_data.mediakit_url && (
@@ -268,7 +268,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
               <button
                 onClick={() => handleCopy(raw_data.mediakit_url!, 'mediakit')}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
-                aria-label="Copy MediaKit URL"
+                aria-label="Copiar URL MediaKit"
                 tabIndex={0}
               >
                 {copiedField === 'mediakit' ? (
@@ -282,7 +282,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-light-secondary hover:text-light-primary text-sm font-medium transition-colors"
-                aria-label={`View MediaKit for ${raw_data.username}`}
+                aria-label={`Ver MediaKit de ${raw_data.username}`}
                 tabIndex={0}
               >
                 MediaKit
@@ -295,10 +295,10 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-accent-gold hover:text-accent-gold-light text-sm font-medium transition-colors"
-            aria-label={`View Instagram profile for ${raw_data.username}`}
+            aria-label={`Ver perfil de Instagram de ${raw_data.username}`}
             tabIndex={0}
           >
-            Profile
+            Perfil
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>

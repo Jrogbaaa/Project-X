@@ -14,50 +14,50 @@ const SCORE_CONFIG: Record<keyof ScoreComponents, {
   bgColor: string;
 }> = {
   credibility: {
-    label: 'Credibility',
-    description: 'Audience authenticity',
+    label: 'Credibilidad',
+    description: 'Autenticidad de la audiencia',
     color: 'bg-[#6366f1]',
     bgColor: 'bg-[#6366f1]/20',
   },
   engagement: {
     label: 'Engagement',
-    description: 'Interaction rate',
+    description: 'Tasa de interacción',
     color: 'bg-metric-excellent',
     bgColor: 'bg-metric-excellent/20',
   },
   audience_match: {
-    label: 'Audience Match',
-    description: 'Demographics fit',
+    label: 'Match Audiencia',
+    description: 'Ajuste demográfico',
     color: 'bg-accent-gold',
     bgColor: 'bg-accent-gold/20',
   },
   growth: {
-    label: 'Growth',
-    description: '6-month trend',
+    label: 'Crecimiento',
+    description: 'Tendencia 6 meses',
     color: 'bg-[#ec4899]',
     bgColor: 'bg-[#ec4899]/20',
   },
   geography: {
-    label: 'Geography',
-    description: 'Spain audience %',
+    label: 'Geografía',
+    description: '% audiencia en España',
     color: 'bg-[#14b8a6]',
     bgColor: 'bg-[#14b8a6]/20',
   },
   brand_affinity: {
-    label: 'Brand Affinity',
-    description: 'Audience overlap with target brand',
+    label: 'Afinidad Marca',
+    description: 'Overlap audiencia con marca objetivo',
     color: 'bg-[#f97316]',
     bgColor: 'bg-[#f97316]/20',
   },
   creative_fit: {
-    label: 'Creative Fit',
-    description: 'Alignment with campaign concept',
+    label: 'Encaje Creativo',
+    description: 'Alineación con concepto de campaña',
     color: 'bg-[#8b5cf6]',
     bgColor: 'bg-[#8b5cf6]/20',
   },
   niche_match: {
-    label: 'Niche Match',
-    description: 'Content niche alignment (what they post about)',
+    label: 'Match Nicho',
+    description: 'Alineación de nicho de contenido',
     color: 'bg-[#06b6d4]',
     bgColor: 'bg-[#06b6d4]/20',
   },
@@ -82,10 +82,10 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
-          Score Breakdown
+          Desglose de Puntuación
         </h4>
         <span className="text-xs text-light-tertiary">
-          weighted scoring
+          puntuación ponderada
         </span>
       </div>
 
@@ -144,10 +144,10 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
       <div className="pt-3 border-t border-dark-border/50">
         <div className="flex flex-col gap-1">
           <span className="text-xs text-light-tertiary">
-            Default weights: Engagement 20% · Credibility 15% · Audience 15% · Brand Affinity 15% · Creative Fit 15%
+            Pesos por defecto: Engagement 20% · Credibilidad 15% · Audiencia 15% · Afinidad Marca 15% · Encaje Creativo 15%
           </span>
           <span className="text-xs text-light-tertiary">
-            Geography 10% · Growth 5% · Niche 5%
+            Geografía 10% · Crecimiento 5% · Nicho 5%
           </span>
         </div>
       </div>

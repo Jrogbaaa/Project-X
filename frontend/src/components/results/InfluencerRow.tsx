@@ -25,7 +25,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      onCopy?.(field === 'username' ? 'Username copied' : 'MediaKit URL copied');
+      onCopy?.(field === 'username' ? 'Usuario copiado' : 'URL MediaKit copiada');
       setTimeout(() => setCopiedField(null), 1500);
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -79,7 +79,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           <button
             onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
             className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all ml-1"
-            aria-label="Copy username"
+            aria-label="Copiar usuario"
             tabIndex={0}
           >
             {copiedField === 'username' ? (
@@ -90,7 +90,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           </button>
         </div>
         <p className="text-light-tertiary text-xs">
-          <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> followers
+          <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
             <button
               onClick={() => handleCopy(raw_data.mediakit_url!, 'mediakit')}
               className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-white/10 transition-all"
-              aria-label="Copy MediaKit URL"
+              aria-label="Copiar URL MediaKit"
               tabIndex={0}
             >
               {copiedField === 'mediakit' ? (
@@ -142,7 +142,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-light-secondary hover:text-light-primary hover:bg-white/5 transition-all"
-              aria-label={`View MediaKit for ${raw_data.username}`}
+              aria-label={`Ver MediaKit de ${raw_data.username}`}
               tabIndex={0}
             >
               MediaKit
@@ -155,10 +155,10 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-accent-gold hover:text-accent-gold-light hover:bg-accent-gold/10 transition-all"
-          aria-label={`View Instagram profile for ${raw_data.username}`}
+          aria-label={`Ver perfil de Instagram de ${raw_data.username}`}
           tabIndex={0}
         >
-          Profile
+          Perfil
           <ExternalLink className="h-3 w-3" />
         </a>
       </div>

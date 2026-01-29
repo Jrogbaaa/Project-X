@@ -30,7 +30,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
       onLoadingChange(false);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Search failed. Please try again.');
+      setError(err.message || 'Error en la búsqueda. Por favor, inténtalo de nuevo.');
       onLoadingChange(false);
     },
     onMutate: () => {
@@ -40,7 +40,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
 
   const executeSearch = useCallback((searchQuery: string) => {
     if (searchQuery.trim().length < 3) {
-      setError('Please enter at least 3 characters');
+      setError('Por favor, introduce al menos 3 caracteres');
       return;
     }
 
@@ -111,7 +111,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Paste your brand brief or describe your campaign..."
+            placeholder="Pega tu brief de marca o describe tu campaña..."
             className="w-full min-h-[60px] max-h-[200px] pl-14 pr-32 py-4 text-base bg-transparent text-light-primary
                        rounded-2xl focus:outline-none transition-all duration-300 resize-none
                        placeholder:text-light-tertiary/60"
@@ -135,11 +135,11 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             {searchMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">Searching</span>
+                <span className="hidden sm:inline">Buscando</span>
               </>
             ) : (
               <>
-                <span>Search</span>
+                <span>Buscar</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
@@ -158,7 +158,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
       {/* Character Count Hint */}
       {query.length > 0 && query.length < 3 && (
         <p className="mt-2 text-center text-xs text-light-tertiary animate-fade-in">
-          {3 - query.length} more character{3 - query.length > 1 ? 's' : ''} needed
+          {3 - query.length} carácter{3 - query.length > 1 ? 'es' : ''} más necesario{3 - query.length > 1 ? 's' : ''}
         </p>
       )}
     </div>

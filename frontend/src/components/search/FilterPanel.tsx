@@ -37,7 +37,7 @@ function FilterSlider({
     ? formatValue(value)
     : value !== undefined
     ? `${value}${unit}`
-    : 'Any';
+    : 'Cualquiera';
 
   const percentage = value !== undefined
     ? ((value - min) / (max - min)) * 100
@@ -48,7 +48,7 @@ function FilterSlider({
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-light-secondary">
           {label}
-          {optional && <span className="text-light-tertiary ml-1">(optional)</span>}
+          {optional && <span className="text-light-tertiary ml-1">(opcional)</span>}
         </label>
         <span className="text-sm font-mono font-medium text-accent-gold">
           {displayValue}
@@ -93,7 +93,7 @@ function FilterSlider({
       </div>
       {/* Scale Labels */}
       <div className="flex justify-between text-xs text-light-tertiary">
-        <span>{optional ? 'Any' : `${min}${unit}`}</span>
+        <span>{optional ? 'Cualquiera' : `${min}${unit}`}</span>
         <span>{max}{unit}{max === 100 ? '' : '+'}</span>
       </div>
     </div>
@@ -142,7 +142,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
-          Filters
+          Filtros
         </h3>
         {hasChanges && (
           <button
@@ -150,7 +150,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
             className="flex items-center gap-1.5 text-xs text-light-tertiary hover:text-accent-gold transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset
+            Restablecer
           </button>
         )}
       </div>
@@ -159,7 +159,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Credibility Score */}
         <FilterSlider
-          label="Min Credibility"
+          label="Credibilidad Mín."
           value={filters.min_credibility_score}
           min={0}
           max={100}
@@ -170,7 +170,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
         {/* Spain Audience */}
         <FilterSlider
-          label="Min Spain Audience"
+          label="Audiencia España Mín."
           value={filters.min_spain_audience_pct}
           min={0}
           max={100}
@@ -181,7 +181,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
         {/* Engagement Rate */}
         <FilterSlider
-          label="Min Engagement Rate"
+          label="Engagement Mín."
           value={filters.min_engagement_rate}
           min={0}
           max={15}
@@ -189,12 +189,12 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           defaultValue={0}
           onChange={(value) => handleChange('min_engagement_rate', value)}
           optional
-          formatValue={(v) => (v !== undefined ? `${v}%` : 'Any')}
+          formatValue={(v) => (v !== undefined ? `${v}%` : 'Cualquiera')}
         />
 
         {/* Growth Rate */}
         <FilterSlider
-          label="Min 6M Growth"
+          label="Crecimiento 6M Mín."
           value={filters.min_follower_growth_rate}
           min={-20}
           max={50}
@@ -205,14 +205,14 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           }
           optional
           formatValue={(v) =>
-            v !== undefined ? `${v > 0 ? '+' : ''}${v}%` : 'Any'
+            v !== undefined ? `${v > 0 ? '+' : ''}${v}%` : 'Cualquiera'
           }
         />
 
         {/* Gender Audience Filter */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-light-secondary">
-            Target Audience Gender
+            Género de Audiencia Objetivo
           </label>
           <div className="flex gap-2">
             {(['any', 'female', 'male'] as const).map((gender) => (
@@ -231,13 +231,13 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
                     : 'bg-dark-tertiary text-light-secondary hover:bg-dark-border'
                 }`}
               >
-                {gender === 'any' ? 'Any' : gender === 'female' ? 'Female' : 'Male'}
+                {gender === 'any' ? 'Cualquiera' : gender === 'female' ? 'Mujeres' : 'Hombres'}
               </button>
             ))}
           </div>
           {filters.target_audience_gender && (
             <FilterSlider
-              label={`Min ${filters.target_audience_gender === 'female' ? 'Female' : 'Male'} %`}
+              label={`Mín. % ${filters.target_audience_gender === 'female' ? 'Mujeres' : 'Hombres'}`}
               value={filters.min_target_gender_pct ?? 50}
               min={50}
               max={90}
@@ -251,7 +251,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         {/* Age Bracket Filter */}
         <div className="space-y-3 sm:col-span-2">
           <label className="text-sm font-medium text-light-secondary">
-            Target Age Brackets
+            Rangos de Edad Objetivo
           </label>
           <div className="flex flex-wrap gap-2">
             {AGE_BRACKETS.map((range) => (
@@ -270,7 +270,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           </div>
           {filters.target_age_ranges && filters.target_age_ranges.length > 0 && (
             <FilterSlider
-              label="Min Combined Age %"
+              label="Mín. % Edad Combinada"
               value={filters.min_target_age_pct ?? 30}
               min={20}
               max={80}
@@ -285,12 +285,12 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
       {/* Active Filters Summary */}
       <div className="mt-6 pt-4 border-t border-dark-border/50">
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-light-tertiary">Active:</span>
+          <span className="text-xs text-light-tertiary">Activos:</span>
           <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
-            Credibility ≥ {filters.min_credibility_score}%
+            Credibilidad ≥ {filters.min_credibility_score}%
           </span>
           <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
-            Spain ≥ {filters.min_spain_audience_pct}%
+            España ≥ {filters.min_spain_audience_pct}%
           </span>
           {filters.min_engagement_rate !== undefined && (
             <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
@@ -299,19 +299,19 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           )}
           {filters.min_follower_growth_rate !== undefined && (
             <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
-              Growth ≥ {filters.min_follower_growth_rate > 0 ? '+' : ''}
+              Crecimiento ≥ {filters.min_follower_growth_rate > 0 ? '+' : ''}
               {filters.min_follower_growth_rate}%
             </span>
           )}
           {filters.target_audience_gender && (
             <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
-              {filters.target_audience_gender === 'female' ? 'Female' : 'Male'} audience ≥{' '}
+              Audiencia {filters.target_audience_gender === 'female' ? 'femenina' : 'masculina'} ≥{' '}
               {filters.min_target_gender_pct ?? 50}%
             </span>
           )}
           {filters.target_age_ranges && filters.target_age_ranges.length > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
-              Ages: {filters.target_age_ranges.join(', ')}
+              Edades: {filters.target_age_ranges.join(', ')}
             </span>
           )}
         </div>

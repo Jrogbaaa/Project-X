@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, forwardRef } from 'react';
-import { Download, FileSpreadsheet, Bookmark, CheckCircle, Tag, Sparkles, LayoutGrid, List } from 'lucide-react';
+import { Download, FileSpreadsheet, Bookmark, CheckCircle, Tag, Sparkles, LayoutGrid, List, ShieldCheck } from 'lucide-react';
 import { SearchResponse } from '@/types/search';
 import { InfluencerCard } from './InfluencerCard';
 import { InfluencerRow } from './InfluencerRow';
@@ -27,13 +27,13 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
 
   const handleExport = async (format: 'csv' | 'excel') => {
     setIsExporting(format);
-    onToast?.(`Exporting ${format.toUpperCase()}...`);
+    onToast?.(`Exportando ${format.toUpperCase()}...`);
     try {
       await downloadExport(searchResponse.search_id, format);
-      onToast?.(`${format.toUpperCase()} downloaded`);
+      onToast?.(`${format.toUpperCase()} descargado`);
     } catch (error) {
       console.error('Export failed:', error);
-      onToast?.('Export failed');
+      onToast?.('Error en la exportación');
     } finally {
       setIsExporting(null);
     }
@@ -42,13 +42,13 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const name = `Search: ${searchResponse.query.substring(0, 50)}`;
+      const name = `Búsqueda: ${searchResponse.query.substring(0, 50)}`;
       await saveSearch(searchResponse.search_id, name);
       setIsSaved(true);
-      onToast?.('Search saved');
+      onToast?.('Búsqueda guardada');
     } catch (error) {
       console.error('Save failed:', error);
-      onToast?.('Save failed');
+      onToast?.('Error al guardar');
     } finally {
       setIsSaving(false);
     }
@@ -65,13 +65,13 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="font-serif text-xl text-light-primary">Results</h2>
+              <h2 className="font-serif text-xl text-light-primary">Resultados</h2>
               <div className="h-px flex-1 bg-dark-border max-w-[100px]" />
             </div>
             <p className="text-sm text-light-tertiary">
-              <span className="font-mono text-light-secondary">{searchResponse.total_candidates}</span> candidates found,{' '}
-              <span className="font-mono text-light-secondary">{searchResponse.total_after_filter}</span> passed filters,{' '}
-              showing top <span className="font-mono text-accent-gold">{searchResponse.results.length}</span>
+              <span className="font-mono text-light-secondary">{searchResponse.total_candidates}</span> candidatos encontrados,{' '}
+              <span className="font-mono text-light-secondary">{searchResponse.total_after_filter}</span> pasaron filtros,{' '}
+              mostrando top <span className="font-mono text-accent-gold">{searchResponse.results.length}</span>
             </p>
           </div>
 
@@ -115,7 +115,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
                        disabled:opacity-50 transition-all"
           >
             <Download className="h-3.5 w-3.5" />
-            {isExporting === 'csv' ? 'Exporting...' : 'CSV'}
+            {isExporting === 'csv' ? 'Exportando...' : 'CSV'}
           </button>
 
           <button
@@ -127,7 +127,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
                        disabled:opacity-50 transition-all"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            {isExporting === 'excel' ? 'Exporting...' : 'Excel'}
+            {isExporting === 'excel' ? 'Exportando...' : 'Excel'}
           </button>
 
           <button
@@ -142,12 +142,12 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             {isSaved ? (
               <>
                 <CheckCircle className="h-3.5 w-3.5" />
-                Saved
+                Guardado
               </>
             ) : (
               <>
                 <Bookmark className="h-3.5 w-3.5" />
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? 'Guardando...' : 'Guardar'}
               </>
             )}
             </button>
@@ -164,7 +164,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-sm text-light-secondary">Detected brand:</span>
+                <span className="text-sm text-light-secondary">Marca detectada:</span>
                 <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs font-medium">
                   {searchResponse.parsed_query.brand_name}
                 </span>
@@ -191,6 +191,15 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
           </div>
         </div>
       )}
+
+      {/* Verified Badge Banner */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-metric-excellent/10 border border-metric-excellent/20">
+        <ShieldCheck className="w-5 h-5 text-metric-excellent flex-shrink-0" />
+        <p className="text-sm text-light-secondary">
+          <span className="font-medium text-metric-excellent">Perfiles verificados:</span>{' '}
+          Cada influencer ha sido analizado y validado para garantizar métricas reales y audiencias auténticas.
+        </p>
+      </div>
 
       {/* Results Grid/List */}
       {searchResponse.results.length > 0 ? (
@@ -225,10 +234,10 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             <Sparkles className="w-8 h-8 text-light-tertiary" />
           </div>
           <h3 className="font-serif text-xl text-light-primary mb-2">
-            No matches found
+            Sin resultados
           </h3>
           <p className="text-light-secondary text-sm max-w-md mx-auto">
-            No influencers matched your criteria. Try adjusting your filters or broadening your search query.
+            Ningún influencer coincide con tus criterios. Prueba a ajustar los filtros o ampliar tu búsqueda.
           </p>
         </div>
       )}
