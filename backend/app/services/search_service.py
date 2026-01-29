@@ -49,15 +49,26 @@ class SearchService:
         """
         try:
             # Step 1: Parse query with LLM
-            logger.info(f"Parsing query: {request.query[:100]}...")
+            logger.info(f"")
+            logger.info(f"╔══════════════════════════════════════════════════════════════════════════╗")
+            logger.info(f"║  🔎 NEW SEARCH REQUEST                                                   ║")
+            logger.info(f"╚══════════════════════════════════════════════════════════════════════════╝")
+            logger.info(f"")
+            logger.info(f"📝 Query: \"{request.query[:80]}{'...' if len(request.query) > 80 else ''}\"")
+            logger.info(f"")
+            logger.info(f"⏳ Step 1/6: Parsing query with AI...")
             parsed_query = await parse_search_query(request.query)
-            logger.info(f"Parsed query - topics: {parsed_query.campaign_topics}, keywords: {parsed_query.search_keywords}")
+            logger.info(f"   ✓ Brand: {parsed_query.brand_name or 'Not specified'}")
+            logger.info(f"   ✓ Topics: {parsed_query.campaign_topics or 'None'}")
+            logger.info(f"   ✓ Keywords: {parsed_query.search_keywords[:5] if parsed_query.search_keywords else 'None'}")
+            logger.info(f"   ✓ Target count: {parsed_query.target_count or 'Default'}")
 
             # Step 1b: Enrich with brand context from database
             brand_context = await self._get_brand_context(parsed_query.brand_name)
             if brand_context:
                 parsed_query = self._enrich_with_brand_context(parsed_query, brand_context)
-                logger.info(f"Enriched with brand context: {brand_context.name} ({brand_context.category})")
+                logger.info(f"   ✓ Brand context found: {brand_context.name} ({brand_context.category})")
+            logger.info(f"")
 
             # Merge with request filters if provided
             filters_applied = self._merge_filters(parsed_query, request.filters)
@@ -67,8 +78,9 @@ class SearchService:
             seen_usernames: Set[str] = set()
 
             # Step 2: Discover candidates from local DB (get large pool)
+            logger.info(f"⏳ Step 2/6: Discovering candidates from database...")
             if parsed_query.campaign_topics:
-                logger.info(f"Searching by interests: {parsed_query.campaign_topics}")
+                logger.info(f"   → Searching by interests: {parsed_query.campaign_topics}")
                 interest_matches = await self.cache_service.find_by_interests(
                     interests=parsed_query.campaign_topics,
                     exclude_interests=parsed_query.exclude_niches,
@@ -79,11 +91,11 @@ class SearchService:
                     if inf.username not in seen_usernames:
                         seen_usernames.add(inf.username)
                         candidates.append(inf)
-                logger.info(f"Found {len(interest_matches)} matches by interests")
+                logger.info(f"   ✓ Found {len(interest_matches)} matches by interests")
 
             # Step 3: Search by keywords in bio
             if len(candidates) < CANDIDATE_POOL_SIZE and parsed_query.search_keywords:
-                logger.info(f"Searching by keywords: {parsed_query.search_keywords}")
+                logger.info(f"   → Searching by keywords: {parsed_query.search_keywords[:5]}")
                 keyword_matches = await self.cache_service.search_by_keywords(
                     keywords=parsed_query.search_keywords[:5],
                     limit=CANDIDATE_POOL_SIZE
@@ -92,11 +104,11 @@ class SearchService:
                     if inf.username not in seen_usernames:
                         seen_usernames.add(inf.username)
                         candidates.append(inf)
-                logger.info(f"Found {len(keyword_matches)} matches by keywords")
+                logger.info(f"   ✓ Found {len(keyword_matches)} matches by keywords")
 
             # Step 4: Fall back to generic cache search
             if len(candidates) < CANDIDATE_POOL_SIZE:
-                logger.info("Falling back to generic cache search")
+                logger.info("   → Expanding search to full database...")
                 cached_influencers = await self.cache_service.find_matching(
                     min_credibility=0,  # Don't pre-filter, let verification handle it
                     min_spain_pct=0,
@@ -108,15 +120,17 @@ class SearchService:
                     if inf.username not in seen_usernames:
                         seen_usernames.add(inf.username)
                         candidates.append(inf)
-                logger.info(f"Total candidates after cache: {len(candidates)}")
+                logger.info(f"   ✓ Added {len(cached_influencers)} from expanded search")
 
             total_candidates = len(candidates)
-            logger.info(f"Total candidates from local DB: {total_candidates}")
+            logger.info(f"   📊 Total candidates discovered: {total_candidates}")
+            logger.info(f"")
 
             # ============================================================
             # Step 5: SOFT PRE-FILTER - Score candidates using cached data
             # Ranks candidates by likelihood of being a good match
             # ============================================================
+            logger.info(f"⏳ Step 3/6: Pre-filtering candidates by relevance...")
             # Use larger pool since we're not making API calls for now
             prefilter_limit = min(100, total_candidates)  # Up to 100 candidates for ranking
             prefiltered = self._soft_prefilter_candidates(
@@ -125,7 +139,8 @@ class SearchService:
                 parsed_query,
                 limit=prefilter_limit
             )
-            logger.info(f"Soft pre-filter: {len(prefiltered)} candidates selected (from {total_candidates})")
+            logger.info(f"   ✓ Selected top {len(prefiltered)} most relevant candidates")
+            logger.info(f"")
 
             # ============================================================
             # Step 6: SKIP API VERIFICATION (temporarily disabled)
@@ -135,13 +150,13 @@ class SearchService:
             # This allows imported influencers to pass through based on cached data
             verified_candidates = prefiltered
             failed_count = 0
-            logger.info(f"Using {len(verified_candidates)} candidates directly (API verification disabled)")
 
             # ============================================================
             # Step 7: Apply filters with lenient mode for imported data
             # Allows profiles without full metrics (credibility, etc.) to pass
             # Uses country fallback for Spain filter when audience_geography is missing
             # ============================================================
+            logger.info(f"⏳ Step 4/6: Applying hard filters...")
             filtered = self.filter_service.apply_filters(
                 verified_candidates,
                 parsed_query,
@@ -149,19 +164,22 @@ class SearchService:
                 lenient_mode=True  # LENIENT: Allow imported profiles without full metrics
             )
             total_after_filter = len(filtered)
-            logger.info(f"After filtering (lenient mode): {total_after_filter} candidates")
+            logger.info(f"")
 
             # Calculate rejection stats
             rejected_count = len(verified_candidates) - total_after_filter
 
             # Step 8: Rank survivors using 8-factor scoring
             # Enrich campaign_topics with search_keywords if empty (for niche matching)
+            logger.info(f"⏳ Step 5/6: Ranking {total_after_filter} candidates...")
             ranking_query = self._enrich_campaign_topics(parsed_query)
             ranked = self.ranking_service.rank_influencers(
                 filtered,
                 ranking_query,
                 request.ranking_weights
             )
+            logger.info(f"   ✓ Scored using 8-factor algorithm")
+            logger.info(f"")
 
             # Step 9: Limit to requested count with gender-split logic
             final_results = self._apply_gender_split_limit(
@@ -169,7 +187,25 @@ class SearchService:
                 parsed_query,
                 request.limit
             )
-            logger.info(f"Final results: {len(final_results)}")
+            
+            # Log top results
+            logger.info(f"⏳ Step 6/6: Selecting final results...")
+            logger.info(f"")
+            logger.info(f"╔══════════════════════════════════════════════════════════════════════════╗")
+            logger.info(f"║  🏆 TOP RESULTS                                                          ║")
+            logger.info(f"╚══════════════════════════════════════════════════════════════════════════╝")
+            for i, result in enumerate(final_results[:10], 1):
+                followers = result.raw_data.follower_count if result.raw_data else 0
+                followers_str = f"{followers/1_000_000:.1f}M" if followers >= 1_000_000 else f"{followers/1_000:.0f}K"
+                score = result.relevance_score
+                logger.info(f"   {i:2}. @{result.username:<20} | {followers_str:>6} followers | Score: {score:.2f}")
+            if len(final_results) > 10:
+                logger.info(f"   ... and {len(final_results) - 10} more")
+            logger.info(f"")
+            logger.info(f"═══════════════════════════════════════════════════════════════════════════")
+            logger.info(f"✅ SEARCH COMPLETE: Returning {len(final_results)} influencers")
+            logger.info(f"═══════════════════════════════════════════════════════════════════════════")
+            logger.info(f"")
 
             # Step 10: Save search to database
             search = await self._save_search(

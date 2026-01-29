@@ -30,6 +30,11 @@ class FilterConfig(BaseModel):
         default=None,
         description="Minimum 6-month follower growth rate"
     )
+    max_follower_count: int = Field(
+        default=2_500_000,
+        ge=0,
+        description="Maximum follower count (default 2.5M - excludes mega-celebrities)"
+    )
 
     # Gender audience filter
     target_audience_gender: Optional[str] = Field(

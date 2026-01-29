@@ -39,9 +39,13 @@ dist/
 # IDE
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 *~
+
+# Playwright MCP
+.playwright-mcp/
 
 # OS
 .DS_Store

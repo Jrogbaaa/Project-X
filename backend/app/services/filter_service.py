@@ -1,7 +1,10 @@
+import logging
 from typing import List, Any, Optional
 from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.search import FilterConfig
 from app.services.brand_intelligence_service import get_brand_intelligence_service
+
+logger = logging.getLogger(__name__)
 
 
 class FilterService:
@@ -29,44 +32,92 @@ class FilterService:
         """
         config = custom_config or self.config
         filtered = list(influencers)
+        initial_count = len(filtered)
+        
+        logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        logger.info(f"🔍 FILTERING {initial_count} candidates")
+        logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        # Filter by max follower count (exclude mega-celebrities) - HARD FILTER
+        max_followers = config.max_follower_count
+        before_count = len(filtered)
+        filtered = [
+            inf for inf in filtered
+            if self._passes_max_followers(inf, max_followers)
+        ]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Max followers (<{max_followers:,}): removed {removed} mega-celebrities")
+        else:
+            logger.info(f"   ✓ Max followers (<{max_followers:,}): all passed")
 
         # Filter by credibility (allow None in lenient mode)
         min_credibility = parsed_query.min_credibility_score or config.min_credibility_score
+        before_count = len(filtered)
         filtered = [
             inf for inf in filtered
             if self._passes_credibility(inf, min_credibility, lenient_mode)
         ]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Credibility (>={min_credibility}%): removed {removed}")
+        else:
+            logger.info(f"   ✓ Credibility (>={min_credibility}%): all passed")
 
         # Filter by Spain audience percentage (allow None in lenient mode)
         min_spain_pct = parsed_query.min_spain_audience_pct or config.min_spain_audience_pct
+        before_count = len(filtered)
         filtered = [
             inf for inf in filtered
             if self._passes_spain_pct(inf, min_spain_pct, lenient_mode)
         ]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Spain audience (>={min_spain_pct}%): removed {removed}")
+        else:
+            logger.info(f"   ✓ Spain audience (>={min_spain_pct}%): all passed")
 
         # Filter by engagement rate if specified (allow None in lenient mode)
         min_engagement = parsed_query.min_engagement_rate or config.min_engagement_rate
         if min_engagement:
             # Convert percentage to decimal if needed
             min_er = min_engagement / 100.0 if min_engagement > 1 else min_engagement
+            before_count = len(filtered)
             filtered = [
                 inf for inf in filtered
                 if self._passes_engagement(inf, min_er, lenient_mode)
             ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Engagement rate (>={min_er:.2%}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Engagement rate (>={min_er:.2%}): all passed")
 
         # Filter by follower growth rate if specified (allow None in lenient mode)
         if config.min_follower_growth_rate is not None:
+            before_count = len(filtered)
             filtered = [
                 inf for inf in filtered
                 if self._passes_growth_rate(inf, config.min_follower_growth_rate, lenient_mode)
             ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Growth rate (>={config.min_follower_growth_rate}%): removed {removed}")
+            else:
+                logger.info(f"   ✓ Growth rate (>={config.min_follower_growth_rate}%): all passed")
 
         # Filter by audience gender if specified
         if parsed_query.target_audience_gender and parsed_query.target_audience_gender != GenderFilter.ANY:
+            before_count = len(filtered)
             filtered = [
                 inf for inf in filtered
                 if self._matches_audience_gender(inf, parsed_query.target_audience_gender)
             ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Audience gender ({parsed_query.target_audience_gender}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Audience gender ({parsed_query.target_audience_gender}): all passed")
 
         # Filter out competitor ambassadors if brand context provided
         # This is a hard exclusion - known ambassadors of competitor brands are removed
@@ -75,12 +126,36 @@ class FilterService:
             exclude_ambassadors = getattr(config, 'exclude_competitor_ambassadors', True)
 
             if exclude_ambassadors:
+                before_count = len(filtered)
                 filtered = [
                     inf for inf in filtered
                     if not self._is_competitor_ambassador(inf, target_brand)
                 ]
+                removed = before_count - len(filtered)
+                if removed > 0:
+                    logger.info(f"   ❌ Competitor ambassadors: removed {removed}")
+
+        total_removed = initial_count - len(filtered)
+        logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        logger.info(f"📊 FILTER RESULT: {len(filtered)}/{initial_count} passed ({total_removed} removed)")
+        logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         return filtered
+    
+    def _passes_max_followers(self, influencer, max_val: int) -> bool:
+        """Check if influencer is under max follower count."""
+        count = self._get_follower_count(influencer)
+        if count is None:
+            return True  # Allow if unknown
+        return count <= max_val
+    
+    def _get_follower_count(self, influencer) -> Optional[int]:
+        """Extract follower count from influencer object."""
+        if hasattr(influencer, 'follower_count'):
+            return influencer.follower_count
+        if isinstance(influencer, dict):
+            return influencer.get('follower_count')
+        return None
 
     def _passes_credibility(self, influencer, min_val: float, lenient: bool) -> bool:
         """Check if influencer passes credibility filter."""

@@ -246,15 +246,34 @@ DEFAULT_MIN_SPAIN_AUDIENCE=60.0
 ### Running the Application
 
 ```bash
-# Backend (from project root)
-cd backend && source ../venv/bin/activate && uvicorn app.main:app --reload --port 8000
+# Run entire app with single command (from repo root)
+npm run dev
 
-# Frontend (from project root)
-cd frontend && npm run dev
+# Or run separately:
+npm run dev:backend   # Backend only
+npm run dev:frontend  # Frontend only
 
 # Database migrations
 cd backend && alembic upgrade head
 ```
+
+The unified `npm run dev` command uses `concurrently` to run both services in parallel with color-coded output:
+- `[backend]` - FastAPI/uvicorn on http://localhost:8000
+- `[frontend]` - Next.js on http://localhost:3000
+
+### Search Filtering
+
+The search pipeline applies these filters in order:
+
+| Filter | Default | Description |
+|--------|---------|-------------|
+| Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers) |
+| Credibility | ≥70% | Audience authenticity score |
+| Spain Audience | ≥60% | Minimum Spanish audience percentage |
+| Engagement Rate | Optional | Minimum interaction rate |
+| Growth Rate | Optional | 6-month follower growth |
+
+The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 
 ### Testing a Search
 
