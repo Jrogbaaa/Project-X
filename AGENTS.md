@@ -147,11 +147,11 @@ Each influencer has:
 | Service | File | Purpose |
 |---------|------|---------|
 | PrimeTag Client | `primetag_client.py` | API integration for influencer data with **exponential backoff retry** (3 retries, handles 429/5xx) |
-| Search Service | `search_service.py` | Main search orchestration with **Primetag verification gate** |
+| Search Service | `search_service.py` | Main search orchestration with **taxonomy-aware niche discovery** |
 | Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
 | Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
-| **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, niche relevance scoring |
-| Cache Service | `cache_service.py` | PostgreSQL-based influencer caching (24h TTL) + **bulk upsert & cache warming** |
+| **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, **niche taxonomy helpers** (`get_niche_relationships`, `get_all_excluded_niches`) |
+| Cache Service | `cache_service.py` | PostgreSQL-based caching + **`find_by_niche()` for taxonomy-aware discovery with hard exclusion** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
