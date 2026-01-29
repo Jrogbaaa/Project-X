@@ -137,10 +137,21 @@ Each influencer has:
 
 ### Key Flows
 
-1. **Paste brief** → LLM extracts brand/creative/niche context → PrimeTag API → Filter → 8-factor ranking → Display
+1. **Paste brief** → LLM extracts brand/creative/niche context → Brand lookup (DB or LLM fallback) → Niche-based discovery → Filter → 8-factor ranking → Display
 2. **Export search results** to CSV/Excel
 3. **Save searches** for later reference
 4. **Search history** tracking
+
+### Brand Recognition Flow
+
+When a brand is mentioned in a search query:
+
+1. **Database lookup first**: Check `brands` table for known brands
+2. **LLM fallback**: If not found, `brand_lookup_service.py` asks GPT-4o to identify the brand
+3. **Extract context**: Category, niche, competitors, suggested keywords
+4. **Enrich search**: Set `campaign_niche` for taxonomy-aware discovery
+
+This allows the system to handle **any brand** - even ones not in our database (e.g., "VIPS" restaurant → niche: "food").
 
 ### Backend Services (`backend/app/services/`)
 
@@ -151,6 +162,8 @@ Each influencer has:
 | Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
 | Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
 | **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, **niche taxonomy helpers** (`get_niche_relationships`, `get_all_excluded_niches`) |
+| **Brand Lookup** | `brand_lookup_service.py` | **LLM-based brand recognition** for unknown brands - extracts category, niche, competitors, keywords via GPT-4o |
+| Brand Context | `brand_context_service.py` | Database-backed brand context lookup with category keywords |
 | Cache Service | `cache_service.py` | PostgreSQL-based caching + **`find_by_niche()` for taxonomy-aware discovery with hard exclusion** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |

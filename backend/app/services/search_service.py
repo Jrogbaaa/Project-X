@@ -11,6 +11,7 @@ from app.services.filter_service import FilterService
 from app.services.ranking_service import RankingService
 from app.services.cache_service import CacheService
 from app.services.brand_context_service import BrandContextService, BrandContext
+from app.services.brand_lookup_service import get_brand_lookup_service, BrandLookupResult
 from app.schemas.search import SearchRequest, SearchResponse, FilterConfig, RankingWeights, VerificationStats
 from app.schemas.llm import ParsedSearchQuery
 from app.schemas.influencer import RankedInfluencer
@@ -63,11 +64,17 @@ class SearchService:
             logger.info(f"   ✓ Keywords: {parsed_query.search_keywords[:5] if parsed_query.search_keywords else 'None'}")
             logger.info(f"   ✓ Target count: {parsed_query.target_count or 'Default'}")
 
-            # Step 1b: Enrich with brand context from database
+            # Step 1b: Enrich with brand context from database (or LLM lookup)
             brand_context = await self._get_brand_context(parsed_query.brand_name)
             if brand_context:
                 parsed_query = self._enrich_with_brand_context(parsed_query, brand_context)
                 logger.info(f"   ✓ Brand context found: {brand_context.name} ({brand_context.category})")
+            
+            # Log the campaign niche (critical for influencer discovery)
+            if parsed_query.campaign_niche:
+                logger.info(f"   ✓ Campaign niche: {parsed_query.campaign_niche}")
+            else:
+                logger.warning(f"   ⚠ No campaign niche - will use fallback matching")
             logger.info(f"")
 
             # Merge with request filters if provided
@@ -684,7 +691,11 @@ class SearchService:
 
     async def _get_brand_context(self, brand_name: Optional[str]) -> Optional[BrandContext]:
         """
-        Look up brand context from the database.
+        Look up brand context from the database, falling back to LLM lookup.
+        
+        Flow:
+        1. Try database lookup first (fast, reliable for known brands)
+        2. If not found, use LLM to understand the brand (handles unknown brands)
         
         Args:
             brand_name: Brand name from parsed query
@@ -696,7 +707,38 @@ class SearchService:
             return None
         
         try:
-            return await self.brand_context_service.find_brand_context(brand_name)
+            # Try database lookup first
+            context = await self.brand_context_service.find_brand_context(brand_name)
+            if context:
+                return context
+            
+            # Fall back to LLM lookup for unknown brands
+            logger.info(f"Brand '{brand_name}' not in database, using LLM lookup...")
+            brand_lookup = get_brand_lookup_service()
+            lookup_result = await brand_lookup.lookup_brand(brand_name)
+            
+            if lookup_result and lookup_result.confidence >= 0.5:
+                # Convert LLM result to BrandContext
+                context = BrandContext(
+                    name=lookup_result.brand_name,
+                    category=lookup_result.category,
+                    description=lookup_result.description,
+                    suggested_keywords=lookup_result.suggested_keywords,
+                    related_brands=lookup_result.competitors[:3],  # Use competitors as related brands
+                )
+                # Store the niche for later use (attach to context as extra attribute)
+                context._llm_niche = lookup_result.niche
+                context._llm_confidence = lookup_result.confidence
+                
+                logger.info(
+                    f"   ✓ LLM brand lookup: {lookup_result.brand_name} -> "
+                    f"category={lookup_result.category}, niche={lookup_result.niche}"
+                )
+                return context
+            else:
+                logger.info(f"   ⚠ LLM could not identify brand: {brand_name}")
+                return None
+                
         except Exception as e:
             logger.warning(f"Failed to get brand context for '{brand_name}': {e}")
             return None
@@ -707,15 +749,16 @@ class SearchService:
         brand_context: BrandContext
     ) -> ParsedSearchQuery:
         """
-        Enrich parsed query with brand context from database.
+        Enrich parsed query with brand context from database or LLM lookup.
         
         Adds:
         - Category-based keywords to search_keywords
         - Category info to brand_category if not set
+        - campaign_niche from brand context (critical for influencer discovery)
         
         Args:
             parsed_query: The parsed search query
-            brand_context: Brand context from database
+            brand_context: Brand context from database or LLM lookup
             
         Returns:
             Enriched ParsedSearchQuery
@@ -735,6 +778,20 @@ class SearchService:
         # Update brand category if not set
         brand_category = parsed_query.brand_category or brand_context.category
         
+        # IMPORTANT: Set campaign_niche from brand context if not already set
+        # This is critical for niche-based influencer discovery (find_by_niche)
+        campaign_niche = parsed_query.campaign_niche
+        if not campaign_niche:
+            # Check if LLM lookup provided a niche
+            if hasattr(brand_context, '_llm_niche') and brand_context._llm_niche:
+                campaign_niche = brand_context._llm_niche
+                logger.info(f"   ✓ Setting campaign_niche from LLM lookup: {campaign_niche}")
+            # Fall back to mapping category to niche
+            elif brand_context.category:
+                brand_lookup = get_brand_lookup_service()
+                campaign_niche = brand_lookup.get_niche_for_category(brand_context.category)
+                logger.info(f"   ✓ Setting campaign_niche from category mapping: {brand_context.category} -> {campaign_niche}")
+        
         # Create updated query with enriched data
         # Note: ParsedSearchQuery is a Pydantic model, so we create a new instance
         return ParsedSearchQuery(
@@ -747,8 +804,10 @@ class SearchService:
             brand_handle=parsed_query.brand_handle,
             brand_category=brand_category,
             creative_concept=parsed_query.creative_concept,
+            creative_format=parsed_query.creative_format,
             creative_tone=parsed_query.creative_tone,
             creative_themes=parsed_query.creative_themes,
+            campaign_niche=campaign_niche,  # Now enriched from brand context
             campaign_topics=parsed_query.campaign_topics,
             exclude_niches=parsed_query.exclude_niches,
             content_themes=parsed_query.content_themes,
@@ -813,8 +872,10 @@ class SearchService:
             brand_handle=parsed_query.brand_handle,
             brand_category=parsed_query.brand_category,
             creative_concept=parsed_query.creative_concept,
+            creative_format=parsed_query.creative_format,
             creative_tone=parsed_query.creative_tone,
             creative_themes=parsed_query.creative_themes,
+            campaign_niche=parsed_query.campaign_niche,
             campaign_topics=niche_keywords[:5],  # Use top 5 keywords as topics
             exclude_niches=parsed_query.exclude_niches,
             content_themes=parsed_query.content_themes,
