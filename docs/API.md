@@ -14,6 +14,18 @@ This API powers an intelligent influencer discovery platform. Users can paste br
 - **Creative Concept Matching**: Score influencers based on alignment with campaign tone and themes
 - **Gender-Split Results**: Request specific counts per gender (e.g., "3 male, 3 female")
 - **Local-First Search**: Searches cached database first, uses PrimeTag API only for metric verification
+- **Verified Profiles**: All returned influencers are analyzed and validated for authentic metrics and audiences
+
+### Frontend UI
+
+The frontend interface is fully localized in **Spanish** for the Spanish market. Key UI elements include:
+
+- **Descubrimiento de Influencers**: Main header
+- **Perfiles verificados**: Trust badge showing all influencers are vetted
+- **Filtros**: Filter panel with credibility, Spain audience %, engagement, growth filters
+- **Resultados**: Results display with match scores and detailed breakdowns
+
+The UI displays a verification badge on results: *"Perfiles verificados: Cada influencer ha sido analizado y validado para garantizar métricas reales y audiencias auténticas."*
 
 ### Niche Matching - Key Concept
 
