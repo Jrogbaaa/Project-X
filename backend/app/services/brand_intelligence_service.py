@@ -381,12 +381,99 @@ class BrandIntelligenceService:
         primary_niche = max(niche_matches.keys(), key=lambda k: len(niche_matches[k]))
         return primary_niche, niche_matches[primary_niche]
 
+    def detect_influencer_niche_enhanced(
+        self,
+        interests: List[str],
+        bio: str = "",
+        post_content: Optional[Dict[str, Any]] = None
+    ) -> Tuple[Optional[str], List[str], float]:
+        """
+        Enhanced niche detection using post content from Apify scraping.
+
+        Uses hashtags and caption keywords from actual posts for more accurate
+        niche detection compared to just bio/interests.
+
+        Args:
+            interests: Coarse interest categories from PrimeTag
+            bio: Profile bio text
+            post_content: Aggregated post content from Apify scraping
+                {
+                    "top_hashtags": {"padel": 45, "fitness": 23},
+                    "caption_keywords": {"tournament": 12, "training": 5},
+                    "scrape_status": "complete"
+                }
+
+        Returns:
+            Tuple of (primary_niche_key, matched_keywords, confidence_score)
+        """
+        # Build searchable text from base data
+        searchable = bio.lower() + " " + " ".join(str(i).lower() for i in interests)
+
+        # Weight post content heavily if available and complete
+        has_post_data = (
+            post_content
+            and post_content.get("scrape_status") == "complete"
+            and post_content.get("top_hashtags")
+        )
+
+        if has_post_data:
+            hashtags = post_content.get("top_hashtags", {})
+            keywords = post_content.get("caption_keywords", {})
+
+            # Add hashtags to searchable text (weighted by frequency)
+            for tag, count in hashtags.items():
+                # Repeat high-frequency hashtags for weight
+                repeats = min(count // 3, 15)  # Max 15 repeats
+                searchable += f" {tag}" * repeats
+
+            # Add caption keywords (weighted)
+            for word, count in keywords.items():
+                repeats = min(count // 2, 10)  # Max 10 repeats
+                searchable += f" {word}" * repeats
+
+        # Match against niche taxonomy
+        niche_scores: Dict[str, Tuple[float, List[str]]] = {}
+
+        for niche_key, niche_data in self._niche_data.get('niches', {}).items():
+            niche_keywords = niche_data.get('keywords', [])
+            matched = [kw for kw in niche_keywords if kw.lower() in searchable]
+
+            if matched:
+                # Score based on number of matches relative to total keywords
+                base_score = len(matched) / max(len(niche_keywords), 1)
+
+                # Boost score if we have post data (more reliable signal)
+                if has_post_data:
+                    # Check how many hashtags match this niche's keywords
+                    hashtag_matches = sum(
+                        1 for tag in post_content.get("top_hashtags", {}).keys()
+                        if any(kw.lower() in tag.lower() for kw in niche_keywords)
+                    )
+                    hashtag_boost = min(hashtag_matches * 0.05, 0.2)
+                    base_score = min(base_score + hashtag_boost, 1.0)
+
+                niche_scores[niche_key] = (base_score, matched)
+
+        if not niche_scores:
+            return None, [], 0.0
+
+        # Return highest scoring niche
+        best_niche = max(niche_scores.keys(), key=lambda k: niche_scores[k][0])
+        score, matched = niche_scores[best_niche]
+
+        # Confidence is higher if we have post data
+        confidence = score * (1.3 if has_post_data else 1.0)
+        confidence = min(confidence, 1.0)
+
+        return best_niche, matched, confidence
+
     def check_niche_relevance(
         self,
         influencer_interests: List[str],
         influencer_bio: str,
         campaign_niche: str,
-        follower_count: int = 0
+        follower_count: int = 0,
+        post_content: Optional[Dict[str, Any]] = None
     ) -> NicheRelevanceResult:
         """
         Check how relevant an influencer's niche is to the campaign niche.
@@ -394,11 +481,15 @@ class BrandIntelligenceService:
         This solves the Messi/Padel problem: Messi (football) should score low
         for a padel campaign, even if he's famous.
 
+        When post_content is available (from Apify scraping), uses enhanced
+        detection based on actual post hashtags and captions for more accuracy.
+
         Args:
             influencer_interests: List of influencer's interests/categories
             influencer_bio: Influencer's bio text
             campaign_niche: Target niche for the campaign (e.g., "padel")
             follower_count: Influencer's follower count (for celebrity penalty)
+            post_content: Optional aggregated post content from Apify scraping
 
         Returns:
             NicheRelevanceResult with score and match details
@@ -415,17 +506,37 @@ class BrandIntelligenceService:
             result.details = f"Unknown campaign niche: {campaign_niche}"
             return result
 
-        # Detect influencer's niche
-        influencer_niche, matched_keywords = self.detect_influencer_niche(
-            influencer_interests, influencer_bio
+        # Use enhanced detection if post content is available
+        has_post_data = (
+            post_content
+            and post_content.get("scrape_status") == "complete"
+            and post_content.get("top_hashtags")
         )
+
+        if has_post_data:
+            influencer_niche, matched_keywords, confidence = self.detect_influencer_niche_enhanced(
+                influencer_interests, influencer_bio, post_content
+            )
+        else:
+            influencer_niche, matched_keywords = self.detect_influencer_niche(
+                influencer_interests, influencer_bio
+            )
+            confidence = 0.5 if influencer_niche else 0.0
+
         result.matched_keywords = matched_keywords
 
         # Check for exact match
         if influencer_niche == campaign_niche_info.key:
-            result.score = rules.get('exact_match_score', 0.95)
+            # Higher score with post data (more confident)
+            base_score = rules.get('exact_match_score', 0.95)
+            if has_post_data and confidence > 0.5:
+                result.score = min(base_score + 0.03, 1.0)  # Slight boost for post-backed match
+            else:
+                result.score = base_score
             result.match_type = "exact"
             result.details = f"Exact niche match: {influencer_niche}"
+            if has_post_data:
+                result.details += " (confirmed by post content)"
             return result
 
         # Check for related niche
@@ -448,13 +559,23 @@ class BrandIntelligenceService:
                 result.score = rules.get('celebrity_mismatch_penalty', 0.15)
                 result.details += f" (celebrity with {follower_count:,} followers)"
 
+            # Additional confidence in conflict if we have post data
+            if has_post_data:
+                result.details += " - conflict confirmed by post analysis"
+
             return result
 
         # Check if influencer has ANY matching keywords for campaign niche
+        # Include post content in searchable text if available
         campaign_keywords = campaign_niche_info.keywords
         searchable = influencer_bio.lower() + " " + " ".join(
             str(i).lower() for i in influencer_interests
         )
+
+        # Add post hashtags to searchable if available
+        if has_post_data:
+            hashtags = post_content.get("top_hashtags", {})
+            searchable += " " + " ".join(hashtags.keys())
 
         direct_matches = [kw for kw in campaign_keywords if kw.lower() in searchable]
         if direct_matches:

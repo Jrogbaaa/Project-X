@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, BigInteger, Float, Boolean, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 
@@ -53,6 +54,13 @@ class Influencer(Base):
     brand_mentions = Column(JSONB, nullable=True)  # ["nike", "adidas"]
     country = Column(String(100), nullable=True)  # "Spain"
 
+    # Post content aggregated (from Apify scraping)
+    # Structure: {"top_hashtags": {...}, "caption_keywords": {...}, "scrape_status": "complete"}
+    post_content_aggregated = Column(JSONB, nullable=True)
+
+    # Relationship to posts
+    posts = relationship("InfluencerPost", back_populates="influencer", cascade="all, delete-orphan")
+
     # Cache metadata
     cached_at = Column(DateTime(timezone=True), server_default=func.now())
     cache_expires_at = Column(DateTime(timezone=True), nullable=True)
@@ -95,5 +103,6 @@ class Influencer(Base):
             "interests": self.interests or [],
             "brand_mentions": self.brand_mentions or [],
             "country": self.country,
+            "post_content_aggregated": self.post_content_aggregated,
             "cached_at": self.cached_at.isoformat() if self.cached_at else None,
         }

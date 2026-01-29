@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(..., validation_alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-2024-08-06")
 
+    # Apify API (Instagram content scraping)
+    apify_api_token: str = Field(default="", validation_alias="APIFY_API_TOKEN")
+    apify_posts_per_influencer: int = Field(default=6)  # ~$55 for 4000 influencers
+    apify_batch_size: int = Field(default=50)
+
     # Cache settings
     cache_ttl_seconds: int = Field(default=900)  # 15 minutes
     influencer_cache_hours: int = Field(default=24)

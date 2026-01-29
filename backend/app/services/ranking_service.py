@@ -314,7 +314,8 @@ class RankingService:
                      'is_verified', 'follower_count', 'credibility_score', 'engagement_rate',
                      'follower_growth_rate_6m', 'avg_likes', 'avg_comments',
                      'audience_genders', 'audience_age_distribution', 'audience_geography',
-                     'interests', 'brand_mentions', 'primetag_encrypted_username']:
+                     'interests', 'brand_mentions', 'primetag_encrypted_username',
+                     'post_content_aggregated']:
             if hasattr(obj, attr):
                 data[attr] = getattr(obj, attr)
         return data
@@ -453,6 +454,7 @@ class RankingService:
         - Uses brand intelligence service for niche taxonomy
         - Detects conflicting niches (football influencer for padel campaign)
         - Applies celebrity penalty for large accounts in wrong niche
+        - Uses post content (hashtags, captions) from Apify for enhanced detection
 
         Returns:
             Tuple of (score, warning_message):
@@ -462,6 +464,7 @@ class RankingService:
         interests = self._get_value(influencer, 'interests', [])
         bio = self._get_value(influencer, 'bio', '') or ''
         follower_count = self._get_value(influencer, 'follower_count', 0)
+        post_content = self._get_value(influencer, 'post_content_aggregated', None)
 
         warning = None
 
@@ -472,7 +475,8 @@ class RankingService:
                 influencer_interests=interests,
                 influencer_bio=bio,
                 campaign_niche=campaign_niche,
-                follower_count=follower_count
+                follower_count=follower_count,
+                post_content=post_content  # Pass post content for enhanced detection
             )
 
             if relevance.match_type == "conflicting" or relevance.is_celebrity_mismatch:
