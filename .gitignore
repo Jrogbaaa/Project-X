@@ -68,3 +68,10 @@ credentials.json
 token.json
 *.pem
 *.key
+
+# Apify data exports
+dataset_instagram-scraper_*.json
+
+# Data files (large exports)
+influencers_enriched*.csv
+brand affinity*.csv
