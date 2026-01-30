@@ -47,6 +47,11 @@ dist/
 # Playwright MCP
 .playwright-mcp/
 
+# Playwright E2E tests
+playwright-report/
+test-results/
+playwright/.cache/
+
 # OS
 .DS_Store
 Thumbs.db

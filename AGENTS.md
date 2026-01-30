@@ -321,6 +321,51 @@ The unified `npm run dev` command uses `concurrently` to run both services in pa
 - `[backend]` - FastAPI/uvicorn on http://localhost:8000
 - `[frontend]` - Next.js on http://localhost:3000
 
+### CI/CD & GitHub Actions
+
+The project uses GitHub Actions for continuous integration with E2E tests as the final quality gate.
+
+**Workflow:** `.github/workflows/ci.yml`
+
+```
+push/PR → Lint ─┬─→ Build → E2E Tests (Quality Gate)
+                │
+        Test Frontend (Vitest)
+                │
+        Test Backend (pytest)
+```
+
+**Jobs:**
+| Job | Description |
+|-----|-------------|
+| `lint` | ESLint on frontend code |
+| `test-frontend` | Vitest unit tests |
+| `test-backend` | pytest unit tests (excludes heavy e2e/reflection tests) |
+| `build` | Verifies Next.js build succeeds |
+| `e2e` | Playwright browser tests against running app |
+
+**Required GitHub Secrets** (Settings → Secrets → Actions):
+- `OPENAI_API_KEY` - For backend tests
+- `PRIMETAG_API_KEY` - For backend tests
+
+**Running E2E Tests Locally:**
+
+```bash
+# Run Playwright E2E tests (auto-starts servers)
+cd frontend && npm run test:e2e
+
+# Run with browser visible
+npm run test:e2e:headed
+
+# Run with Playwright UI
+npm run test:e2e:ui
+```
+
+**E2E Test Files** (`frontend/e2e/`):
+- `health.spec.ts` - App loads, API responds
+- `search.spec.ts` - Search flow works end-to-end
+- `accessibility.spec.ts` - Basic a11y checks
+
 ### Search Filtering
 
 The search pipeline applies these filters in order:
