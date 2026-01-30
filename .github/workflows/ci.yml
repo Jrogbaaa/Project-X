@@ -186,6 +186,8 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_db
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PRIMETAG_API_KEY: ${{ secrets.PRIMETAG_API_KEY }}
         run: |
           alembic upgrade head
 
