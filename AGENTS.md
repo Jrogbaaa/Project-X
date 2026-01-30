@@ -243,6 +243,41 @@ Test coverage includes:
 - InfluencerCard: username display, MediaKit links, copy functionality, metrics
 - InfluencerRow: compact view, all essential data visible without expansion
 
+### Backend Testing
+
+The backend has a comprehensive pytest-based test suite with **LLM reflection** for validating search result quality.
+
+**Test Files:**
+- `backend/tests/test_filter_service.py` - 21 unit tests for filter logic
+- `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
+- `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
+- `backend/tests/test_briefs.py` - 20 test briefs covering various scenarios
+- `backend/tests/reflection_service.py` - LLM-powered result validation
+
+```bash
+# Run unit tests (fast, ~0.1s)
+cd backend && pytest tests/test_filter_service.py tests/test_ranking_service.py -v
+
+# Run a single E2E test with reflection (~40s due to LLM calls)
+cd backend && pytest tests/test_search_e2e.py::TestNichePrecision::test_padel_excludes_football -v -s
+
+# Run all tests
+cd backend && pytest tests/ -v
+```
+
+**LLM Reflection Service:**
+The reflection service uses GPT-4o to analyze if search results actually match the original brief:
+- Evaluates niche alignment, brand fit, and creative fit
+- Identifies excluded niche violations (e.g., football influencers for padel campaign)
+- Detects brand conflicts (e.g., Adidas ambassador for Nike campaign)
+- Returns structured verdict: excellent/good/acceptable/poor/fail
+
+**Test Brief Categories:**
+1. **Niche Precision** - Padel brand (excludes football), IKEA (home decor), fitness supplement
+2. **Brand Matching** - Unknown brands (LLM lookup), competitor exclusion (Nike vs Adidas)
+3. **Creative Fit** - Documentary style, luxury aesthetic, humorous/casual
+4. **Edge Cases** - Gender splits, micro-influencers, multiple niche exclusions
+
 ### Database Schema
 
 | Table | Purpose |

@@ -86,6 +86,20 @@ class InfluencerData(BaseModel):
         default_factory=list,
         description="Brands the influencer has mentioned/partnered with"
     )
+    
+    # Niche detection data (from Apify scraping)
+    primary_niche: Optional[str] = Field(
+        default=None,
+        description="Detected primary content niche (e.g., 'padel', 'fitness', 'fashion')"
+    )
+    niche_confidence: Optional[float] = Field(
+        default=None,
+        description="Confidence score for niche detection (0-1)"
+    )
+    detected_brands: List[str] = Field(
+        default_factory=list,
+        description="Brands detected in post content (more accurate than bio-based brand_mentions)"
+    )
 
     # Brand/Niche warnings (populated during ranking)
     brand_warning_type: Optional[str] = Field(

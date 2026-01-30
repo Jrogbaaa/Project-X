@@ -139,6 +139,10 @@ class RankingService:
                 audience_geography=raw_data.get('audience_geography') or {},
                 interests=raw_data.get('interests') or [],
                 brand_mentions=raw_data.get('brand_mentions') or [],
+                # Niche detection data from Apify scrape
+                primary_niche=raw_data.get('primary_niche'),
+                niche_confidence=raw_data.get('niche_confidence'),
+                detected_brands=raw_data.get('detected_brands') or [],
                 # Add warning fields
                 brand_warning_type=brand_warning_type,
                 brand_warning_message=brand_warning_message,
