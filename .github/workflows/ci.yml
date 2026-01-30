@@ -126,13 +126,6 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/.next
-          retention-days: 1
-
   # ============================================
   # E2E TESTS - Final quality gate
   # ============================================
@@ -185,11 +178,9 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/.next
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
 
       - name: Run database migrations
         working-directory: backend
