@@ -1,12 +1,9 @@
 import logging
 import sys
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.config import get_settings
-from app.core.database import init_db
-from app.api.routes import search_router, influencers_router, exports_router, health_router, brands_router
 
 
 def setup_logging():
@@ -38,19 +35,24 @@ def setup_logging():
 setup_logging()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events."""
-    # Startup
-    await init_db()
-    yield
-    # Shutdown
-    pass
-
-
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    # Import here to avoid circular imports and module-level execution issues
+    from app.config import get_settings
+    from app.core.database import init_db
+    from app.api.routes import search_router, influencers_router, exports_router, health_router, brands_router
+    
     settings = get_settings()
+    is_vercel = os.environ.get("VERCEL", False)
+
+    # Lifespan for non-serverless environments (local dev)
+    # Vercel doesn't support lifespan events
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Application lifespan events (only for local dev)."""
+        if not is_vercel:
+            await init_db()
+        yield
 
     app = FastAPI(
         title="Influencer Discovery Tool",
@@ -71,16 +73,12 @@ def create_app() -> FastAPI:
         3. Export results or save the search
         """,
         version="1.0.0",
-        lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        lifespan=None if is_vercel else lifespan,
+        docs_url="/api/docs" if is_vercel else "/docs",
+        redoc_url="/api/redoc" if is_vercel else "/redoc",
     )
 
-    # Configure CORS - allow Vercel domains and configured origins
-    # In production on Vercel, requests come from same domain so CORS is less strict
-    import os
-    is_vercel = os.environ.get("VERCEL", False)
-    
+    # Configure CORS - allow all origins on Vercel
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"] if is_vercel else settings.cors_origins_list,
@@ -99,12 +97,17 @@ def create_app() -> FastAPI:
     return app
 
 
-# Create the application instance
-app = create_app()
+# Only create app instance when running directly (not when imported by Vercel)
+# Vercel's api/index.py will call create_app() directly
+if not os.environ.get("VERCEL"):
+    app = create_app()
 
 
 if __name__ == "__main__":
     import uvicorn
+    # Ensure app exists for direct execution
+    if "app" not in dir():
+        app = create_app()
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
