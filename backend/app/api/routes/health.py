@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+import traceback
+import os
 
 from app.core.database import get_db
 from app.config import get_settings
@@ -15,21 +18,32 @@ async def health_check():
 
 
 @router.get("/health/ready")
-async def readiness_check(db: AsyncSession = Depends(get_db)):
+async def readiness_check():
     """
     Readiness check - verifies database connectivity.
     """
     try:
-        # Test database connection
-        await db.execute(text("SELECT 1"))
-        db_status = "connected"
+        # Import here to catch any import errors
+        from app.core.database import get_session_maker
+        
+        session_maker = get_session_maker()
+        async with session_maker() as db:
+            await db.execute(text("SELECT 1"))
+            db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
+        # Log full traceback for debugging
+        print(f"Database connection error: {traceback.format_exc()}")
 
-    settings = get_settings()
+    try:
+        settings = get_settings()
+        debug = settings.debug
+    except Exception as e:
+        debug = False
 
-    return {
+    return JSONResponse(content={
         "status": "ready" if db_status == "connected" else "not_ready",
         "database": db_status,
-        "debug": settings.debug
-    }
+        "debug": debug,
+        "vercel": os.environ.get("VERCEL", "false")
+    })
