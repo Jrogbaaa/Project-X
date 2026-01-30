@@ -89,8 +89,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Include routers
-    app.include_router(health_router)
+    # Include routers - all under /api prefix for Vercel routing
+    app.include_router(health_router, prefix="/api")
     app.include_router(search_router, prefix="/api")
     app.include_router(influencers_router, prefix="/api")
     app.include_router(exports_router, prefix="/api")

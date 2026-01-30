@@ -9,12 +9,23 @@ ENV_FILE_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 def clean_database_url(url: str) -> str:
-    """Clean database URL for asyncpg compatibility."""
+    """Clean database URL for asyncpg compatibility.
+    
+    Neon uses sslmode=require but asyncpg needs ssl=require.
+    We remove unsupported params and add ssl=require for Neon connections.
+    """
     # Remove sslmode and channel_binding params which asyncpg doesn't support
+    needs_ssl = False
     if "?" in url:
         base_url, params = url.split("?", 1)
         param_pairs = params.split("&")
+        # Check if SSL was requested
+        needs_ssl = any(p.startswith("sslmode=require") for p in param_pairs)
+        # Filter out unsupported params
         supported_params = [p for p in param_pairs if not p.startswith("sslmode=") and not p.startswith("channel_binding=")]
+        # Add ssl=require for asyncpg if needed
+        if needs_ssl:
+            supported_params.append("ssl=require")
         if supported_params:
             return base_url + "?" + "&".join(supported_params)
         return base_url
