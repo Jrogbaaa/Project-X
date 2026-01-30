@@ -1,11 +1,15 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, computed_field
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 from pathlib import Path
+import os
 
 # Get the path to the .env file (in project root, one level up from backend)
+# On Vercel, env vars are injected directly, so .env file is optional
 ENV_FILE_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
+if not ENV_FILE_PATH.exists():
+    ENV_FILE_PATH = None  # Don't fail if no .env file (Vercel injects env vars)
 
 
 def clean_database_url(url: str) -> str:
@@ -96,7 +100,7 @@ class Settings(BaseSettings):
         return origins
 
     model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE_PATH),
+        env_file=str(ENV_FILE_PATH) if ENV_FILE_PATH else None,
         env_file_encoding="utf-8",
         extra="ignore"
     )
