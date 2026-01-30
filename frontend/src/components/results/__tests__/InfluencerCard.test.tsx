@@ -68,7 +68,7 @@ describe('InfluencerCard', () => {
     it('renders the follower count formatted correctly', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
       expect(screen.getByText('150.0K')).toBeInTheDocument();
-      expect(screen.getByText('followers')).toBeInTheDocument();
+      expect(screen.getByText(/seguidores/)).toBeInTheDocument();
     });
 
     it('renders the rank position', () => {
@@ -139,7 +139,7 @@ describe('InfluencerCard', () => {
 
     it('renders Profile link', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      const profileLink = screen.getByRole('link', { name: /profile/i });
+      const profileLink = screen.getByRole('link', { name: /perfil/i });
       expect(profileLink).toBeInTheDocument();
       expect(profileLink).toHaveAttribute('href', 'https://instagram.com/testuser');
       expect(profileLink).toHaveAttribute('target', '_blank');
@@ -147,7 +147,7 @@ describe('InfluencerCard', () => {
 
     it('generates fallback profile URL when not provided', () => {
       render(<InfluencerCard influencer={createMockInfluencer({ profile_url: undefined })} />);
-      const profileLink = screen.getByRole('link', { name: /profile/i });
+      const profileLink = screen.getByRole('link', { name: /perfil/i });
       expect(profileLink).toHaveAttribute('href', 'https://instagram.com/testuser');
     });
   });
@@ -155,7 +155,7 @@ describe('InfluencerCard', () => {
   describe('Copy Functionality', () => {
     it('renders copy button for username', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      const copyButton = screen.getByRole('button', { name: /copy username/i });
+      const copyButton = screen.getByRole('button', { name: /copiar usuario/i });
       expect(copyButton).toBeInTheDocument();
     });
 
@@ -163,18 +163,18 @@ describe('InfluencerCard', () => {
       const mockOnCopy = vi.fn();
       render(<InfluencerCard influencer={createMockInfluencer()} onCopy={mockOnCopy} />);
       
-      const copyButton = screen.getByRole('button', { name: /copy username/i });
+      const copyButton = screen.getByRole('button', { name: /copiar usuario/i });
       fireEvent.click(copyButton);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('@testuser');
       });
-      expect(mockOnCopy).toHaveBeenCalledWith('Username copied');
+      expect(mockOnCopy).toHaveBeenCalledWith('Usuario copiado');
     });
 
     it('renders copy button for MediaKit URL when available', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      const copyButton = screen.getByRole('button', { name: /copy mediakit url/i });
+      const copyButton = screen.getByRole('button', { name: /copiar url mediakit/i });
       expect(copyButton).toBeInTheDocument();
     });
 
@@ -182,27 +182,27 @@ describe('InfluencerCard', () => {
       const mockOnCopy = vi.fn();
       render(<InfluencerCard influencer={createMockInfluencer()} onCopy={mockOnCopy} />);
       
-      const copyButton = screen.getByRole('button', { name: /copy mediakit url/i });
+      const copyButton = screen.getByRole('button', { name: /copiar url mediakit/i });
       fireEvent.click(copyButton);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://primetag.com/mediakit/testuser');
       });
-      expect(mockOnCopy).toHaveBeenCalledWith('MediaKit URL copied');
+      expect(mockOnCopy).toHaveBeenCalledWith('URL MediaKit copiada');
     });
   });
 
   describe('Expandable Details', () => {
     it('renders expand button', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      const expandButton = screen.getByRole('button', { name: /view details/i });
+      const expandButton = screen.getByRole('button', { name: /ver detalles/i });
       expect(expandButton).toBeInTheDocument();
     });
 
     it('shows bio when expanded', async () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
       
-      const expandButton = screen.getByRole('button', { name: /view details/i });
+      const expandButton = screen.getByRole('button', { name: /ver detalles/i });
       fireEvent.click(expandButton);
 
       await waitFor(() => {
@@ -214,18 +214,18 @@ describe('InfluencerCard', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
       
       // Expand
-      const expandButton = screen.getByRole('button', { name: /view details/i });
+      const expandButton = screen.getByRole('button', { name: /ver detalles/i });
       fireEvent.click(expandButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/hide details/i)).toBeInTheDocument();
+        expect(screen.getByText(/ocultar detalles/i)).toBeInTheDocument();
       });
 
       // Collapse
-      fireEvent.click(screen.getByRole('button', { name: /hide details/i }));
+      fireEvent.click(screen.getByRole('button', { name: /ocultar detalles/i }));
       
       await waitFor(() => {
-        expect(screen.getByText(/view details/i)).toBeInTheDocument();
+        expect(screen.getByText(/ver detalles/i)).toBeInTheDocument();
       });
     });
   });
@@ -238,8 +238,7 @@ describe('InfluencerCard', () => {
 
     it('renders average comments', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      // The footer contains "150" for avg_comments (below 1000, so rendered as-is)
-      // Look for the footer area which contains the pattern
+      // The footer contains "likes," for avg_likes
       const footer = screen.getByText(/likes,/);
       expect(footer).toBeInTheDocument();
       // Comments value is 150, check it's in the document

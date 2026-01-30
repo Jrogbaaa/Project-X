@@ -63,7 +63,7 @@ describe('InfluencerRow', () => {
     it('renders the follower count formatted correctly', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
       expect(screen.getByText('250.0K')).toBeInTheDocument();
-      expect(screen.getByText(/followers/)).toBeInTheDocument();
+      expect(screen.getByText(/seguidores/)).toBeInTheDocument();
     });
 
     it('renders the rank position', () => {
@@ -123,7 +123,7 @@ describe('InfluencerRow', () => {
 
     it('renders Profile link', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
-      const profileLink = screen.getByRole('link', { name: /profile/i });
+      const profileLink = screen.getByRole('link', { name: /perfil/i });
       expect(profileLink).toBeInTheDocument();
       expect(profileLink).toHaveAttribute('href', 'https://instagram.com/rowuser');
       expect(profileLink).toHaveAttribute('target', '_blank');
@@ -131,7 +131,7 @@ describe('InfluencerRow', () => {
 
     it('generates fallback profile URL when not provided', () => {
       render(<InfluencerRow influencer={createMockInfluencer({ profile_url: undefined })} />);
-      const profileLink = screen.getByRole('link', { name: /profile/i });
+      const profileLink = screen.getByRole('link', { name: /perfil/i });
       expect(profileLink).toHaveAttribute('href', 'https://instagram.com/rowuser');
     });
   });
@@ -139,7 +139,7 @@ describe('InfluencerRow', () => {
   describe('Copy Functionality', () => {
     it('renders copy button for username', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
-      const copyButton = screen.getByRole('button', { name: /copy username/i });
+      const copyButton = screen.getByRole('button', { name: /copiar usuario/i });
       expect(copyButton).toBeInTheDocument();
     });
 
@@ -147,18 +147,18 @@ describe('InfluencerRow', () => {
       const mockOnCopy = vi.fn();
       render(<InfluencerRow influencer={createMockInfluencer()} onCopy={mockOnCopy} />);
       
-      const copyButton = screen.getByRole('button', { name: /copy username/i });
+      const copyButton = screen.getByRole('button', { name: /copiar usuario/i });
       fireEvent.click(copyButton);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('@rowuser');
       });
-      expect(mockOnCopy).toHaveBeenCalledWith('Username copied');
+      expect(mockOnCopy).toHaveBeenCalledWith('Usuario copiado');
     });
 
     it('renders copy button for MediaKit URL when available', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
-      const copyButton = screen.getByRole('button', { name: /copy mediakit url/i });
+      const copyButton = screen.getByRole('button', { name: /copiar url mediakit/i });
       expect(copyButton).toBeInTheDocument();
     });
 
@@ -166,13 +166,13 @@ describe('InfluencerRow', () => {
       const mockOnCopy = vi.fn();
       render(<InfluencerRow influencer={createMockInfluencer()} onCopy={mockOnCopy} />);
       
-      const copyButton = screen.getByRole('button', { name: /copy mediakit url/i });
+      const copyButton = screen.getByRole('button', { name: /copiar url mediakit/i });
       fireEvent.click(copyButton);
 
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://primetag.com/mediakit/rowuser');
       });
-      expect(mockOnCopy).toHaveBeenCalledWith('MediaKit URL copied');
+      expect(mockOnCopy).toHaveBeenCalledWith('URL MediaKit copiada');
     });
   });
 
@@ -209,7 +209,7 @@ describe('InfluencerRow', () => {
       expect(screen.getByText('78%')).toBeVisible(); // Match score
       expect(screen.getByText('82%')).toBeVisible(); // Credibility
       expect(screen.getByText('2.8%')).toBeVisible(); // Engagement
-      expect(screen.getByRole('link', { name: /profile/i })).toBeVisible();
+      expect(screen.getByRole('link', { name: /perfil/i })).toBeVisible();
     });
 
     it('displays MediaKit link without requiring expansion', () => {
