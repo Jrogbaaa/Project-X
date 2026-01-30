@@ -15,25 +15,34 @@ if not ENV_FILE_PATH.exists():
 def clean_database_url(url: str) -> str:
     """Clean database URL for asyncpg compatibility.
     
-    Neon uses sslmode=require but asyncpg needs ssl=require.
-    We remove unsupported params and add ssl=require for Neon connections.
+    Neon uses sslmode=require but asyncpg doesn't support URL params for SSL.
+    We remove unsupported params - SSL is configured separately in database.py.
     """
-    # Remove sslmode and channel_binding params which asyncpg doesn't support
-    needs_ssl = False
     if "?" in url:
         base_url, params = url.split("?", 1)
         param_pairs = params.split("&")
-        # Check if SSL was requested
-        needs_ssl = any(p.startswith("sslmode=require") for p in param_pairs)
-        # Filter out unsupported params
-        supported_params = [p for p in param_pairs if not p.startswith("sslmode=") and not p.startswith("channel_binding=")]
-        # Add ssl=require for asyncpg if needed
-        if needs_ssl:
-            supported_params.append("ssl=require")
+        # Filter out params that asyncpg doesn't support in URL
+        supported_params = [
+            p for p in param_pairs 
+            if not p.startswith("sslmode=") 
+            and not p.startswith("channel_binding=")
+            and not p.startswith("ssl=")
+        ]
         if supported_params:
             return base_url + "?" + "&".join(supported_params)
         return base_url
     return url
+
+
+def needs_ssl(url: str) -> bool:
+    """Check if the database URL requires SSL."""
+    # Neon URLs always need SSL
+    if "neon.tech" in url:
+        return True
+    # Check for explicit sslmode=require
+    if "sslmode=require" in url:
+        return True
+    return False
 
 
 class Settings(BaseSettings):
