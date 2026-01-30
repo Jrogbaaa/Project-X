@@ -1,6 +1,8 @@
 # Influencer Discovery API Documentation
 
-Base URL: `http://localhost:8000`
+Base URL: `http://localhost:8000` (local) | `https://project-x-three-sage.vercel.app/api` (production)
+
+> **Last Updated:** January 30, 2026
 
 ## Overview
 
