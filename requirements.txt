@@ -3,7 +3,6 @@
 
 # FastAPI and server
 fastapi==0.109.2
-mangum==0.17.0
 python-multipart==0.0.9
 
 # Database
