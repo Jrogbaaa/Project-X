@@ -1,17 +1,27 @@
 """
 Vercel Serverless Function entry point for FastAPI backend.
-Vercel natively supports ASGI apps - just export the FastAPI app directly.
 """
-import sys
-import os
-from pathlib import Path
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-# Add backend to Python path so imports work
-backend_path = Path(__file__).parent.parent / "backend"
-sys.path.insert(0, str(backend_path))
+# Create a minimal test app first
+app = FastAPI(title="Influencer Discovery API")
 
-# Mark as Vercel environment
-os.environ["VERCEL"] = "1"
+# Add CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Import the FastAPI app - Vercel handles ASGI natively
-from app.main import app
+
+@app.get("/api/health")
+async def health():
+    return {"status": "healthy", "environment": "vercel"}
+
+
+@app.get("/api/test")
+async def test():
+    return {"message": "API is working!"}
