@@ -1,27 +1,20 @@
 """
 Vercel Serverless Function entry point for FastAPI backend.
 """
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+import os
+from pathlib import Path
 
-# Create a minimal test app first
-app = FastAPI(title="Influencer Discovery API")
+# Mark as Vercel environment FIRST before any other imports
+os.environ["VERCEL"] = "1"
 
-# Add CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add backend to Python path so imports work
+backend_path = Path(__file__).parent.parent / "backend"
+sys.path.insert(0, str(backend_path))
 
+# Import FastAPI app from backend
+# The create_app() function is used to avoid module-level side effects
+from app.main import create_app
 
-@app.get("/api/health")
-async def health():
-    return {"status": "healthy", "environment": "vercel"}
-
-
-@app.get("/api/test")
-async def test():
-    return {"message": "API is working!"}
+# Create the app instance
+app = create_app()
