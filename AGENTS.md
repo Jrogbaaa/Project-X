@@ -99,9 +99,17 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 
 **Discovery Pipeline:**
 1. LLM extracts `campaign_niche` and `exclude_niches` from the brief
-2. `find_by_niche()` queries by `primary_niche` column (exact + related matches)
-3. Conflicting niches are **hard-excluded** at database level (not just penalized)
-4. Falls back to `interests` field matching when `primary_niche` is not set
+2. **Creative Matching**: LLM also outputs `discovery_interests` - PrimeTag interest categories that would be good fits (e.g., padel brand → ["Sports", "Tennis", "Fitness"])
+3. `find_by_niche()` queries by `primary_niche` column (exact + related matches)
+4. **Creative Discovery**: If niche matches are sparse (<20 results), expands using `discovery_interests`
+5. Conflicting niches are **hard-excluded** at database level (not just penalized)
+6. Falls back to `interests` field matching when `primary_niche` is not set
+
+**Creative Matching Example:**
+- Brief: "Find influencers for Bullpadel, a padel equipment brand"
+- LLM extracts: `campaign_niche: "padel"`, `discovery_interests: ["Sports", "Tennis", "Fitness"]`, `exclude_interests: ["Soccer"]`
+- Reasoning: "Padel is a racket sport. Tennis and fitness influencers align authentically. Avoid soccer players."
+- Result: Even without literal "padel" influencers in the database, finds relevant fitness/tennis creators
 
 Each influencer has:
 - `primary_niche`: Detected niche from post content analysis (e.g., "padel", "football")
@@ -173,7 +181,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 | Module | File | Purpose |
 |--------|------|---------|
-| Query Parser | `query_parser.py` | GPT-4o extracts brand, creative concept, tone, themes, niches, size preferences from briefs |
+| Query Parser | `query_parser.py` | GPT-4o extracts brand, creative concept, tone, themes, niches, size preferences + **creative matching fields** (`discovery_interests`, `exclude_interests`, `influencer_reasoning`) |
 
 ### API Endpoints
 

@@ -118,6 +118,22 @@ class ParsedSearchQuery(BaseModel):
         description="Relevant content themes (e.g., 'interior_design', 'lifestyle')"
     )
 
+    # ========== Creative Discovery (PrimeTag Interest Mapping) ==========
+    discovery_interests: List[str] = Field(
+        default_factory=list,
+        description="PrimeTag interest categories to search for (e.g., 'Sports', 'Tennis', 'Fitness'). Used when exact niche matches are sparse."
+    )
+
+    exclude_interests: List[str] = Field(
+        default_factory=list,
+        description="PrimeTag interest categories to avoid (e.g., 'Soccer' for a padel campaign)"
+    )
+
+    influencer_reasoning: str = Field(
+        default="",
+        description="Brief reasoning about what types of influencers would authentically represent this brand"
+    )
+
     # ========== Size Preferences ==========
     preferred_follower_min: Optional[int] = Field(
         default=None,

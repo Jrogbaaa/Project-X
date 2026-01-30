@@ -92,6 +92,37 @@ Provide keywords that would help find relevant influencer usernames:
 - Spanish terms if relevant (e.g., "decoracion", "hogar")
 - Content types (e.g., "lifestyle", "diy")
 
+### Creative Influencer Discovery (IMPORTANT)
+Think creatively about WHO would authentically represent this brand. Our database has influencers with PrimeTag interest categories, NOT exact niches. You must reason about which interest categories would be good fits.
+
+**Available PrimeTag Interest Categories:**
+- Sports, Soccer, Tennis, Fitness, Golf
+- Fashion, Beauty, Luxury Goods, Jewellery & Watches
+- Entertainment and Music, Celebrity, Actors, Modeling
+- Family, Lifestyle, Parenting, Toys Children & Baby
+- Cars & Motorbikes, Journalists
+- Clothes Shoes Handbags & Accessories
+- Television & Film, Health
+
+**Creative Reasoning Process:**
+1. Understand the brand's positioning (athletic, luxury, healthy, family-friendly, etc.)
+2. Think: "What types of creators would genuinely use/love this product?"
+3. Map that reasoning to PrimeTag interest categories (above)
+4. Think: "What types would feel INAUTHENTIC?" → exclude those
+
+**Examples:**
+- Padel brand → discovery_interests: ["Sports", "Tennis", "Fitness"], exclude_interests: ["Soccer"]
+  Reasoning: "Padel is a racket sport. Tennis players and fitness enthusiasts align authentically. Soccer players don't."
+  
+- Healthy restaurant (Honest Greens) → discovery_interests: ["Fitness", "Health", "Lifestyle", "Family"]
+  Reasoning: "Health-conscious, active people would authentically promote healthy food."
+  
+- Luxury watch brand → discovery_interests: ["Luxury Goods", "Fashion", "Jewellery & Watches", "Celebrity"]
+  Reasoning: "Luxury positioning requires aspirational creators."
+
+- Home furniture brand (IKEA) → discovery_interests: ["Lifestyle", "Family", "Parenting"]
+  Reasoning: "Home-focused, family-oriented creators would authentically show furniture in real life."
+
 Always return valid JSON matching the schema."""
 
 
@@ -179,6 +210,21 @@ RESPONSE_FORMAT = {
                     "items": {"type": "string"},
                     "description": "Relevant content themes"
                 },
+                # Creative discovery (PrimeTag interest mapping)
+                "discovery_interests": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "PrimeTag interest categories for discovery: Sports, Soccer, Tennis, Fitness, Fashion, Beauty, Luxury Goods, Entertainment and Music, Family, Lifestyle, etc."
+                },
+                "exclude_interests": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "PrimeTag interest categories to AVOID (e.g., 'Soccer' for padel campaign)"
+                },
+                "influencer_reasoning": {
+                    "type": "string",
+                    "description": "Brief reasoning about what types of influencers would authentically represent this brand"
+                },
                 # Size preferences
                 "preferred_follower_min": {
                     "type": ["integer", "null"],
@@ -260,6 +306,9 @@ RESPONSE_FORMAT = {
                 "campaign_topics",
                 "exclude_niches",
                 "content_themes",
+                "discovery_interests",
+                "exclude_interests",
+                "influencer_reasoning",
                 "preferred_follower_min",
                 "preferred_follower_max",
                 "target_age_ranges",
@@ -328,6 +377,11 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             campaign_topics=parsed_data.get("campaign_topics", []),
             exclude_niches=parsed_data.get("exclude_niches", []),
             content_themes=parsed_data.get("content_themes", []),
+
+            # Creative discovery (PrimeTag interest mapping)
+            discovery_interests=parsed_data.get("discovery_interests", []),
+            exclude_interests=parsed_data.get("exclude_interests", []),
+            influencer_reasoning=parsed_data.get("influencer_reasoning", ""),
 
             # Size preferences
             preferred_follower_min=parsed_data.get("preferred_follower_min"),

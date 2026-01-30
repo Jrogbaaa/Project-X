@@ -114,6 +114,26 @@ class SearchService:
                         candidates.append(inf)
                 
                 logger.info(f"   ✓ Found {len(primary_matches)} by primary_niche, {len(fallback_matches)} by interests")
+                
+                # CREATIVE DISCOVERY: If niche matches are sparse, use discovery_interests
+                if len(candidates) < 20 and parsed_query.discovery_interests:
+                    logger.info(f"   → Expanding via creative matching: {parsed_query.discovery_interests}")
+                    if parsed_query.influencer_reasoning:
+                        logger.info(f"   💡 Reasoning: {parsed_query.influencer_reasoning[:100]}...")
+                    
+                    creative_matches = await self.cache_service.find_by_interests(
+                        interests=parsed_query.discovery_interests,
+                        exclude_interests=parsed_query.exclude_interests,
+                        country="Spain",
+                        limit=CANDIDATE_POOL_SIZE
+                    )
+                    creative_added = 0
+                    for inf in creative_matches:
+                        if inf.username not in seen_usernames:
+                            seen_usernames.add(inf.username)
+                            candidates.append(inf)
+                            creative_added += 1
+                    logger.info(f"   ✓ Added {creative_added} via creative discovery (interest-based)")
             
             # Fallback: Use interest-based matching if no campaign_niche
             elif parsed_query.campaign_topics:
@@ -129,6 +149,24 @@ class SearchService:
                         seen_usernames.add(inf.username)
                         candidates.append(inf)
                 logger.info(f"   ✓ Found {len(interest_matches)} matches by interests")
+            
+            # CREATIVE DISCOVERY FALLBACK: Use discovery_interests if available
+            elif parsed_query.discovery_interests:
+                logger.info(f"   → Creative discovery via interests: {parsed_query.discovery_interests}")
+                if parsed_query.influencer_reasoning:
+                    logger.info(f"   💡 Reasoning: {parsed_query.influencer_reasoning[:100]}...")
+                
+                creative_matches = await self.cache_service.find_by_interests(
+                    interests=parsed_query.discovery_interests,
+                    exclude_interests=parsed_query.exclude_interests,
+                    country="Spain",
+                    limit=CANDIDATE_POOL_SIZE
+                )
+                for inf in creative_matches:
+                    if inf.username not in seen_usernames:
+                        seen_usernames.add(inf.username)
+                        candidates.append(inf)
+                logger.info(f"   ✓ Found {len(creative_matches)} via creative discovery")
 
             # Step 3: Search by keywords in bio
             if len(candidates) < CANDIDATE_POOL_SIZE and parsed_query.search_keywords:

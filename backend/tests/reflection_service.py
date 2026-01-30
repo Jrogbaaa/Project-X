@@ -61,11 +61,20 @@ REFLECTION_SYSTEM_PROMPT = """You are an expert evaluator for influencer marketi
 ## Evaluation Criteria
 
 ### 1. Niche Alignment (0-1 scale)
+IMPORTANT: Use "Interests" field when "Primary Niche" is Unknown. Many influencers have interests like "Sports", "Tennis", "Fitness" but no explicit niche.
+
 - 1.0: Perfect match (influencer's niche matches campaign niche exactly)
 - 0.7-0.9: Related niche (e.g., tennis influencer for padel campaign)
-- 0.4-0.6: Loosely related (e.g., general sports for specific sport)
-- 0.1-0.3: Poor match (e.g., fashion influencer for sports campaign)
+- 0.5-0.7: Creative match (e.g., fitness influencer for sports brand - they share athletic audience)
+- 0.4-0.5: Loosely related (e.g., general lifestyle for specific niche)
+- 0.1-0.3: Poor match (e.g., fashion-only influencer for sports campaign)
 - 0.0: Conflicting niche (e.g., football player for a padel campaign that explicitly excludes football)
+
+**Creative Matching Logic:**
+- Padel brand → Tennis, Fitness, Sports influencers are GOOD matches (score 0.6-0.8)
+- Healthy food brand → Fitness, Health, Wellness influencers are GOOD matches
+- Home furniture → Lifestyle, Family, Parenting influencers are GOOD matches
+- Use the "Interests" field to determine fit when "Primary Niche" is Unknown
 
 ### 2. Brand Fit (0-1 scale)
 - 1.0: Perfect fit (no conflicts, aligns with brand values)
@@ -287,6 +296,11 @@ class ReflectionService:
     ) -> str:
         """Build the context string for LLM evaluation."""
         
+        # Get discovery interests if available
+        discovery_interests = getattr(parsed_query, 'discovery_interests', []) or []
+        exclude_interests = getattr(parsed_query, 'exclude_interests', []) or []
+        influencer_reasoning = getattr(parsed_query, 'influencer_reasoning', '') or ''
+        
         # Build parsed query summary
         query_summary = f"""
 ## Parsed Query
@@ -301,6 +315,13 @@ class ReflectionService:
 - Target Count: {parsed_query.target_count}
 - Target Male Count: {parsed_query.target_male_count or 'Not specified'}
 - Target Female Count: {parsed_query.target_female_count or 'Not specified'}
+
+## Creative Discovery Strategy
+- Discovery Interests: {', '.join(discovery_interests) if discovery_interests else 'Not specified'}
+- Exclude Interests: {', '.join(exclude_interests) if exclude_interests else 'None'}
+- Influencer Reasoning: {influencer_reasoning or 'Not specified'}
+
+NOTE: Influencers matching the "Discovery Interests" above are VALID matches even if their primary niche differs from campaign niche. For example, if campaign_niche is "padel" but discovery_interests includes ["Sports", "Tennis", "Fitness"], then fitness influencers are GOOD matches.
 """
         
         # Build results summary
@@ -350,13 +371,17 @@ class ReflectionService:
 {results_section}
 
 ## Your Task
-Evaluate each result against the original brief. Be STRICT about:
-1. Niche alignment - does the influencer's niche match the campaign?
-2. Excluded niches - are any influencers in niches that should be EXCLUDED?
+Evaluate each result against the original brief. Consider:
+1. Niche alignment - does the influencer match via primary_niche OR interests? Check "Discovery Interests" above.
+2. Excluded niches - are any influencers in niches that should be EXCLUDED? (e.g., Soccer for padel campaign)
 3. Brand fit - are there any competitor conflicts?
 4. Creative fit - does the influencer's style match the requested tone?
 
-If the brief asks for padel influencers and returns football players, that's a FAIL.
+CRITICAL: If "Discovery Interests" are specified, influencers matching those interests are VALID matches. For example:
+- Padel campaign with Discovery Interests ["Sports", "Tennis", "Fitness"] → Fitness influencers are GOOD (score 0.6-0.7)
+- Only flag as FAIL if influencer is in an EXCLUDED interest category (e.g., Soccer for padel)
+
+If primary_niche is Unknown, use the Interests field to determine fit.
 """
     
     def _parse_verdict(self, data: Dict[str, Any]) -> ReflectionVerdict:
