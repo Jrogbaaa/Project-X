@@ -71,6 +71,20 @@ When the brief specifies separate male and female requirements (e.g., "3 male, 3
 - These allow returning a split list (e.g., 10 males + 10 females = 20 results with 3x headroom)
 - Only set these if EXPLICIT gender counts are mentioned; do NOT set if just "10 influencers"
 
+### Influencer Tier Counts
+When the brief specifies influencers by tier/size (e.g., "3 macro 4 mid", "we need 2 micro-influencers and 1 macro"):
+- target_micro_count: Number of micro influencers (1K-50K followers)
+- target_mid_count: Number of mid-tier influencers (50K-500K followers)
+- target_macro_count: Number of macro influencers (500K-2.5M followers)
+
+Common terms that map to tiers:
+- "micro", "micro-influencer", "nano", "small" → micro (1K-50K)
+- "mid", "mid-tier", "medium" → mid (50K-500K)
+- "macro", "large", "big" → macro (500K+)
+
+Only set these if EXPLICIT tier counts are mentioned. Do NOT set if just "10 influencers" without tier specification.
+If the brief just says "micro-influencers" without a count, set target_count to the total and set target_micro_count to that same number.
+
 ### Default Settings
 1. Default to Spanish audience focus (min 60% Spain audience)
 2. Default credibility threshold is 70%
@@ -156,6 +170,19 @@ RESPONSE_FORMAT = {
                 "target_female_count": {
                     "type": ["integer", "null"],
                     "description": "Number of female influencers specifically requested (e.g., '3 female influencers' -> 3). Only set if explicitly mentioned."
+                },
+                # Tier-specific counts
+                "target_micro_count": {
+                    "type": ["integer", "null"],
+                    "description": "Number of micro influencers (1K-50K followers) requested. Only set if explicitly mentioned."
+                },
+                "target_mid_count": {
+                    "type": ["integer", "null"],
+                    "description": "Number of mid-tier influencers (50K-500K followers) requested. Only set if explicitly mentioned."
+                },
+                "target_macro_count": {
+                    "type": ["integer", "null"],
+                    "description": "Number of macro influencers (500K-2.5M followers) requested. Only set if explicitly mentioned."
                 },
                 # Brand context
                 "brand_name": {
@@ -295,6 +322,9 @@ RESPONSE_FORMAT = {
                 "target_audience_gender",
                 "target_male_count",
                 "target_female_count",
+                "target_micro_count",
+                "target_mid_count",
+                "target_macro_count",
                 "brand_name",
                 "brand_handle",
                 "brand_category",
@@ -360,6 +390,11 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             # Gender-specific counts
             target_male_count=parsed_data.get("target_male_count"),
             target_female_count=parsed_data.get("target_female_count"),
+
+            # Tier-specific counts
+            target_micro_count=parsed_data.get("target_micro_count"),
+            target_mid_count=parsed_data.get("target_mid_count"),
+            target_macro_count=parsed_data.get("target_macro_count"),
 
             # Brand context
             brand_name=parsed_data.get("brand_name"),

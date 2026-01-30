@@ -1,13 +1,14 @@
+# Root requirements.txt for Vercel deployment
+# This includes all backend dependencies for serverless functions
+
 # FastAPI and server
 fastapi==0.109.2
-uvicorn[standard]==0.27.1
+mangum==0.17.0
 python-multipart==0.0.9
-mangum==0.17.0  # ASGI adapter for serverless (Vercel/AWS Lambda)
 
 # Database
 sqlalchemy[asyncio]==2.0.25
 asyncpg==0.29.0
-alembic==1.13.1
 
 # Pydantic
 pydantic==2.6.1
@@ -31,10 +32,5 @@ python-dateutil==2.8.2
 # YAML parsing
 pyyaml==6.0.1
 
-# HTML parsing for web scraping
+# HTML parsing
 beautifulsoup4==4.12.3
-
-# Testing
-pytest>=7.0.0,<8.0.0
-pytest-asyncio==0.23.4
-pytest-cov==4.1.0

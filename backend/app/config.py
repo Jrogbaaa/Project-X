@@ -67,14 +67,22 @@ class Settings(BaseSettings):
     # App settings
     debug: bool = Field(default=False, validation_alias="DEBUG")
     cors_origins: str = Field(
-        default="http://localhost:3000",
+        default="http://localhost:3000,http://localhost:3001",
         validation_alias="CORS_ORIGINS"
     )
+    # Vercel URL (auto-set by Vercel)
+    vercel_url: str = Field(default="", validation_alias="VERCEL_URL")
 
     @property
     def cors_origins_list(self) -> List[str]:
-        """Parse CORS origins from comma-separated string."""
-        return [origin.strip() for origin in self.cors_origins.split(",")]
+        """Parse CORS origins from comma-separated string, plus Vercel URLs."""
+        origins = [origin.strip() for origin in self.cors_origins.split(",")]
+        # Add Vercel URL if present
+        if self.vercel_url:
+            origins.append(f"https://{self.vercel_url}")
+        # Allow all Vercel preview deployments
+        origins.append("https://*.vercel.app")
+        return origins
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE_PATH),

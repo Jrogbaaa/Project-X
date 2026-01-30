@@ -10,6 +10,11 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    // Only use rewrites in local development
+    // In production (Vercel), the vercel.json routes handle API routing
+    if (process.env.VERCEL) {
+      return [];
+    }
     return [
       {
         source: '/api/:path*',

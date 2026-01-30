@@ -20,6 +20,13 @@ class AudienceAgeRange(str, Enum):
     SENIOR = "55+"
 
 
+class InfluencerTier(str, Enum):
+    """Influencer tier based on follower count."""
+    MICRO = "micro"    # 1K - 50K followers
+    MID = "mid"        # 50K - 500K followers
+    MACRO = "macro"    # 500K - 2.5M followers
+
+
 class ParsedSearchQuery(BaseModel):
     """Structured output from LLM query parsing.
 
@@ -58,6 +65,28 @@ class ParsedSearchQuery(BaseModel):
         ge=1,
         le=50,
         description="Number of female influencers requested (e.g., '3 female influencers' -> 3)"
+    )
+
+    # Tier-specific result counts (when brief requests e.g. "3 macro, 4 mid")
+    target_micro_count: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Number of micro influencers (1K-50K followers) requested"
+    )
+
+    target_mid_count: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Number of mid-tier influencers (50K-500K followers) requested"
+    )
+
+    target_macro_count: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Number of macro influencers (500K-2.5M followers) requested"
     )
 
     # ========== Brand Context ==========
@@ -217,4 +246,18 @@ class ParsedSearchQuery(BaseModel):
                 self.preferred_follower_min or 0,
                 self.preferred_follower_max or 999_999_999
             )
+        return None
+
+    def get_tier_distribution(self) -> Optional[Dict[str, int]]:
+        """Get tier counts if any are specified.
+        
+        Returns:
+            Dictionary with micro/mid/macro counts, or None if no tiers specified.
+        """
+        if any([self.target_micro_count, self.target_mid_count, self.target_macro_count]):
+            return {
+                "micro": self.target_micro_count or 0,
+                "mid": self.target_mid_count or 0,
+                "macro": self.target_macro_count or 0,
+            }
         return None

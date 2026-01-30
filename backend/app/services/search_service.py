@@ -26,6 +26,11 @@ CANDIDATE_POOL_SIZE = 200  # Fixed pool size for predictable performance
 MAX_CANDIDATES_TO_VERIFY = 15  # Max candidates to verify via API (controls cost, caps at 15-30 calls)
 MAX_CONCURRENT_VERIFICATION = 5  # Parallel API calls for verification
 
+# Influencer tier follower ranges
+TIER_MICRO = (1_000, 49_999)      # Micro: 1K - 50K followers
+TIER_MID = (50_000, 499_999)      # Mid: 50K - 500K followers
+TIER_MACRO = (500_000, 2_500_000) # Macro: 500K - 2.5M followers
+
 
 class SearchService:
     """Main service for orchestrating influencer searches."""
@@ -63,6 +68,13 @@ class SearchService:
             logger.info(f"   ✓ Topics: {parsed_query.campaign_topics or 'None'}")
             logger.info(f"   ✓ Keywords: {parsed_query.search_keywords[:5] if parsed_query.search_keywords else 'None'}")
             logger.info(f"   ✓ Target count: {parsed_query.target_count or 'Default'}")
+            
+            # Log tier distribution if specified
+            tier_dist = parsed_query.get_tier_distribution()
+            if tier_dist:
+                logger.info(f"   ✓ Tier counts: micro={tier_dist['micro']}, mid={tier_dist['mid']}, macro={tier_dist['macro']}")
+            else:
+                logger.info(f"   ✓ Tier distribution: balanced (no specific counts)")
 
             # Step 1b: Enrich with brand context from database (or LLM lookup)
             brand_context = await self._get_brand_context(parsed_query.brand_name)
@@ -256,9 +268,17 @@ class SearchService:
             logger.info(f"   ✓ Scored using 8-factor algorithm")
             logger.info(f"")
 
-            # Step 9: Limit to requested count with gender-split logic
-            final_results = self._apply_gender_split_limit(
+            # Step 9: Limit to requested count with tier and gender split logic
+            # First apply tier distribution (explicit or balanced)
+            tier_distributed = self._apply_tier_split_limit(
                 ranked,
+                parsed_query,
+                request.limit
+            )
+            
+            # Then apply gender split if specified
+            final_results = self._apply_gender_split_limit(
+                tier_distributed,
                 parsed_query,
                 request.limit
             )
@@ -739,6 +759,124 @@ class SearchService:
         # If audience is balanced, cannot determine
         return None
 
+    def _get_follower_count(self, influencer: RankedInfluencer) -> Optional[int]:
+        """Extract follower count from influencer."""
+        if influencer.raw_data:
+            return influencer.raw_data.follower_count
+        return None
+
+    def _get_influencer_tier(self, influencer: RankedInfluencer) -> Optional[str]:
+        """
+        Determine influencer's tier based on follower count.
+        
+        Returns:
+            'micro', 'mid', 'macro', or None if cannot determine
+        """
+        followers = self._get_follower_count(influencer)
+        if followers is None:
+            return None
+        if TIER_MICRO[0] <= followers <= TIER_MICRO[1]:
+            return "micro"
+        elif TIER_MID[0] <= followers <= TIER_MID[1]:
+            return "mid"
+        elif TIER_MACRO[0] <= followers <= TIER_MACRO[1]:
+            return "macro"
+        return None
+
+    def _apply_tier_split_limit(
+        self,
+        ranked: List[RankedInfluencer],
+        parsed_query: ParsedSearchQuery,
+        request_limit: int
+    ) -> List[RankedInfluencer]:
+        """
+        Apply result limiting with tier-split logic.
+
+        If tier counts specified: return requested distribution (with 3x headroom)
+        If no tier specified: return balanced mix across all 3 tiers
+
+        Falls back gracefully when tier cannot be determined for influencers
+        (e.g., missing follower_count data) by including unclassified influencers.
+
+        Args:
+            ranked: Ranked list of influencers
+            parsed_query: Parsed query with potential tier counts
+            request_limit: Maximum results from request
+
+        Returns:
+            Final list of influencers respecting tier split
+        """
+        tier_dist = parsed_query.get_tier_distribution()
+
+        # Bucket influencers by tier
+        micros = []
+        mids = []
+        macros = []
+        others = []
+
+        for inf in ranked:
+            tier = self._get_influencer_tier(inf)
+            if tier == "micro":
+                micros.append(inf)
+            elif tier == "mid":
+                mids.append(inf)
+            elif tier == "macro":
+                macros.append(inf)
+            else:
+                others.append(inf)
+
+        if tier_dist:
+            # Explicit tier counts requested - apply 3x headroom
+            micro_limit = tier_dist["micro"] * 3
+            mid_limit = tier_dist["mid"] * 3
+            macro_limit = tier_dist["macro"] * 3
+
+            selected_micros = micros[:micro_limit] if micro_limit > 0 else []
+            selected_mids = mids[:mid_limit] if mid_limit > 0 else []
+            selected_macros = macros[:macro_limit] if macro_limit > 0 else []
+
+            combined = selected_micros + selected_mids + selected_macros
+
+            logger.info(
+                f"Tier split: {len(selected_micros)} micro, "
+                f"{len(selected_mids)} mid, {len(selected_macros)} macro"
+            )
+
+            # Fallback: add unclassified if needed
+            total_target = micro_limit + mid_limit + macro_limit
+            if len(combined) < total_target and others:
+                remaining_slots = total_target - len(combined)
+                combined.extend(others[:remaining_slots])
+                logger.info(
+                    f"   → Added {min(len(others), remaining_slots)} unclassified "
+                    f"influencers (tier data unavailable)"
+                )
+        else:
+            # Default: balanced distribution (1/3 each tier)
+            per_tier = max(request_limit // 3, 1)
+            combined = micros[:per_tier] + mids[:per_tier] + macros[:per_tier]
+
+            logger.info(
+                f"Balanced tier distribution: {min(len(micros), per_tier)} micro, "
+                f"{min(len(mids), per_tier)} mid, {min(len(macros), per_tier)} macro"
+            )
+
+            # If we don't have enough in balanced mode, fill with remaining from any tier
+            if len(combined) < request_limit:
+                # Get remaining influencers not yet selected
+                remaining = [inf for inf in ranked if inf not in combined]
+                slots_needed = request_limit - len(combined)
+                combined.extend(remaining[:slots_needed])
+
+        # Re-sort by relevance score to maintain overall ranking
+        combined.sort(key=lambda x: x.relevance_score, reverse=True)
+
+        # Re-assign rank positions
+        for i, inf in enumerate(combined):
+            inf.rank_position = i + 1
+
+        return combined
+
     async def _get_brand_context(self, brand_name: Optional[str]) -> Optional[BrandContext]:
         """
         Look up brand context from the database, falling back to LLM lookup.
@@ -850,6 +988,9 @@ class SearchService:
             target_audience_gender=parsed_query.target_audience_gender,
             target_male_count=parsed_query.target_male_count,
             target_female_count=parsed_query.target_female_count,
+            target_micro_count=parsed_query.target_micro_count,
+            target_mid_count=parsed_query.target_mid_count,
+            target_macro_count=parsed_query.target_macro_count,
             brand_name=parsed_query.brand_name,
             brand_handle=parsed_query.brand_handle,
             brand_category=brand_category,
@@ -918,6 +1059,9 @@ class SearchService:
             target_audience_gender=parsed_query.target_audience_gender,
             target_male_count=parsed_query.target_male_count,
             target_female_count=parsed_query.target_female_count,
+            target_micro_count=parsed_query.target_micro_count,
+            target_mid_count=parsed_query.target_mid_count,
+            target_macro_count=parsed_query.target_macro_count,
             brand_name=parsed_query.brand_name,
             brand_handle=parsed_query.brand_handle,
             brand_category=parsed_query.brand_category,

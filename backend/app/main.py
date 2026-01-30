@@ -76,10 +76,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # Configure CORS
+    # Configure CORS - allow Vercel domains and configured origins
+    # In production on Vercel, requests come from same domain so CORS is less strict
+    import os
+    is_vercel = os.environ.get("VERCEL", False)
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins_list,
+        allow_origins=["*"] if is_vercel else settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
