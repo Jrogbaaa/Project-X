@@ -204,7 +204,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
       {/* Results Grid/List */}
       {searchResponse.results.length > 0 ? (
         viewMode === 'cards' ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-2">
             {searchResponse.results.map((result, index) => (
               <InfluencerCard
                 key={result.influencer_id}

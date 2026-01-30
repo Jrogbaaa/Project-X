@@ -58,7 +58,9 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
     }
   };
 
-  const spainPct = raw_data.audience_geography?.ES || raw_data.audience_geography?.es || 0;
+  // Check if we have actual audience geography data (not just empty object)
+  const hasAudienceGeo = raw_data.audience_geography && Object.keys(raw_data.audience_geography).length > 0;
+  const spainPct = hasAudienceGeo ? (raw_data.audience_geography?.ES || raw_data.audience_geography?.es || 0) : null;
   const growthRate = raw_data.follower_growth_rate_6m;
   const engagementRate = raw_data.engagement_rate;
 
@@ -78,9 +80,9 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
       data-index={index}
     >
       {/* Main Card Content */}
-      <div className="p-5">
+      <div className="p-6">
         {/* Header Row */}
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex items-start gap-4 mb-5">
           {/* Rank Badge */}
           <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-accent-gold/10 border border-accent-gold/20 flex items-center justify-center">
             <span className="font-mono font-bold text-accent-gold text-sm">
@@ -89,9 +91,9 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           </div>
 
           {/* Profile Info */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             {/* Avatar */}
-            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-2 ring-dark-border group-hover:ring-accent-gold/30 transition-all">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-2 ring-dark-border group-hover:ring-accent-gold/30 transition-all">
               {raw_data.profile_picture_url ? (
                 <Image
                   src={raw_data.profile_picture_url}
@@ -108,33 +110,36 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
 
             {/* Name Stack */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-semibold text-light-primary truncate">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-light-primary truncate">
                   @{raw_data.username}
                 </h3>
                 {raw_data.is_verified && (
-                  <BadgeCheck className="h-4 w-4 text-accent-gold flex-shrink-0" />
+                  <BadgeCheck className="h-5 w-5 text-accent-gold flex-shrink-0" />
                 )}
                 <button
                   onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all ml-0.5"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
                   aria-label="Copiar usuario"
                   tabIndex={0}
                 >
                   {copiedField === 'username' ? (
-                    <Check className="w-3.5 h-3.5 text-metric-excellent" />
+                    <Check className="w-4 h-4 text-metric-excellent" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5 text-light-tertiary" />
+                    <Copy className="w-4 h-4 text-light-tertiary" />
                   )}
                 </button>
               </div>
               {raw_data.display_name && (
-                <p className="text-light-tertiary text-sm truncate">
+                <p className="text-light-secondary text-sm truncate mt-0.5">
                   {raw_data.display_name}
                 </p>
               )}
-              <p className="text-light-secondary text-xs mt-0.5">
-                <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
+              <p className="text-light-tertiary text-sm mt-1">
+                <span className="font-mono font-medium text-light-secondary">
+                  {raw_data.follower_count > 0 ? formatNumber(raw_data.follower_count) : 'N/A'}
+                </span>{' '}
+                seguidores
               </p>
               {/* Niche Tags - Show first 2 */}
               {raw_data.interests && raw_data.interests.length > 0 && (
@@ -170,7 +175,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
         </div>
 
         {/* Metrics Row */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-5">
           <MetricPill
             label="Cred"
             value={raw_data.credibility_score ? `${raw_data.credibility_score.toFixed(0)}%` : 'N/A'}
@@ -183,7 +188,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           />
           <MetricPill
             label="España"
-            value={`${spainPct.toFixed(0)}%`}
+            value={spainPct !== null ? `${spainPct.toFixed(0)}%` : 'N/A'}
             metricClass={getMetricClass(spainPct, 'spain')}
           />
           <MetricPill
@@ -218,7 +223,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
-        <div className="px-5 pb-5 space-y-6 border-t border-dark-border/50 pt-5">
+        <div className="px-6 pb-6 space-y-6 border-t border-dark-border/50 pt-6">
           {/* Bio */}
           {raw_data.bio && (
             <p className="text-sm text-light-secondary leading-relaxed">
@@ -257,10 +262,10 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 bg-dark-tertiary/50 border-t border-dark-border/30 flex items-center justify-between">
-        <div className="text-xs text-light-tertiary">
-          Media: <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_likes)}</span> likes,{' '}
-          <span className="font-mono text-light-secondary">{formatNumber(raw_data.avg_comments)}</span> comentarios
+      <div className="px-6 py-4 bg-dark-tertiary/50 border-t border-dark-border/30 flex items-center justify-between">
+        <div className="text-sm text-light-tertiary">
+          Media: <span className="font-mono text-light-secondary">{raw_data.avg_likes > 0 ? formatNumber(raw_data.avg_likes) : 'N/A'}</span> likes,{' '}
+          <span className="font-mono text-light-secondary">{raw_data.avg_comments > 0 ? formatNumber(raw_data.avg_comments) : 'N/A'}</span> comentarios
         </div>
         <div className="flex items-center gap-3">
           {raw_data.mediakit_url && (

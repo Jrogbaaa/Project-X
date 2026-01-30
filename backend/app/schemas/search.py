@@ -136,8 +136,8 @@ class SearchRequest(BaseModel):
     query: str = Field(
         ...,
         min_length=3,
-        max_length=500,
-        description="Natural language search query"
+        max_length=5000,
+        description="Natural language search query or brand brief"
     )
     filters: Optional[FilterConfig] = Field(
         default=None,

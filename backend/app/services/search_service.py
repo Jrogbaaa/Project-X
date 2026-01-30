@@ -646,6 +646,9 @@ class SearchService:
         return separate counts for each gender (with 3x headroom).
         Otherwise, return up to request_limit results (default 20).
 
+        Falls back gracefully when gender cannot be determined for influencers
+        (e.g., missing audience_genders data) by including unclassified influencers.
+
         Args:
             ranked: Ranked list of influencers
             parsed_query: Parsed query with potential gender counts
@@ -681,8 +684,18 @@ class SearchService:
             selected_males = males[:male_limit] if male_limit > 0 else []
             selected_females = females[:female_limit] if female_limit > 0 else []
 
-            # Combine and maintain ranking order
+            # Combine classified results
             combined = selected_males + selected_females
+
+            logger.info(f"Gender split: {len(selected_males)} males, {len(selected_females)} females")
+
+            # FALLBACK: If we couldn't classify enough by gender, include unclassified
+            # This ensures we return results even when audience_genders data is missing
+            total_target = (male_limit + female_limit) or request_limit
+            if len(combined) < total_target and others:
+                remaining_slots = total_target - len(combined)
+                combined.extend(others[:remaining_slots])
+                logger.info(f"   → Added {min(len(others), remaining_slots)} unclassified influencers (gender data unavailable)")
 
             # Sort by relevance score to maintain overall ranking
             combined.sort(key=lambda x: x.relevance_score, reverse=True)
@@ -691,7 +704,6 @@ class SearchService:
             for i, inf in enumerate(combined):
                 inf.rank_position = i + 1
 
-            logger.info(f"Gender split: {len(selected_males)} males, {len(selected_females)} females")
             return combined
 
         # Default: return up to request_limit
