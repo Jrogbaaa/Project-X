@@ -38,20 +38,22 @@ export function getMetricClass(score: number | null | undefined, type: 'credibil
       if (normalizedScore >= 70) return 'metric-good';
       if (normalizedScore >= 60) return 'metric-warning';
       return 'metric-poor';
-    case 'engagement':
+    case 'engagement': {
       // Engagement rate thresholds (already in percentage form 0-15)
       const engRate = score <= 1 ? score * 100 : score;
       if (engRate >= 4) return 'metric-excellent';
       if (engRate >= 2.5) return 'metric-good';
       if (engRate >= 1.5) return 'metric-warning';
       return 'metric-poor';
-    case 'growth':
+    }
+    case 'growth': {
       // Growth rate thresholds
       const growthRate = score <= 1 ? score * 100 : score;
       if (growthRate >= 10) return 'metric-excellent';
       if (growthRate >= 0) return 'metric-good';
       if (growthRate >= -10) return 'metric-warning';
       return 'metric-poor';
+    }
     case 'spain':
       if (normalizedScore >= 70) return 'metric-excellent';
       if (normalizedScore >= 60) return 'metric-good';
