@@ -76,6 +76,8 @@ def create_app() -> FastAPI:
         lifespan=None if is_vercel else lifespan,
         docs_url="/api/docs" if is_vercel else "/docs",
         redoc_url="/api/redoc" if is_vercel else "/redoc",
+        # Disable automatic trailing slash redirects to prevent redirect loops on Vercel
+        redirect_slashes=False,
     )
 
     # Configure CORS - allow all origins on Vercel
