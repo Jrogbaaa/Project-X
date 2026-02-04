@@ -17,7 +17,7 @@ from app.core.exceptions import SearchError
 router = APIRouter(prefix="/search", tags=["search"])
 
 
-@router.post("/", response_model=SearchResponse)
+@router.post("", response_model=SearchResponse)
 async def execute_search(
     request: SearchRequest,
     db: AsyncSession = Depends(get_db)
