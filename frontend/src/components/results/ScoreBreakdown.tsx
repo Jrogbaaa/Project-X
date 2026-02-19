@@ -10,139 +10,105 @@ interface ScoreBreakdownProps {
 const SCORE_CONFIG: Record<keyof ScoreComponents, {
   label: string;
   description: string;
-  color: string;
-  bgColor: string;
-  glowColor: string;
+  barColor: string;
 }> = {
   credibility: {
     label: 'Credibilidad',
     description: 'Autenticidad de la audiencia',
-    color: 'bg-[#6366f1]',
-    bgColor: 'bg-[#6366f1]/15',
-    glowColor: 'shadow-[#6366f1]/30',
+    barColor: 'bg-[#5B6CF6]',
   },
   engagement: {
     label: 'Engagement',
     description: 'Tasa de interacción',
-    color: 'bg-metric-excellent',
-    bgColor: 'bg-metric-excellent/15',
-    glowColor: 'shadow-metric-excellent/30',
+    barColor: 'bg-metric-excellent',
   },
   audience_match: {
     label: 'Match Audiencia',
     description: 'Ajuste demográfico',
-    color: 'bg-ember-core',
-    bgColor: 'bg-ember-core/15',
-    glowColor: 'shadow-ember-core/30',
+    barColor: 'bg-ember-warm',
   },
   growth: {
     label: 'Crecimiento',
     description: 'Tendencia 6 meses',
-    color: 'bg-[#ec4899]',
-    bgColor: 'bg-[#ec4899]/15',
-    glowColor: 'shadow-[#ec4899]/30',
+    barColor: 'bg-[#D95F8F]',
   },
   geography: {
     label: 'Geografía',
     description: '% audiencia en España',
-    color: 'bg-ice-soft',
-    bgColor: 'bg-ice-soft/15',
-    glowColor: 'shadow-ice-soft/30',
+    barColor: 'bg-ice-bright',
   },
   brand_affinity: {
     label: 'Afinidad Marca',
-    description: 'Overlap audiencia con marca objetivo',
-    color: 'bg-ember-hot',
-    bgColor: 'bg-ember-hot/15',
-    glowColor: 'shadow-ember-hot/30',
+    description: 'Overlap audiencia con marca',
+    barColor: 'bg-ember-hot',
   },
   creative_fit: {
     label: 'Encaje Creativo',
     description: 'Alineación con concepto de campaña',
-    color: 'bg-[#8b5cf6]',
-    bgColor: 'bg-[#8b5cf6]/15',
-    glowColor: 'shadow-[#8b5cf6]/30',
+    barColor: 'bg-[#8B60F0]',
   },
   niche_match: {
     label: 'Match Nicho',
     description: 'Alineación de nicho de contenido',
-    color: 'bg-ice-bright',
-    bgColor: 'bg-ice-bright/15',
-    glowColor: 'shadow-ice-bright/30',
+    barColor: 'bg-ice-soft',
   },
 };
 
 const WEIGHT_LABELS: Record<keyof ScoreComponents, string> = {
-  credibility: '15%',
-  engagement: '20%',
+  credibility:    '15%',
+  engagement:     '20%',
   audience_match: '15%',
-  growth: '5%',
-  geography: '10%',
+  growth:         '5%',
+  geography:      '10%',
   brand_affinity: '15%',
-  creative_fit: '15%',
-  niche_match: '5%',
+  creative_fit:   '15%',
+  niche_match:    '5%',
 };
 
 export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
   const scoreEntries = Object.entries(scores) as [keyof ScoreComponents, number][];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-ember-glow/80 uppercase tracking-wider">
+        <h4 className="text-[10px] font-semibold text-ember-warm/70 uppercase tracking-[0.10em]">
           Desglose de Puntuación
         </h4>
-        <span className="text-xs text-light-tertiary">
-          puntuación ponderada
-        </span>
+        <span className="text-[10px] text-light-tertiary/50">ponderada</span>
       </div>
 
-      {/* Score Bars */}
-      <div className="space-y-3">
+      {/* Score bars */}
+      <div className="space-y-2.5">
         {scoreEntries.map(([key, value]) => {
           const config = SCORE_CONFIG[key];
           const percentage = value * 100;
           const weight = WEIGHT_LABELS[key];
 
           return (
-            <div key={key} className="group">
-              <div className="flex items-center justify-between mb-1.5">
+            <div key={key} className="group/bar">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-light-secondary group-hover:text-light-primary transition-colors">
+                  <span className="text-xs text-light-secondary group-hover/bar:text-light-primary transition-colors">
                     {config.label}
                   </span>
-                  <span className="text-[10px] text-light-tertiary px-1.5 py-0.5 rounded bg-dark-ash">
-                    {weight}
-                  </span>
+                  <span className="text-[9px] text-light-tertiary/50 font-mono">{weight}</span>
                 </div>
-                <span className="font-mono font-medium text-sm text-light-primary">
+                <span className="font-mono text-xs font-medium text-light-primary tabular-nums">
                   {percentage.toFixed(0)}%
                 </span>
               </div>
 
-              {/* Progress Bar */}
-              <div className="relative h-2 bg-dark-ash rounded-full overflow-hidden">
+              {/* Thin progress bar */}
+              <div className="h-[3px] bg-dark-ash rounded-full overflow-hidden">
                 <div
-                  className={cn(
-                    'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-sm',
-                    config.color,
-                    config.glowColor
-                  )}
+                  className={cn('h-full rounded-full transition-all duration-600 ease-out', config.barColor)}
                   style={{ width: `${percentage}%` }}
-                />
-                {/* Glow effect at fill point */}
-                <div
-                  className={cn(
-                    'absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full blur-md opacity-60 transition-all duration-700 ease-out',
-                    config.color
-                  )}
-                  style={{ left: `calc(${percentage}% - 6px)` }}
                 />
               </div>
 
               {/* Description on hover */}
-              <p className="text-[10px] text-light-tertiary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-[10px] text-light-tertiary/50 mt-0.5 opacity-0 group-hover/bar:opacity-100 transition-opacity">
                 {config.description}
               </p>
             </div>
@@ -150,16 +116,11 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
         })}
       </div>
 
-      {/* Summary */}
-      <div className="pt-3 border-t border-dark-border/30">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-light-tertiary">
-            Pesos por defecto: Engagement 20% · Credibilidad 15% · Audiencia 15% · Afinidad Marca 15% · Encaje Creativo 15%
-          </span>
-          <span className="text-xs text-light-tertiary">
-            Geografía 10% · Crecimiento 5% · Nicho 5%
-          </span>
-        </div>
+      {/* Weight legend */}
+      <div className="pt-2.5 border-t border-dark-border/30">
+        <p className="text-[10px] text-light-tertiary/45 leading-relaxed">
+          Engagement 20% · Credibilidad 15% · Audiencia 15% · Afinidad 15% · Creativo 15% · Geografía 10% · Crecimiento 5% · Nicho 5%
+        </p>
       </div>
     </div>
   );

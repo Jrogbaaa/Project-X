@@ -7,29 +7,39 @@ interface AudienceChartProps {
   ageDistribution: Record<string, number>;
 }
 
+// Updated palette for light theme
 const GENDER_COLORS = {
-  female: '#ec4899', // Pink for female
-  Female: '#ec4899',
-  male: '#00d4ff', // Ice bright for male (contrast)
-  Male: '#00d4ff',
-  unknown: '#5e5e66',
+  female: '#D95F8F',
+  Female: '#D95F8F',
+  male:   '#4A6FA5',
+  Male:   '#4A6FA5',
+  unknown:'#B5BEC8',
 };
 
-const AGE_GRADIENT = [
-  '#ff6b4a', // ember-hot
-  '#e8734d', // ember-warm
-  '#d4845c', // ember-core
-  '#c9956a', // ember-glow
-  '#b8a078', // ember-cool
+// Clay gradient for age bars
+const AGE_COLORS = [
+  '#D07055',
+  '#C4714A',
+  '#B85C38',
+  '#C98C6A',
+  '#D4A882',
 ];
 
-// Custom tooltip component for dark theme
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
+// Light-themed tooltip
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-dark-secondary border border-ember-core/30 rounded-lg px-3 py-2 shadow-lg shadow-black/30">
+      <div className="bg-dark-secondary border border-dark-border/60 rounded-lg px-3 py-2 shadow-card">
         <p className="text-light-secondary text-xs">{label}</p>
-        <p className="text-ember-warm font-mono font-medium">
+        <p className="text-ember-warm font-mono font-medium text-sm">
           {payload[0].value.toFixed(1)}%
         </p>
       </div>
@@ -39,52 +49,45 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) {
-  // Format gender data for pie chart
   const genderData = Object.entries(genders || {}).map(([key, value]) => ({
     name: key.charAt(0).toUpperCase() + key.slice(1),
-    value: value,
-    color: GENDER_COLORS[key as keyof typeof GENDER_COLORS] || '#6b6b70',
+    value,
+    color: GENDER_COLORS[key as keyof typeof GENDER_COLORS] || '#B5BEC8',
   }));
 
-  // Format age data for bar chart
   const ageData = Object.entries(ageDistribution || {})
-    .map(([range, value]) => ({
-      range,
-      value: value,
-    }))
+    .map(([range, value]) => ({ range, value }))
     .sort((a, b) => {
-      // Sort by age range
-      const getMinAge = (range: string) => parseInt(range.split('-')[0]) || parseInt(range);
+      const getMinAge = (r: string) => parseInt(r.split('-')[0]) || parseInt(r);
       return getMinAge(a.range) - getMinAge(b.range);
     });
 
-  const hasGenderData = genderData.length > 0 && genderData.some(d => d.value > 0);
-  const hasAgeData = ageData.length > 0 && ageData.some(d => d.value > 0);
+  const hasGenderData = genderData.length > 0 && genderData.some((d) => d.value > 0);
+  const hasAgeData = ageData.length > 0 && ageData.some((d) => d.value > 0);
 
   if (!hasGenderData && !hasAgeData) {
     return (
-      <div className="text-center py-6 text-light-tertiary text-sm">
-        Sin datos demográficos de audiencia
+      <div className="text-center py-5 text-light-tertiary/50 text-sm">
+        Sin datos demográficos
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <h4 className="text-sm font-semibold text-ember-glow/80 uppercase tracking-wider">
+    <div className="space-y-3.5">
+      <h4 className="text-[10px] font-semibold text-ember-warm/70 uppercase tracking-[0.10em]">
         Demografía de Audiencia
       </h4>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Gender Distribution */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Gender donut */}
         {hasGenderData && (
-          <div className="bg-dark-ash/40 rounded-lg p-4 border border-dark-border/20">
-            <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
+          <div className="bg-dark-tertiary/40 rounded-lg p-3.5 border border-dark-border/30">
+            <h5 className="text-[10px] text-light-tertiary/60 mb-3 uppercase tracking-wider font-mono">
               Género
             </h5>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20">
+            <div className="flex items-center gap-3">
+              <div className="w-[72px] h-[72px] flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -93,28 +96,28 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={22}
-                      outerRadius={36}
+                      innerRadius={20}
+                      outerRadius={32}
                       strokeWidth={0}
                     >
-                      {genderData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      {genderData.map((entry, i) => (
+                        <Cell key={`cell-${i}`} fill={entry.color} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-1.5">
                 {genderData.map((entry) => (
-                  <div key={entry.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
+                  <div key={entry.name} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5">
                       <div
-                        className="w-2.5 h-2.5 rounded-full"
+                        className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: entry.color }}
                       />
                       <span className="text-light-secondary">{entry.name}</span>
                     </div>
-                    <span className="font-mono font-medium text-light-primary">
+                    <span className="font-mono font-medium text-light-primary tabular-nums">
                       {entry.value.toFixed(1)}%
                     </span>
                   </div>
@@ -124,41 +127,31 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
           </div>
         )}
 
-        {/* Age Distribution */}
+        {/* Age bars */}
         {hasAgeData && (
-          <div className="bg-dark-ash/40 rounded-lg p-4 border border-dark-border/20">
-            <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
+          <div className="bg-dark-tertiary/40 rounded-lg p-3.5 border border-dark-border/30">
+            <h5 className="text-[10px] text-light-tertiary/60 mb-3 uppercase tracking-wider font-mono">
               Grupos de Edad
             </h5>
-            <div className="h-[100px]">
+            <div className="h-[90px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ageData} layout="vertical" barCategoryGap={4}>
-                  <XAxis
-                    type="number"
-                    hide
-                    domain={[0, 'dataMax']}
-                  />
+                <BarChart data={ageData} layout="vertical" barCategoryGap={5}>
+                  <XAxis type="number" hide domain={[0, 'dataMax']} />
                   <YAxis
                     type="category"
                     dataKey="range"
-                    width={40}
-                    tick={{ fontSize: 10, fill: '#9a9aa3' }}
+                    width={36}
+                    tick={{ fontSize: 10, fill: '#8B98A7', fontFamily: 'var(--font-dm-mono)' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     content={<CustomTooltip />}
-                    cursor={{ fill: 'rgba(212, 132, 92, 0.08)' }}
+                    cursor={{ fill: 'rgba(184, 92, 56, 0.05)' }}
                   />
-                  <Bar
-                    dataKey="value"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {ageData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={AGE_GRADIENT[index % AGE_GRADIENT.length]}
-                      />
+                  <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+                    {ageData.map((_, i) => (
+                      <Cell key={`cell-${i}`} fill={AGE_COLORS[i % AGE_COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>

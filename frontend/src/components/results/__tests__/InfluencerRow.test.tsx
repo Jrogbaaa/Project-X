@@ -180,14 +180,14 @@ describe('InfluencerRow', () => {
     it('applies selected styling when isSelected is true', () => {
       const { container } = render(<InfluencerRow influencer={createMockInfluencer()} isSelected={true} />);
       const row = container.firstChild as HTMLElement;
-      expect(row.className).toContain('border-ember-core');
-      expect(row.className).toContain('ring-1');
+      expect(row.className).toContain('border-ember-warm');
+      expect(row.className).toContain('border-l-2');
     });
 
     it('does not apply selected styling when isSelected is false', () => {
       const { container } = render(<InfluencerRow influencer={createMockInfluencer()} isSelected={false} />);
       const row = container.firstChild as HTMLElement;
-      expect(row.className).not.toContain('ring-1');
+      expect(row.className).not.toContain('border-l-2');
     });
   });
 

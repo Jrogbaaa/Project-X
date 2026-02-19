@@ -238,8 +238,8 @@ describe('InfluencerCard', () => {
 
     it('renders average comments', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      // The footer contains "likes," for avg_likes
-      const footer = screen.getByText(/likes,/);
+      // The footer contains "likes" for avg_likes
+      const footer = screen.getByText(/likes/);
       expect(footer).toBeInTheDocument();
       // Comments value is 150, check it's in the document
       const commentCount = screen.getAllByText(/150/)[0];
@@ -251,7 +251,7 @@ describe('InfluencerCard', () => {
     it('applies selected styling when isSelected is true', () => {
       const { container } = render(<InfluencerCard influencer={createMockInfluencer()} isSelected={true} />);
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('border-ember-core');
+      expect(card.className).toContain('border-ember-warm');
     });
 
     it('does not apply selected styling when isSelected is false', () => {

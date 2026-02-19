@@ -18,88 +18,71 @@ export interface SearchBarRef {
 
 export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
   function SearchBar({ onResults, filters, onLoadingChange }, ref) {
-  const [query, setQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
+    const [query, setQuery] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isFocused, setIsFocused] = useState(false);
 
-  const searchMutation = useMutation({
-    mutationFn: searchInfluencers,
-    onSuccess: (data) => {
-      onResults(data);
-      setError(null);
-      onLoadingChange(false);
-    },
-    onError: (err: Error) => {
-      setError(err.message || 'Error en la búsqueda. Por favor, inténtalo de nuevo.');
-      onLoadingChange(false);
-    },
-    onMutate: () => {
-      onLoadingChange(true);
-    },
-  });
-
-  const executeSearch = useCallback((searchQuery: string) => {
-    if (searchQuery.trim().length < 3) {
-      setError('Por favor, introduce al menos 3 caracteres');
-      return;
-    }
-
-    searchMutation.mutate({
-      query: searchQuery.trim(),
-      filters,
-      limit: 20,
+    const searchMutation = useMutation({
+      mutationFn: searchInfluencers,
+      onSuccess: (data) => {
+        onResults(data);
+        setError(null);
+        onLoadingChange(false);
+      },
+      onError: (err: Error) => {
+        setError(err.message || 'Error en la búsqueda. Por favor, inténtalo de nuevo.');
+        onLoadingChange(false);
+      },
+      onMutate: () => {
+        onLoadingChange(true);
+      },
     });
-  }, [filters, searchMutation]);
 
-  const handleSearch = useCallback(() => {
-    executeSearch(query);
-  }, [query, executeSearch]);
+    const executeSearch = useCallback((searchQuery: string) => {
+      if (searchQuery.trim().length < 3) {
+        setError('Por favor, introduce al menos 3 caracteres');
+        return;
+      }
+      searchMutation.mutate({
+        query: searchQuery.trim(),
+        filters,
+        limit: 20,
+      });
+    }, [filters, searchMutation]);
 
-  // Expose setQueryAndSearch method to parent via ref
-  useImperativeHandle(ref, () => ({
-    setQueryAndSearch: (newQuery: string) => {
-      setQuery(newQuery);
-      setError(null);
-      // Execute search with the new query directly (state update is async)
-      executeSearch(newQuery);
-    },
-  }), [executeSearch]);
+    const handleSearch = useCallback(() => {
+      executeSearch(query);
+    }, [query, executeSearch]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
+    useImperativeHandle(ref, () => ({
+      setQueryAndSearch: (newQuery: string) => {
+        setQuery(newQuery);
+        setError(null);
+        executeSearch(newQuery);
+      },
+    }), [executeSearch]);
 
-  return (
-    <div className="w-full max-w-3xl mx-auto search-ember-glow">
-      {/* Search Container with Glow Effect */}
-      <div
-        className={`relative transition-all duration-500 ${
-          isFocused ? 'glow-ember-intense' : ''
-        }`}
-      >
-        {/* Gradient Border */}
+    return (
+      <div className="w-full max-w-3xl mx-auto">
+
+        {/* Search container */}
         <div
-          className={`absolute -inset-[1px] rounded-2xl bg-gradient-to-r transition-all duration-500 ${
+          className={`relative bg-dark-secondary rounded-xl border transition-all duration-250 ${
             isFocused
-              ? 'from-ember-hot/50 via-ember-core/40 to-ember-glow/50 opacity-100'
-              : 'from-dark-border/80 via-dark-border to-dark-border/80 opacity-100'
+              ? 'border-ember-warm/50 shadow-ember-glow'
+              : 'border-dark-border hover:border-dark-border/80'
           }`}
-        />
-
-        {/* Input Container */}
-        <div className="relative bg-dark-secondary rounded-2xl shadow-lg shadow-black/20">
-          {/* Search Icon */}
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+        >
+          {/* Search icon */}
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-start pt-[1.05rem] pointer-events-none">
             <Search
-              className={`h-5 w-5 transition-colors duration-300 ${
+              className={`h-[1rem] w-[1rem] transition-colors duration-200 ${
                 isFocused ? 'text-ember-warm' : 'text-light-tertiary'
               }`}
             />
           </div>
 
-          {/* Input Field - Supports pasting full briefs */}
+          {/* Textarea */}
           <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -112,55 +95,54 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="Pega tu brief de marca o describe tu campaña..."
-            className="w-full min-h-[60px] max-h-[200px] pl-14 pr-32 py-4 text-base bg-transparent text-light-primary
-                       rounded-2xl focus:outline-none transition-all duration-300 resize-none
-                       placeholder:text-light-tertiary/50"
+            className="w-full min-h-[58px] max-h-[200px] pl-11 pr-32 py-[0.95rem] text-sm leading-relaxed
+                       bg-transparent text-light-primary rounded-xl focus:outline-none resize-none
+                       placeholder:text-light-tertiary/45"
             disabled={searchMutation.isPending}
             rows={1}
-            style={{ height: query.length > 100 ? 'auto' : '60px' }}
+            style={{ height: query.length > 100 ? 'auto' : '58px' }}
           />
 
-          {/* Search Button */}
+          {/* Submit button */}
           <button
             onClick={handleSearch}
             disabled={searchMutation.isPending || query.trim().length < 3}
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-[44px] px-6
-                       bg-gradient-to-r from-ember-hot to-ember-core text-dark-void font-semibold rounded-xl
-                       hover:from-ember-warm hover:to-ember-glow
-                       disabled:from-dark-tertiary disabled:to-dark-tertiary disabled:text-light-tertiary disabled:cursor-not-allowed
-                       transition-all duration-300 flex items-center gap-2
-                       shadow-ember-glow hover:shadow-ember-glow-lg
-                       disabled:shadow-none"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 h-9 px-5
+                       bg-ember-warm text-white font-medium text-sm rounded-lg
+                       hover:bg-ember-hot
+                       disabled:bg-dark-ash disabled:text-light-tertiary disabled:cursor-not-allowed
+                       transition-all duration-200 flex items-center gap-1.5
+                       shadow-sm"
           >
             {searchMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span className="hidden sm:inline">Buscando</span>
               </>
             ) : (
               <>
                 <span>Buscar</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5" />
               </>
             )}
           </button>
         </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mt-2.5 flex items-center justify-center gap-2 animate-fade-in">
+            <div className="w-1 h-1 rounded-full bg-metric-poor" />
+            <p className="text-metric-poor text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Character hint */}
+        {query.length > 0 && query.length < 3 && (
+          <p className="mt-2 text-center text-xs text-light-tertiary/70 animate-fade-in">
+            {3 - query.length} carácter{3 - query.length > 1 ? 'es' : ''} más
+          </p>
+        )}
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mt-3 flex items-center justify-center gap-2 animate-fade-in">
-          <div className="w-1.5 h-1.5 rounded-full bg-metric-poor shadow-sm shadow-metric-poor/50" />
-          <p className="text-metric-poor text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Character Count Hint */}
-      {query.length > 0 && query.length < 3 && (
-        <p className="mt-2 text-center text-xs text-light-tertiary/80 animate-fade-in">
-          {3 - query.length} carácter{3 - query.length > 1 ? 'es' : ''} más necesario{3 - query.length > 1 ? 's' : ''}
-        </p>
-      )}
-    </div>
-  );
-});
+    );
+  }
+);

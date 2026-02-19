@@ -3,69 +3,60 @@
 @tailwind utilities;
 
 /* ============================================
-   OBSIDIAN EMBER THEME - CSS Custom Properties
+   MERIDIAN THEME — Mediterranean Editorial
+   Warm cream · Clay terracotta · Cormorant serif
    ============================================ */
 
 :root {
-  /* Core Colors - Obsidian Scale */
-  --bg-void: #050506;
-  --bg-primary: #0c0c0e;
-  --bg-secondary: #16161a;
-  --bg-tertiary: #1f1f24;
-  --bg-ash: #28282f;
-  --border-color: #2e2e36;
-  --border-subtle: #232329;
-  --border-accent: #3a3a44;
+  /* Core Surfaces */
+  --cream: #FAF8F4;
+  --white: #FFFFFF;
+  --parchment: #F2EDE6;
+  --linen: #EBE5DC;
+  --border: #DDD7CF;
+  --border-light: #EDE9E4;
 
-  /* Text Colors */
-  --text-bright: #f8f8f7;
-  --text-primary: #e4e4e3;
-  --text-secondary: #9a9aa3;
-  --text-tertiary: #5e5e66;
+  /* Text Hierarchy */
+  --slate: #1C2B3A;
+  --charcoal: #2C3E50;
+  --smoke: #5A6878;
+  --mist: #8B98A7;
 
-  /* Ember Accent Gradient */
-  --ember-hot: #ff6b4a;
-  --ember-warm: #e8734d;
-  --ember-core: #d4845c;
-  --ember-glow: #c9956a;
-  --ember-cool: #b8a078;
+  /* Clay Accent Palette */
+  --clay: #B85C38;
+  --clay-light: #D07055;
+  --clay-dark: #8E3E22;
+  --sienna: #C4714A;
+  --clay-pale: #F5E8E1;
+  --clay-medium: #C98C6A;
+  --clay-muted: #D4A882;
 
-  /* Legacy accent aliases */
-  --accent-gold: #d4845c;
-  --accent-gold-light: #c9956a;
-  --accent-gold-dark: #b8a078;
-  --accent-cream: #faf7f2;
+  /* Legacy aliases (for utils.ts compatibility) */
+  --accent-gold: #C4714A;
+  --accent-gold-light: #C98C6A;
+  --accent-gold-dark: #8E3E22;
+  --accent-cream: #F5E8E1;
 
-  /* Ice Accent (contrast) */
-  --ice-bright: #00d4ff;
-  --ice-soft: #4ecdc4;
+  /* Refined Blue (replacing ice) */
+  --blue: #4A6FA5;
+  --blue-soft: #6B8FBA;
 
-  /* Metric Colors */
-  --metric-excellent: #22d67a;
-  --metric-good: #d4845c;
-  --metric-warning: #f59e42;
-  --metric-poor: #ff5757;
+  /* Status Colors */
+  --metric-excellent: #4A7C59;
+  --metric-good: #B85C38;
+  --metric-warning: #9E7A2A;
+  --metric-poor: #C13C2A;
 
-  /* Gradients */
-  --gradient-ember: linear-gradient(135deg, #ff6b4a, #e8734d, #d4845c);
-  --gradient-ember-soft: linear-gradient(135deg, #d4845c 0%, #c9956a 100%);
-  --gradient-gold: linear-gradient(135deg, #d4845c, #c9956a, #d4845c);
-  --gradient-dark: linear-gradient(180deg, #0c0c0e 0%, #16161a 100%);
-  --gradient-radial: radial-gradient(ellipse at center, rgba(212, 132, 92, 0.06) 0%, transparent 70%);
-  --gradient-obsidian: linear-gradient(145deg, rgba(22, 22, 26, 0.95) 0%, rgba(31, 31, 36, 0.9) 100%);
+  /* Elevation */
+  --shadow-sm: 0 1px 3px rgba(28, 43, 58, 0.07), 0 1px 2px rgba(28, 43, 58, 0.04);
+  --shadow-md: 0 4px 16px rgba(28, 43, 58, 0.08), 0 2px 6px rgba(28, 43, 58, 0.04);
+  --shadow-lg: 0 8px 32px rgba(28, 43, 58, 0.09), 0 4px 12px rgba(28, 43, 58, 0.05);
+  --shadow-clay: 0 2px 14px rgba(184, 92, 56, 0.18);
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 30px rgba(212, 132, 92, 0.15);
-  --shadow-glow-intense: 0 0 40px rgba(212, 132, 92, 0.25);
-  --shadow-ember: 0 4px 16px rgba(212, 132, 92, 0.3);
-
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-base: 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-slow: 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Easing */
+  --transition-fast: 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ============================================
@@ -83,24 +74,24 @@ html {
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--slate);
+  font-family: var(--font-outfit), system-ui, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Noise texture overlay for tactile quality */
+/* Subtle paper grain for tactile quality */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.022;
   pointer-events: none;
   z-index: 9999;
-  mix-blend-mode: overlay;
+  mix-blend-mode: multiply;
 }
 
 /* ============================================
@@ -108,17 +99,17 @@ body::before {
    ============================================ */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  color: var(--text-primary);
+  font-family: var(--font-cormorant), Georgia, serif;
+  color: var(--slate);
   letter-spacing: -0.02em;
 }
 
 .font-serif {
-  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-family: var(--font-cormorant), Georgia, serif;
 }
 
 .font-mono {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
 }
 
 /* ============================================
@@ -126,23 +117,21 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-  border-radius: 4px;
+  background: var(--parchment);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-  transition: background 0.2s;
+  background: var(--border);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: var(--mist);
 }
 
 /* ============================================
@@ -150,8 +139,8 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 ::selection {
-  background: rgba(212, 132, 92, 0.35);
-  color: var(--text-bright);
+  background: rgba(184, 92, 56, 0.14);
+  color: var(--slate);
 }
 
 /* ============================================
@@ -159,63 +148,62 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 :focus-visible {
-  outline: 2px solid var(--accent-gold);
+  outline: 2px solid var(--clay);
   outline-offset: 2px;
 }
 
 /* ============================================
-   GLASS MORPHISM UTILITIES
+   CARD STYLES — Light Theme
+   ============================================ */
+
+.card-obsidian {
+  background: var(--white);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-obsidian:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   GLASS — Light Version
    ============================================ */
 
 .glass {
-  background: rgba(22, 22, 26, 0.85);
+  background: rgba(250, 248, 244, 0.90);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(221, 215, 207, 0.65);
 }
 
 .glass-subtle {
-  background: rgba(22, 22, 26, 0.65);
+  background: rgba(250, 248, 244, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 
-/* Obsidian card styling */
-.card-obsidian {
-  background: linear-gradient(145deg, rgba(22, 22, 26, 0.95) 0%, rgba(31, 31, 36, 0.9) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.card-obsidian:hover {
-  border-color: var(--ember-core);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 12px 40px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(212, 132, 92, 0.15),
-    0 0 60px -20px rgba(212, 132, 92, 0.12);
-}
-
 /* ============================================
-   GRADIENT TEXT
+   TEXT GRADIENT
    ============================================ */
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--text-bright) 40%, var(--ember-core) 100%);
+  background: linear-gradient(135deg, var(--slate) 25%, var(--clay) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-gold {
-  background: var(--gradient-gold);
+  background: linear-gradient(135deg, var(--clay-dark), var(--clay), var(--sienna));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-ember {
-  background: var(--gradient-ember);
+  background: linear-gradient(135deg, var(--clay-light), var(--clay), var(--clay-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -228,7 +216,7 @@ h1, h2, h3, h4, h5, h6 {
 .border-gradient {
   position: relative;
   border: 1px solid transparent;
-  background: var(--bg-secondary);
+  background: var(--white);
   background-clip: padding-box;
 }
 
@@ -238,111 +226,86 @@ h1, h2, h3, h4, h5, h6 {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(212, 132, 92, 0.35), rgba(212, 132, 92, 0.1), rgba(212, 132, 92, 0.35));
+  background: linear-gradient(135deg, rgba(184, 92, 56, 0.20), rgba(184, 92, 56, 0.06), rgba(184, 92, 56, 0.20));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-}
-
-.border-ember {
-  position: relative;
-  border: 1px solid transparent;
-  background-clip: padding-box;
-}
-
-.border-ember::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--ember-hot), var(--ember-core), var(--ember-cool));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0.6;
 }
 
 /* ============================================
-   GLOW EFFECTS
+   GLOW / FOCUS EFFECTS — Refined for Light
    ============================================ */
 
 .glow-gold {
-  box-shadow: 0 0 20px rgba(212, 132, 92, 0.15),
-              0 0 40px rgba(212, 132, 92, 0.08);
+  box-shadow: 0 0 0 3px rgba(184, 92, 56, 0.09);
 }
 
 .glow-gold-intense {
-  box-shadow: 0 0 30px rgba(212, 132, 92, 0.25),
-              0 0 60px rgba(212, 132, 92, 0.12);
+  box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.14);
 }
 
 .glow-ember {
-  box-shadow: 0 0 25px rgba(255, 107, 74, 0.2),
-              0 0 50px rgba(212, 132, 92, 0.12);
+  box-shadow: 0 2px 14px rgba(184, 92, 56, 0.14);
 }
 
 .glow-ember-intense {
-  box-shadow: 0 0 35px rgba(255, 107, 74, 0.3),
-              0 0 70px rgba(212, 132, 92, 0.18);
+  box-shadow: 0 2px 18px rgba(184, 92, 56, 0.20);
 }
 
 /* ============================================
-   CUSTOM RANGE SLIDER
+   CUSTOM RANGE SLIDER — Light Theme
    ============================================ */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
-  background: var(--bg-tertiary);
-  border-radius: 3px;
+  height: 4px;
+  background: var(--linen);
+  border-radius: 2px;
   cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
-  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
+  width: 15px;
+  height: 15px;
+  background: var(--clay);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(212, 132, 92, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid var(--white);
+  box-shadow: 0 1px 4px rgba(28, 43, 58, 0.14), 0 0 0 1px rgba(184, 92, 56, 0.20);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 16px rgba(255, 107, 74, 0.5);
+  transform: scale(1.18);
+  box-shadow: 0 2px 10px rgba(184, 92, 56, 0.24), 0 0 0 3px rgba(184, 92, 56, 0.10);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
+  width: 15px;
+  height: 15px;
+  background: var(--clay);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(212, 132, 92, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid var(--white);
+  box-shadow: 0 1px 4px rgba(28, 43, 58, 0.14);
+  transition: transform 0.15s;
 }
 
-input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 16px rgba(255, 107, 74, 0.5);
-}
-
-/* Range track gradient fill */
 input[type="range"]::-webkit-slider-runnable-track {
-  background: linear-gradient(to right, var(--ember-core) 0%, var(--ember-core) var(--value, 50%), var(--bg-tertiary) var(--value, 50%), var(--bg-tertiary) 100%);
-  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--clay) 0%,
+    var(--clay) var(--value, 50%),
+    var(--linen) var(--value, 50%),
+    var(--linen) 100%
+  );
+  border-radius: 2px;
 }
 
 /* ============================================
@@ -351,56 +314,52 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 .card-enter {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(14px);
 }
 
 .card-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Staggered animation for card lists */
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
-.stagger-5 { animation-delay: 250ms; }
-.stagger-6 { animation-delay: 300ms; }
-.stagger-7 { animation-delay: 350ms; }
-.stagger-8 { animation-delay: 400ms; }
-.stagger-9 { animation-delay: 450ms; }
+.stagger-1  { animation-delay: 50ms; }
+.stagger-2  { animation-delay: 100ms; }
+.stagger-3  { animation-delay: 150ms; }
+.stagger-4  { animation-delay: 200ms; }
+.stagger-5  { animation-delay: 250ms; }
+.stagger-6  { animation-delay: 300ms; }
+.stagger-7  { animation-delay: 350ms; }
+.stagger-8  { animation-delay: 400ms; }
+.stagger-9  { animation-delay: 450ms; }
 .stagger-10 { animation-delay: 500ms; }
 
 /* ============================================
-   SHIMMER LOADING EFFECT
+   SHIMMER
    ============================================ */
 
 .shimmer {
   background: linear-gradient(
     90deg,
-    var(--bg-tertiary) 0%,
-    rgba(212, 132, 92, 0.12) 50%,
-    var(--bg-tertiary) 100%
+    var(--parchment) 0%,
+    rgba(184, 92, 56, 0.05) 50%,
+    var(--parchment) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* Ember pulse animation */
+/* Clay selection ring pulse */
 @keyframes ember-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(212, 132, 92, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 35px rgba(212, 132, 92, 0.3);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 92, 56, 0); }
+  50%       { box-shadow: 0 0 0 3px rgba(184, 92, 56, 0.12); }
 }
 
 .animate-ember-pulse {
@@ -408,39 +367,35 @@ input[type="range"]::-webkit-slider-runnable-track {
 }
 
 /* ============================================
-   METRIC BADGE COLORS - Thermal Tags
+   METRIC BADGE COLORS — Light Theme
    ============================================ */
 
 .metric-excellent {
-  background: linear-gradient(180deg, rgba(34, 214, 122, 0.18) 0%, rgba(34, 214, 122, 0.08) 100%);
-  color: #22d67a;
-  border: 1px solid rgba(34, 214, 122, 0.3);
-  border-top-color: rgba(34, 214, 122, 0.45);
+  background: rgba(74, 124, 89, 0.09);
+  color: #3D6B4A;
+  border: 1px solid rgba(74, 124, 89, 0.20);
 }
 
 .metric-good {
-  background: linear-gradient(180deg, rgba(212, 132, 92, 0.18) 0%, rgba(212, 132, 92, 0.08) 100%);
-  color: #d4845c;
-  border: 1px solid rgba(212, 132, 92, 0.3);
-  border-top-color: rgba(212, 132, 92, 0.45);
+  background: rgba(184, 92, 56, 0.09);
+  color: #9E4222;
+  border: 1px solid rgba(184, 92, 56, 0.20);
 }
 
 .metric-warning {
-  background: linear-gradient(180deg, rgba(245, 158, 66, 0.18) 0%, rgba(245, 158, 66, 0.08) 100%);
-  color: #f59e42;
-  border: 1px solid rgba(245, 158, 66, 0.3);
-  border-top-color: rgba(245, 158, 66, 0.45);
+  background: rgba(158, 122, 42, 0.09);
+  color: #7A5C18;
+  border: 1px solid rgba(158, 122, 42, 0.20);
 }
 
 .metric-poor {
-  background: linear-gradient(180deg, rgba(255, 87, 87, 0.18) 0%, rgba(255, 87, 87, 0.08) 100%);
-  color: #ff5757;
-  border: 1px solid rgba(255, 87, 87, 0.3);
-  border-top-color: rgba(255, 87, 87, 0.45);
+  background: rgba(193, 60, 42, 0.09);
+  color: #A42E1E;
+  border: 1px solid rgba(193, 60, 42, 0.20);
 }
 
 /* ============================================
-   HOVER LIFT EFFECT
+   HOVER LIFT
    ============================================ */
 
 .hover-lift {
@@ -448,7 +403,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
@@ -463,11 +418,11 @@ input[type="range"]::-webkit-slider-runnable-track {
 .underline-animated::after {
   content: '';
   position: absolute;
-  bottom: -2px;
+  bottom: -1px;
   left: 0;
   width: 0;
   height: 1px;
-  background: linear-gradient(90deg, var(--ember-hot), var(--ember-core));
+  background: var(--clay);
   transition: width var(--transition-base);
 }
 
@@ -476,31 +431,32 @@ input[type="range"]::-webkit-slider-runnable-track {
 }
 
 /* ============================================
-   RANK BADGE - Ember Core
+   RANK BADGE
    ============================================ */
 
 .rank-badge-ember {
-  background: radial-gradient(circle at 30% 30%, var(--ember-hot) 0%, var(--ember-core) 50%, var(--ember-cool) 100%);
-  color: var(--bg-void);
+  background: var(--slate);
+  color: var(--white);
   font-weight: 700;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(212, 132, 92, 0.4);
+  box-shadow: 0 1px 4px rgba(28, 43, 58, 0.18);
 }
 
 /* ============================================
-   BUTTON STYLES - Ember
+   BUTTON STYLES
    ============================================ */
 
 .btn-ember {
-  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
-  color: var(--bg-void);
+  background: var(--clay);
+  color: var(--white);
   font-weight: 600;
-  box-shadow: 0 4px 16px rgba(212, 132, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 4px rgba(184, 92, 56, 0.20);
   transition: all var(--transition-base);
 }
 
 .btn-ember:hover {
+  background: var(--clay-light);
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(212, 132, 92, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(184, 92, 56, 0.22);
 }
 
 .btn-ember:active {
@@ -509,25 +465,25 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 .btn-ghost {
   background: transparent;
-  border: 1px solid var(--border-accent);
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  color: var(--smoke);
   transition: all var(--transition-base);
 }
 
 .btn-ghost:hover {
-  border-color: var(--ember-glow);
-  color: var(--text-primary);
-  background: rgba(212, 132, 92, 0.06);
+  border-color: var(--clay);
+  color: var(--slate);
+  background: var(--clay-pale);
 }
 
 /* ============================================
-   PULSE DOT (for loading states)
+   PULSE DOT
    ============================================ */
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--ember-core);
+  width: 7px;
+  height: 7px;
+  background: var(--clay);
   border-radius: 50%;
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
@@ -536,114 +492,44 @@ input[type="range"]::-webkit-slider-runnable-track {
   0%, 100% {
     opacity: 1;
     transform: scale(1);
-    background: var(--ember-cool);
+    background: var(--clay-medium);
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.65;
     transform: scale(1.15);
-    background: var(--ember-hot);
+    background: var(--clay);
   }
 }
 
 /* ============================================
-   RADIAL BACKGROUND GLOW
+   GHOST RANK NUMBERS — Signature Design Element
+   Large Cormorant numerals ghosted behind card content.
    ============================================ */
 
-.bg-radial-glow {
-  position: relative;
+.ghost-rank {
+  font-family: var(--font-cormorant), Georgia, serif;
+  line-height: 0.82;
+  color: var(--clay);
+  opacity: 0.055;
+  pointer-events: none;
+  user-select: none;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  transition: opacity 0.3s ease;
 }
 
-.bg-radial-glow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 150%;
-  height: 150%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(212, 132, 92, 0.05) 0%,
-    transparent 60%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Ambient ember glow for hero section */
-.bg-ember-glow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 500px;
-  background: radial-gradient(
-    ellipse at center top,
-    rgba(255, 107, 74, 0.04) 0%,
-    rgba(212, 132, 92, 0.02) 40%,
-    transparent 70%
-  );
-  pointer-events: none;
-  z-index: 0;
+.group:hover .ghost-rank {
+  opacity: 0.10;
 }
 
 /* ============================================
-   NOISE TEXTURE OVERLAY (optional)
-   ============================================ */
-
-.noise-overlay {
-  position: relative;
-}
-
-.noise-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-
-/* ============================================
-   SEARCH BAR EMBER STYLES
-   ============================================ */
-
-.search-ember-glow {
-  position: relative;
-}
-
-.search-ember-glow::after {
-  content: '';
-  position: absolute;
-  bottom: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70%;
-  height: 80px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(212, 132, 92, 0.06) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--transition-base);
-}
-
-.search-ember-glow:focus-within::after {
-  opacity: 1;
-}
-
-/* ============================================
-   RECHARTS DARK THEME OVERRIDES
+   RECHARTS — Light Theme Overrides
    ============================================ */
 
 .recharts-cartesian-axis-tick-value {
-  fill: var(--text-secondary) !important;
+  fill: var(--mist) !important;
   font-size: 11px !important;
+  font-family: var(--font-dm-mono), monospace !important;
 }
 
 .recharts-tooltip-wrapper {
@@ -651,16 +537,16 @@ input[type="range"]::-webkit-slider-runnable-track {
 }
 
 .recharts-default-tooltip {
-  background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-color) !important;
+  background: var(--white) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   box-shadow: var(--shadow-md) !important;
 }
 
 .recharts-tooltip-label {
-  color: var(--text-primary) !important;
+  color: var(--slate) !important;
 }
 
 .recharts-tooltip-item {
-  color: var(--text-secondary) !important;
+  color: var(--smoke) !important;
 }
