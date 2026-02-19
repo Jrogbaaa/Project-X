@@ -3,44 +3,64 @@
 @tailwind utilities;
 
 /* ============================================
-   DARK EDITORIAL THEME - CSS Custom Properties
+   OBSIDIAN EMBER THEME - CSS Custom Properties
    ============================================ */
 
 :root {
-  /* Core Colors */
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #141416;
-  --bg-tertiary: #1c1c1f;
-  --border-color: #2a2a2e;
-  --border-subtle: #1f1f22;
+  /* Core Colors - Obsidian Scale */
+  --bg-void: #050506;
+  --bg-primary: #0c0c0e;
+  --bg-secondary: #16161a;
+  --bg-tertiary: #1f1f24;
+  --bg-ash: #28282f;
+  --border-color: #2e2e36;
+  --border-subtle: #232329;
+  --border-accent: #3a3a44;
 
   /* Text Colors */
-  --text-primary: #fafaf9;
-  --text-secondary: #a1a1a6;
-  --text-tertiary: #6b6b70;
+  --text-bright: #f8f8f7;
+  --text-primary: #e4e4e3;
+  --text-secondary: #9a9aa3;
+  --text-tertiary: #5e5e66;
 
-  /* Accent Colors */
-  --accent-gold: #d4a574;
-  --accent-gold-light: #e8c9a8;
-  --accent-gold-dark: #b8895a;
+  /* Ember Accent Gradient */
+  --ember-hot: #ff6b4a;
+  --ember-warm: #e8734d;
+  --ember-core: #d4845c;
+  --ember-glow: #c9956a;
+  --ember-cool: #b8a078;
+
+  /* Legacy accent aliases */
+  --accent-gold: #d4845c;
+  --accent-gold-light: #c9956a;
+  --accent-gold-dark: #b8a078;
   --accent-cream: #faf7f2;
 
+  /* Ice Accent (contrast) */
+  --ice-bright: #00d4ff;
+  --ice-soft: #4ecdc4;
+
   /* Metric Colors */
-  --metric-excellent: #4ade80;
-  --metric-good: #d4a574;
-  --metric-warning: #fb923c;
-  --metric-poor: #f87171;
+  --metric-excellent: #22d67a;
+  --metric-good: #d4845c;
+  --metric-warning: #f59e42;
+  --metric-poor: #ff5757;
 
   /* Gradients */
-  --gradient-gold: linear-gradient(135deg, #d4a574, #e8c9a8, #d4a574);
-  --gradient-dark: linear-gradient(180deg, #0a0a0b 0%, #141416 100%);
-  --gradient-radial: radial-gradient(ellipse at center, rgba(212, 165, 116, 0.08) 0%, transparent 70%);
+  --gradient-ember: linear-gradient(135deg, #ff6b4a, #e8734d, #d4845c);
+  --gradient-ember-soft: linear-gradient(135deg, #d4845c 0%, #c9956a 100%);
+  --gradient-gold: linear-gradient(135deg, #d4845c, #c9956a, #d4845c);
+  --gradient-dark: linear-gradient(180deg, #0c0c0e 0%, #16161a 100%);
+  --gradient-radial: radial-gradient(ellipse at center, rgba(212, 132, 92, 0.06) 0%, transparent 70%);
+  --gradient-obsidian: linear-gradient(145deg, rgba(22, 22, 26, 0.95) 0%, rgba(31, 31, 36, 0.9) 100%);
 
   /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 30px rgba(212, 165, 116, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px rgba(212, 132, 92, 0.15);
+  --shadow-glow-intense: 0 0 40px rgba(212, 132, 92, 0.25);
+  --shadow-ember: 0 4px 16px rgba(212, 132, 92, 0.3);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -69,6 +89,18 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Noise texture overlay for tactile quality */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.018;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
 }
 
 /* ============================================
@@ -118,8 +150,8 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 ::selection {
-  background: rgba(212, 165, 116, 0.3);
-  color: var(--text-primary);
+  background: rgba(212, 132, 92, 0.35);
+  color: var(--text-bright);
 }
 
 /* ============================================
@@ -136,16 +168,32 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 .glass {
-  background: rgba(20, 20, 22, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(22, 22, 26, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .glass-subtle {
-  background: rgba(20, 20, 22, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(22, 22, 26, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Obsidian card styling */
+.card-obsidian {
+  background: linear-gradient(145deg, rgba(22, 22, 26, 0.95) 0%, rgba(31, 31, 36, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.card-obsidian:hover {
+  border-color: var(--ember-core);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(212, 132, 92, 0.15),
+    0 0 60px -20px rgba(212, 132, 92, 0.12);
 }
 
 /* ============================================
@@ -153,7 +201,7 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-gold) 100%);
+  background: linear-gradient(135deg, var(--text-bright) 40%, var(--ember-core) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -161,6 +209,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .text-gradient-gold {
   background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-ember {
+  background: var(--gradient-ember);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -183,7 +238,7 @@ h1, h2, h3, h4, h5, h6 {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(212, 165, 116, 0.3), rgba(212, 165, 116, 0.1), rgba(212, 165, 116, 0.3));
+  background: linear-gradient(135deg, rgba(212, 132, 92, 0.35), rgba(212, 132, 92, 0.1), rgba(212, 132, 92, 0.35));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -191,18 +246,49 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
 }
 
+.border-ember {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.border-ember::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--ember-hot), var(--ember-core), var(--ember-cool));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 /* ============================================
    GLOW EFFECTS
    ============================================ */
 
 .glow-gold {
-  box-shadow: 0 0 20px rgba(212, 165, 116, 0.15),
-              0 0 40px rgba(212, 165, 116, 0.1);
+  box-shadow: 0 0 20px rgba(212, 132, 92, 0.15),
+              0 0 40px rgba(212, 132, 92, 0.08);
 }
 
 .glow-gold-intense {
-  box-shadow: 0 0 30px rgba(212, 165, 116, 0.25),
-              0 0 60px rgba(212, 165, 116, 0.15);
+  box-shadow: 0 0 30px rgba(212, 132, 92, 0.25),
+              0 0 60px rgba(212, 132, 92, 0.12);
+}
+
+.glow-ember {
+  box-shadow: 0 0 25px rgba(255, 107, 74, 0.2),
+              0 0 50px rgba(212, 132, 92, 0.12);
+}
+
+.glow-ember-intense {
+  box-shadow: 0 0 35px rgba(255, 107, 74, 0.3),
+              0 0 70px rgba(212, 132, 92, 0.18);
 }
 
 /* ============================================
@@ -224,38 +310,38 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: var(--accent-gold);
+  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(212, 132, 92, 0.3);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(212, 165, 116, 0.4);
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(255, 107, 74, 0.5);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: var(--accent-gold);
+  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(212, 132, 92, 0.3);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(212, 165, 116, 0.4);
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(255, 107, 74, 0.5);
 }
 
 /* Range track gradient fill */
 input[type="range"]::-webkit-slider-runnable-track {
-  background: linear-gradient(to right, var(--accent-gold) 0%, var(--accent-gold) var(--value, 50%), var(--bg-tertiary) var(--value, 50%), var(--bg-tertiary) 100%);
+  background: linear-gradient(to right, var(--ember-core) 0%, var(--ember-core) var(--value, 50%), var(--bg-tertiary) var(--value, 50%), var(--bg-tertiary) 100%);
   border-radius: 3px;
 }
 
@@ -295,7 +381,7 @@ input[type="range"]::-webkit-slider-runnable-track {
   background: linear-gradient(
     90deg,
     var(--bg-tertiary) 0%,
-    rgba(212, 165, 116, 0.1) 50%,
+    rgba(212, 132, 92, 0.12) 50%,
     var(--bg-tertiary) 100%
   );
   background-size: 200% 100%;
@@ -307,32 +393,50 @@ input[type="range"]::-webkit-slider-runnable-track {
   100% { background-position: -200% 0; }
 }
 
+/* Ember pulse animation */
+@keyframes ember-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(212, 132, 92, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(212, 132, 92, 0.3);
+  }
+}
+
+.animate-ember-pulse {
+  animation: ember-pulse 2.5s ease-in-out infinite;
+}
+
 /* ============================================
-   METRIC BADGE COLORS
+   METRIC BADGE COLORS - Thermal Tags
    ============================================ */
 
 .metric-excellent {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: linear-gradient(180deg, rgba(34, 214, 122, 0.18) 0%, rgba(34, 214, 122, 0.08) 100%);
+  color: #22d67a;
+  border: 1px solid rgba(34, 214, 122, 0.3);
+  border-top-color: rgba(34, 214, 122, 0.45);
 }
 
 .metric-good {
-  background: rgba(212, 165, 116, 0.15);
-  color: #d4a574;
-  border: 1px solid rgba(212, 165, 116, 0.3);
+  background: linear-gradient(180deg, rgba(212, 132, 92, 0.18) 0%, rgba(212, 132, 92, 0.08) 100%);
+  color: #d4845c;
+  border: 1px solid rgba(212, 132, 92, 0.3);
+  border-top-color: rgba(212, 132, 92, 0.45);
 }
 
 .metric-warning {
-  background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
-  border: 1px solid rgba(251, 146, 60, 0.3);
+  background: linear-gradient(180deg, rgba(245, 158, 66, 0.18) 0%, rgba(245, 158, 66, 0.08) 100%);
+  color: #f59e42;
+  border: 1px solid rgba(245, 158, 66, 0.3);
+  border-top-color: rgba(245, 158, 66, 0.45);
 }
 
 .metric-poor {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: linear-gradient(180deg, rgba(255, 87, 87, 0.18) 0%, rgba(255, 87, 87, 0.08) 100%);
+  color: #ff5757;
+  border: 1px solid rgba(255, 87, 87, 0.3);
+  border-top-color: rgba(255, 87, 87, 0.45);
 }
 
 /* ============================================
@@ -363,12 +467,57 @@ input[type="range"]::-webkit-slider-runnable-track {
   left: 0;
   width: 0;
   height: 1px;
-  background: var(--accent-gold);
+  background: linear-gradient(90deg, var(--ember-hot), var(--ember-core));
   transition: width var(--transition-base);
 }
 
 .underline-animated:hover::after {
   width: 100%;
+}
+
+/* ============================================
+   RANK BADGE - Ember Core
+   ============================================ */
+
+.rank-badge-ember {
+  background: radial-gradient(circle at 30% 30%, var(--ember-hot) 0%, var(--ember-core) 50%, var(--ember-cool) 100%);
+  color: var(--bg-void);
+  font-weight: 700;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(212, 132, 92, 0.4);
+}
+
+/* ============================================
+   BUTTON STYLES - Ember
+   ============================================ */
+
+.btn-ember {
+  background: linear-gradient(135deg, var(--ember-hot) 0%, var(--ember-core) 100%);
+  color: var(--bg-void);
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(212, 132, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all var(--transition-base);
+}
+
+.btn-ember:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(212, 132, 92, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-ember:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-accent);
+  color: var(--text-secondary);
+  transition: all var(--transition-base);
+}
+
+.btn-ghost:hover {
+  border-color: var(--ember-glow);
+  color: var(--text-primary);
+  background: rgba(212, 132, 92, 0.06);
 }
 
 /* ============================================
@@ -378,7 +527,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background: var(--accent-gold);
+  background: var(--ember-core);
   border-radius: 50%;
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
@@ -387,10 +536,12 @@ input[type="range"]::-webkit-slider-runnable-track {
   0%, 100% {
     opacity: 1;
     transform: scale(1);
+    background: var(--ember-cool);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(0.8);
+    opacity: 0.6;
+    transform: scale(1.15);
+    background: var(--ember-hot);
   }
 }
 
@@ -412,8 +563,27 @@ input[type="range"]::-webkit-slider-runnable-track {
   height: 150%;
   background: radial-gradient(
     ellipse at center,
-    rgba(212, 165, 116, 0.06) 0%,
+    rgba(212, 132, 92, 0.05) 0%,
     transparent 60%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ambient ember glow for hero section */
+.bg-ember-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 500px;
+  background: radial-gradient(
+    ellipse at center top,
+    rgba(255, 107, 74, 0.04) 0%,
+    rgba(212, 132, 92, 0.02) 40%,
+    transparent 70%
   );
   pointer-events: none;
   z-index: 0;
@@ -432,9 +602,39 @@ input[type="range"]::-webkit-slider-runnable-track {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.02;
+  opacity: 0.025;
   pointer-events: none;
   mix-blend-mode: overlay;
+}
+
+/* ============================================
+   SEARCH BAR EMBER STYLES
+   ============================================ */
+
+.search-ember-glow {
+  position: relative;
+}
+
+.search-ember-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 80px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 132, 92, 0.06) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.search-ember-glow:focus-within::after {
+  opacity: 1;
 }
 
 /* ============================================

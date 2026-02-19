@@ -67,7 +67,7 @@ export function getMetricClass(score: number | null | undefined, type: 'credibil
 // For match/relevance score
 export function getMatchScoreClass(score: number): string {
   if (score >= 0.8) return 'text-metric-excellent';
-  if (score >= 0.6) return 'text-accent-gold';
+  if (score >= 0.6) return 'text-ember-warm';
   if (score >= 0.4) return 'text-metric-warning';
   return 'text-metric-poor';
 }
@@ -75,7 +75,7 @@ export function getMatchScoreClass(score: number): string {
 // Legacy functions for compatibility
 export function getScoreColor(score: number): string {
   if (score >= 0.8) return 'text-metric-excellent';
-  if (score >= 0.6) return 'text-accent-gold';
+  if (score >= 0.6) return 'text-ember-core';
   if (score >= 0.4) return 'text-metric-warning';
   return 'text-metric-poor';
 }
@@ -89,6 +89,6 @@ export function getScoreBgColor(score: number): string {
 
 export function getMetricColor(value: number, thresholds: { good: number; ok: number }): string {
   if (value >= thresholds.good) return 'text-metric-excellent';
-  if (value >= thresholds.ok) return 'text-accent-gold';
+  if (value >= thresholds.ok) return 'text-ember-warm';
   return 'text-metric-poor';
 }

@@ -180,7 +180,7 @@ describe('InfluencerRow', () => {
     it('applies selected styling when isSelected is true', () => {
       const { container } = render(<InfluencerRow influencer={createMockInfluencer()} isSelected={true} />);
       const row = container.firstChild as HTMLElement;
-      expect(row.className).toContain('border-accent-gold');
+      expect(row.className).toContain('border-ember-core');
       expect(row.className).toContain('ring-1');
     });
 

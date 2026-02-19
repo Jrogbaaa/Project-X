@@ -72,29 +72,29 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto search-ember-glow">
       {/* Search Container with Glow Effect */}
       <div
         className={`relative transition-all duration-500 ${
-          isFocused ? 'glow-gold-intense' : ''
+          isFocused ? 'glow-ember-intense' : ''
         }`}
       >
         {/* Gradient Border */}
         <div
-          className={`absolute -inset-[1px] rounded-2xl bg-gradient-to-r transition-opacity duration-500 ${
+          className={`absolute -inset-[1px] rounded-2xl bg-gradient-to-r transition-all duration-500 ${
             isFocused
-              ? 'from-accent-gold/60 via-accent-gold-light/40 to-accent-gold/60 opacity-100'
-              : 'from-dark-border via-dark-border to-dark-border opacity-100'
+              ? 'from-ember-hot/50 via-ember-core/40 to-ember-glow/50 opacity-100'
+              : 'from-dark-border/80 via-dark-border to-dark-border/80 opacity-100'
           }`}
         />
 
         {/* Input Container */}
-        <div className="relative bg-dark-secondary rounded-2xl">
+        <div className="relative bg-dark-secondary rounded-2xl shadow-lg shadow-black/20">
           {/* Search Icon */}
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
             <Search
               className={`h-5 w-5 transition-colors duration-300 ${
-                isFocused ? 'text-accent-gold' : 'text-light-tertiary'
+                isFocused ? 'text-ember-warm' : 'text-light-tertiary'
               }`}
             />
           </div>
@@ -114,7 +114,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             placeholder="Pega tu brief de marca o describe tu campaña..."
             className="w-full min-h-[60px] max-h-[200px] pl-14 pr-32 py-4 text-base bg-transparent text-light-primary
                        rounded-2xl focus:outline-none transition-all duration-300 resize-none
-                       placeholder:text-light-tertiary/60"
+                       placeholder:text-light-tertiary/50"
             disabled={searchMutation.isPending}
             rows={1}
             style={{ height: query.length > 100 ? 'auto' : '60px' }}
@@ -125,11 +125,11 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             onClick={handleSearch}
             disabled={searchMutation.isPending || query.trim().length < 3}
             className="absolute right-2 top-1/2 -translate-y-1/2 h-[44px] px-6
-                       bg-accent-gold text-dark-primary font-semibold rounded-xl
-                       hover:bg-accent-gold-light
-                       disabled:bg-dark-tertiary disabled:text-light-tertiary disabled:cursor-not-allowed
+                       bg-gradient-to-r from-ember-hot to-ember-core text-dark-void font-semibold rounded-xl
+                       hover:from-ember-warm hover:to-ember-glow
+                       disabled:from-dark-tertiary disabled:to-dark-tertiary disabled:text-light-tertiary disabled:cursor-not-allowed
                        transition-all duration-300 flex items-center gap-2
-                       shadow-lg shadow-accent-gold/20 hover:shadow-accent-gold/30
+                       shadow-ember-glow hover:shadow-ember-glow-lg
                        disabled:shadow-none"
           >
             {searchMutation.isPending ? (
@@ -150,14 +150,14 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
       {/* Error Message */}
       {error && (
         <div className="mt-3 flex items-center justify-center gap-2 animate-fade-in">
-          <div className="w-1.5 h-1.5 rounded-full bg-metric-poor" />
+          <div className="w-1.5 h-1.5 rounded-full bg-metric-poor shadow-sm shadow-metric-poor/50" />
           <p className="text-metric-poor text-sm">{error}</p>
         </div>
       )}
 
       {/* Character Count Hint */}
       {query.length > 0 && query.length < 3 && (
-        <p className="mt-2 text-center text-xs text-light-tertiary animate-fade-in">
+        <p className="mt-2 text-center text-xs text-light-tertiary/80 animate-fade-in">
           {3 - query.length} carácter{3 - query.length > 1 ? 'es' : ''} más necesario{3 - query.length > 1 ? 's' : ''}
         </p>
       )}

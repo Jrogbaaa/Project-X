@@ -460,6 +460,105 @@ EDGE_CASE_BRIEFS = [
 
 
 # ============================================================
+# REAL WORLD BRIEFS
+# These are based on real client briefs from Spanish talent agencies.
+# They test the system's ability to parse messy, conversational Spanish
+# email format with budgets, CPM constraints, and multi-phase strategies.
+# ============================================================
+
+REAL_WORLD_BRIEFS = [
+    TestBrief(
+        name="puerto_de_indias_spirits",
+        category="real_world",
+        description="Spanish gin brand, social/lifestyle campaign - 'Tarde con los tuyos' concept",
+        query="""Puerto de Indias - oleada 2. Brief igual que la anterior con el concepto "Tarde con los tuyos".
+        Quieren ir a creadores TOP que sepan que convierten y mueven gente. Preferimos repetir con los que han
+        funcionado bien en la oleada anterior. Buscar perfiles lifestyle y entretenimiento que encajen con una
+        ginebra premium. Importante: hay que verificar que los perfiles estén dispuestos a vincularse a bebidas
+        espirituosas. Presupuesto: 111.800€. CPM máximo 20€ por talento. Publicaciones en octubre.""",
+        expectations=TestBriefExpectations(
+            expected_brand="Puerto de Indias",
+            expected_niche="alcoholic_beverages",
+            expected_tones=["social", "warm", "authentic"],
+            expected_themes=["tiempo con amigos", "tarde", "social moments"],
+            min_niche_alignment=0.4,
+            min_brand_fit=0.4,
+            min_creative_fit=0.4,
+            min_overall_quality="acceptable",
+            target_count=5,
+        )
+    ),
+
+    TestBrief(
+        name="ikea_novedades_primeras_veces",
+        category="real_world",
+        description="IKEA first-homes campaign targeting GenZ and Millennials with 'primeras veces' theme",
+        query="""IKEA novedades oleada 1, año 26. Objetivo: fomentar el interés a través de un mensaje
+        actual y relevante. Target: GenZ y Millenials + 1-2 perfil family. Concepto: "Primeras veces" -
+        posicionar IKEA como la marca que te acompaña en los momentos difíciles y te da un empujón extra.
+        Al menos el 30% de los talentos deben ir a la tienda a grabar. Comunicar relación calidad-precio.
+        Tono: natural, auténtico y cercano. Presupuesto: 39.000€. Fechas: 6 octubre - 2 noviembre.
+        Rescatar perfiles que hayan funcionado muy bien como Carliyo, Anna Padilla.""",
+        expectations=TestBriefExpectations(
+            expected_brand="IKEA",
+            expected_niche="home_decor",
+            expected_tones=["natural", "authentic", "cercano"],
+            expected_themes=["primeras veces", "primer hogar", "independencia"],
+            expected_topics=["home", "lifestyle", "juventud", "vivienda"],
+            min_niche_alignment=0.6,
+            target_count=5,
+        )
+    ),
+
+    TestBrief(
+        name="square_fintech_gastro_entrepreneurs",
+        category="real_world",
+        description="B2B fintech brand seeking gastro entrepreneur speakers for bar/restaurant owner events",
+        query="""Square - propuesta para cliente B2B de tecnología financiera. Necesitamos 5-6 perfiles
+        emprendedores gastronómicos para dar una ponencia a emprendedores jóvenes de restaurantes y bares
+        de barrio. Deben ser referentes del mundo foodie/gastro, con contenido curado en redes y residentes
+        en España. Variedad entre hombres y mujeres. Repartidos en Madrid, Barcelona, Sevilla, Valencia -
+        las ciudades core son Madrid y BCN. Compromiso: asistencia a evento + pack 2/3 stories para amplificar.
+        Budget: 28k. Se trata de emprendedores que puedan hablar de cómo hacer crecer restaurantes y bares.""",
+        expectations=TestBriefExpectations(
+            expected_brand="Square",
+            expected_niche="food",
+            expected_topics=["gastronomía", "emprendimiento", "restaurante", "bar"],
+            expected_tones=["professional", "credible", "authentic"],
+            min_niche_alignment=0.5,
+            target_count=6,
+        )
+    ),
+
+    TestBrief(
+        name="ikea_grejsimojs_playful_collection",
+        category="real_world",
+        description="IKEA GREJSIMOJS playful collection launch - 3-phase teasing campaign with two budget scenarios",
+        query="""IKEA colección GREJSIMOJS - Key Collection FY26. Colección de 33 productos que reivindica
+        el juego como herramienta para el bienestar emocional y la creatividad. Pensada para todas las edades.
+        Estrategia en 3 fases:
+        FASE 1 (diciembre): Teaser sin mostrar colección - perfiles diseño y aesthetic/cultural que generen
+        expectación ("acabo de ver algo de IKEA que no puedo enseñar todavía").
+        FASE 2 (enero): Revelación - perfiles culturalmente relevantes (diseño, moda, arte, deco) que expliquen
+        la colección. Experiencia privada en tienda.
+        FASE 3 (febrero, lanzamiento): Creadores masivos/aspiracionales que empujen urgencia de compra.
+        Colección para niños pero no solo perfil family - también lifestyle, moda. Escenarios presupuesto:
+        1º: 30.000€ / 2º: 50.000€.""",
+        expectations=TestBriefExpectations(
+            expected_brand="IKEA",
+            expected_niche="home_decor",
+            expected_tones=["playful", "creative", "bold", "unexpected"],
+            expected_themes=["juego", "creatividad", "diseño", "bienestar"],
+            expected_topics=["home", "design", "lifestyle", "play"],
+            min_niche_alignment=0.5,
+            min_creative_fit=0.4,
+            target_count=5,
+        )
+    ),
+]
+
+
+# ============================================================
 # ALL BRIEFS COMBINED
 # ============================================================
 
@@ -467,7 +566,8 @@ ALL_TEST_BRIEFS: List[TestBrief] = (
     NICHE_PRECISION_BRIEFS +
     BRAND_MATCHING_BRIEFS +
     CREATIVE_FIT_BRIEFS +
-    EDGE_CASE_BRIEFS
+    EDGE_CASE_BRIEFS +
+    REAL_WORLD_BRIEFS
 )
 
 

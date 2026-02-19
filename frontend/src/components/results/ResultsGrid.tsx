@@ -61,30 +61,30 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
   return (
     <div className="space-y-6" ref={ref}>
       {/* Results Header - Sticky */}
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-4 bg-dark-primary/95 backdrop-blur-md border-b border-dark-border/30">
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-4 bg-dark-primary/90 backdrop-blur-lg border-b border-dark-border/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h2 className="font-serif text-xl text-light-primary">Resultados</h2>
-              <div className="h-px flex-1 bg-dark-border max-w-[100px]" />
+              <div className="h-px flex-1 bg-gradient-to-r from-ember-core/30 to-transparent max-w-[100px]" />
             </div>
             <p className="text-sm text-light-tertiary">
               <span className="font-mono text-light-secondary">{searchResponse.total_candidates}</span> candidatos encontrados,{' '}
               <span className="font-mono text-light-secondary">{searchResponse.total_after_filter}</span> pasaron filtros,{' '}
-              mostrando top <span className="font-mono text-accent-gold">{searchResponse.results.length}</span>
+              mostrando top <span className="font-mono text-ember-warm">{searchResponse.results.length}</span>
             </p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             {/* View Mode Toggle */}
-            <div className="flex items-center rounded-lg border border-dark-border p-0.5 mr-2">
+            <div className="flex items-center rounded-lg border border-dark-border/50 p-0.5 mr-2 bg-dark-secondary/50">
               <button
                 onClick={() => setViewMode('cards')}
                 className={cn(
                   'p-1.5 rounded-md transition-all',
                   viewMode === 'cards'
-                    ? 'bg-accent-gold/20 text-accent-gold'
+                    ? 'bg-ember-core/20 text-ember-warm shadow-sm'
                     : 'text-light-tertiary hover:text-light-secondary'
                 )}
                 aria-label="Card view"
@@ -97,7 +97,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
                 className={cn(
                   'p-1.5 rounded-md transition-all',
                   viewMode === 'list'
-                    ? 'bg-accent-gold/20 text-accent-gold'
+                    ? 'bg-ember-core/20 text-ember-warm shadow-sm'
                     : 'text-light-tertiary hover:text-light-secondary'
                 )}
                 aria-label="List view"
@@ -110,8 +110,8 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             onClick={() => handleExport('csv')}
             disabled={isExporting !== null}
             className="flex items-center gap-2 px-3 py-2 text-xs font-medium
-                       text-light-secondary bg-dark-secondary border border-dark-border rounded-lg
-                       hover:border-accent-gold/30 hover:text-light-primary
+                       text-light-secondary bg-dark-secondary/60 border border-dark-border/50 rounded-lg
+                       hover:border-ember-core/30 hover:text-light-primary
                        disabled:opacity-50 transition-all"
           >
             <Download className="h-3.5 w-3.5" />
@@ -122,8 +122,8 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             onClick={() => handleExport('excel')}
             disabled={isExporting !== null}
             className="flex items-center gap-2 px-3 py-2 text-xs font-medium
-                       text-light-secondary bg-dark-secondary border border-dark-border rounded-lg
-                       hover:border-accent-gold/30 hover:text-light-primary
+                       text-light-secondary bg-dark-secondary/60 border border-dark-border/50 rounded-lg
+                       hover:border-ember-core/30 hover:text-light-primary
                        disabled:opacity-50 transition-all"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -135,8 +135,8 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
             disabled={isSaving || isSaved}
             className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
               isSaved
-                ? 'text-metric-excellent bg-metric-excellent/10 border border-metric-excellent/30'
-                : 'text-accent-gold bg-accent-gold/10 border border-accent-gold/30 hover:bg-accent-gold/20'
+                ? 'text-metric-excellent bg-metric-excellent/10 border border-metric-excellent/30 shadow-sm shadow-metric-excellent/10'
+                : 'text-ember-warm bg-ember-core/10 border border-ember-core/30 hover:bg-ember-core/20 hover:shadow-sm hover:shadow-ember-core/10'
             } disabled:opacity-50`}
           >
             {isSaved ? (
@@ -157,19 +157,19 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
 
       {/* Parsed Query Info */}
       {searchResponse.parsed_query.brand_name && (
-        <div className="glass rounded-lg border border-accent-gold/20 p-4">
+        <div className="card-obsidian rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent-gold/10 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-4 h-4 text-accent-gold" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-ice-bright/20 to-ice-soft/10 flex items-center justify-center flex-shrink-0 border border-ice-bright/20">
+              <Sparkles className="w-4 h-4 text-ice-bright" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="text-sm text-light-secondary">Marca detectada:</span>
-                <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-ember-core/15 text-ember-warm text-xs font-medium border border-ember-core/25">
                   {searchResponse.parsed_query.brand_name}
                 </span>
                 {searchResponse.parsed_query.brand_category && (
-                  <span className="px-2 py-0.5 rounded-full bg-dark-tertiary text-light-secondary text-xs">
+                  <span className="px-2 py-0.5 rounded-full bg-dark-ash text-light-secondary text-xs">
                     {searchResponse.parsed_query.brand_category.replace(/_/g, ' ')}
                   </span>
                 )}
@@ -180,7 +180,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
                   {searchResponse.parsed_query.content_themes.slice(0, 5).map((theme, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 rounded-full bg-dark-tertiary text-light-tertiary text-xs"
+                      className="px-2 py-0.5 rounded-full bg-dark-ash text-light-tertiary text-xs"
                     >
                       {theme.replace(/_/g, ' ')}
                     </span>
@@ -193,7 +193,7 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
       )}
 
       {/* Verified Badge Banner */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-metric-excellent/10 border border-metric-excellent/20">
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-metric-excellent/8 border border-metric-excellent/20">
         <ShieldCheck className="w-5 h-5 text-metric-excellent flex-shrink-0" />
         <p className="text-sm text-light-secondary">
           <span className="font-medium text-metric-excellent">Perfiles verificados:</span>{' '}
@@ -230,8 +230,8 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
         )
       ) : (
         <div className="text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-dark-secondary border border-dark-border flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-light-tertiary" />
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-dark-secondary to-dark-tertiary border border-dark-border/50 flex items-center justify-center shadow-lg shadow-black/20">
+            <Sparkles className="w-8 h-8 text-ember-core/50" />
           </div>
           <h3 className="font-serif text-xl text-light-primary mb-2">
             Sin resultados

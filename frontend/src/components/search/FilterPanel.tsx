@@ -50,7 +50,7 @@ function FilterSlider({
           {label}
           {optional && <span className="text-light-tertiary ml-1">(opcional)</span>}
         </label>
-        <span className="text-sm font-mono font-medium text-accent-gold">
+        <span className="text-sm font-mono font-medium text-ember-warm">
           {displayValue}
         </span>
       </div>
@@ -59,7 +59,7 @@ function FilterSlider({
         <div className="h-1.5 bg-dark-tertiary rounded-full overflow-hidden">
           {/* Filled Track */}
           <div
-            className="h-full bg-gradient-to-r from-accent-gold-dark to-accent-gold rounded-full transition-all duration-200"
+            className="h-full bg-gradient-to-r from-ember-cool to-ember-core rounded-full transition-all duration-200"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -87,7 +87,7 @@ function FilterSlider({
         />
         {/* Custom Thumb */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-accent-gold rounded-full shadow-lg shadow-accent-gold/30 border-2 border-dark-primary pointer-events-none transition-all duration-200 hover:scale-110"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-gradient-to-br from-ember-hot to-ember-core rounded-full shadow-lg shadow-ember-core/40 border-2 border-dark-primary pointer-events-none transition-all duration-200"
           style={{ left: `calc(${percentage}% - 8px)` }}
         />
       </div>
@@ -138,7 +138,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
     (filters.target_age_ranges && filters.target_age_ranges.length > 0);
 
   return (
-    <div className="glass rounded-xl border border-dark-border/50 p-6 max-w-3xl mx-auto">
+    <div className="card-obsidian rounded-xl p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
@@ -147,7 +147,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         {hasChanges && (
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 text-xs text-light-tertiary hover:text-accent-gold transition-colors"
+            className="flex items-center gap-1.5 text-xs text-light-tertiary hover:text-ember-warm transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
             Restablecer
@@ -227,8 +227,8 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
                 className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
                   (filters.target_audience_gender === gender) ||
                   (gender === 'any' && !filters.target_audience_gender)
-                    ? 'bg-accent-gold text-dark-primary font-medium'
-                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-border'
+                    ? 'bg-gradient-to-r from-ember-core to-ember-glow text-dark-void font-medium shadow-sm shadow-ember-core/30'
+                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-ash hover:text-light-primary'
                 }`}
               >
                 {gender === 'any' ? 'Cualquiera' : gender === 'female' ? 'Mujeres' : 'Hombres'}
@@ -260,8 +260,8 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
                 onClick={() => toggleAgeRange(range)}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
                   filters.target_age_ranges?.includes(range)
-                    ? 'bg-accent-gold text-dark-primary font-medium'
-                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-border'
+                    ? 'bg-gradient-to-r from-ember-core to-ember-glow text-dark-void font-medium shadow-sm shadow-ember-core/30'
+                    : 'bg-dark-tertiary text-light-secondary hover:bg-dark-ash hover:text-light-primary'
                 }`}
               >
                 {range}
@@ -283,34 +283,34 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
       </div>
 
       {/* Active Filters Summary */}
-      <div className="mt-6 pt-4 border-t border-dark-border/50">
+      <div className="mt-6 pt-4 border-t border-dark-border/30">
         <div className="flex flex-wrap gap-2">
           <span className="text-xs text-light-tertiary">Activos:</span>
-          <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+          <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
             Credibilidad ≥ {filters.min_credibility_score}%
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+          <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
             España ≥ {filters.min_spain_audience_pct}%
           </span>
           {filters.min_engagement_rate !== undefined && (
-            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
               Engagement ≥ {filters.min_engagement_rate}%
             </span>
           )}
           {filters.min_follower_growth_rate !== undefined && (
-            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
               Crecimiento ≥ {filters.min_follower_growth_rate > 0 ? '+' : ''}
               {filters.min_follower_growth_rate}%
             </span>
           )}
           {filters.target_audience_gender && (
-            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
               Audiencia {filters.target_audience_gender === 'female' ? 'femenina' : 'masculina'} ≥{' '}
               {filters.min_target_gender_pct ?? 50}%
             </span>
           )}
           {filters.target_age_ranges && filters.target_age_ranges.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-ember-core/10 text-ember-warm text-xs border border-ember-core/20">
               Edades: {filters.target_age_ranges.join(', ')}
             </span>
           )}

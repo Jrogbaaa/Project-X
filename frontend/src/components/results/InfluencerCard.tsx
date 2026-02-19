@@ -69,23 +69,25 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
   return (
     <div
       className={cn(
-        'group bg-dark-secondary rounded-xl border overflow-hidden',
-        'hover:border-accent-gold/30 hover:shadow-card-hover transition-all duration-300',
-        'animate-cascade',
-        isSelected 
-          ? 'border-accent-gold/50 ring-2 ring-accent-gold/20 shadow-glow-gold' 
-          : 'border-dark-border/50'
+        'group rounded-xl border overflow-hidden',
+        'bg-gradient-to-b from-dark-secondary to-dark-tertiary/50',
+        'hover:border-ember-core/40 transition-all duration-300',
+        'animate-card-reveal',
+        'shadow-card',
+        isSelected
+          ? 'border-ember-core/50 ring-2 ring-ember-core/20 shadow-glow-gold animate-ember-pulse'
+          : 'border-dark-border/40 hover:shadow-card-hover'
       )}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${index * 60}ms` }}
       data-index={index}
     >
       {/* Main Card Content */}
       <div className="p-6">
         {/* Header Row */}
         <div className="flex items-start gap-4 mb-5">
-          {/* Rank Badge */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-accent-gold/10 border border-accent-gold/20 flex items-center justify-center">
-            <span className="font-mono font-bold text-accent-gold text-sm">
+          {/* Rank Badge - Ember Core */}
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-ember-hot/90 to-ember-core flex items-center justify-center shadow-lg shadow-ember-core/30">
+            <span className="font-mono font-bold text-dark-void text-sm">
               {rank_position}
             </span>
           </div>
@@ -93,7 +95,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           {/* Profile Info */}
           <div className="flex items-center gap-4 flex-1 min-w-0">
             {/* Avatar */}
-            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-2 ring-dark-border group-hover:ring-accent-gold/30 transition-all">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-2 ring-dark-border/60 group-hover:ring-ember-core/40 transition-all duration-300">
               {raw_data.profile_picture_url ? (
                 <Image
                   src={raw_data.profile_picture_url}
@@ -115,7 +117,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
                   @{raw_data.username}
                 </h3>
                 {raw_data.is_verified && (
-                  <BadgeCheck className="h-5 w-5 text-accent-gold flex-shrink-0" />
+                  <BadgeCheck className="h-5 w-5 text-ice-bright flex-shrink-0" />
                 )}
                 <button
                   onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
@@ -147,13 +149,13 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
                   {raw_data.interests.slice(0, 2).map((interest, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 text-[10px] rounded-full bg-[#06b6d4]/10 text-[#06b6d4] border border-[#06b6d4]/20"
+                      className="px-2 py-0.5 text-[10px] rounded-full bg-ice-soft/10 text-ice-soft border border-ice-soft/20"
                     >
                       {interest}
                     </span>
                   ))}
                   {raw_data.interests.length > 2 && (
-                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-dark-tertiary text-light-tertiary">
+                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-dark-ash text-light-tertiary">
                       +{raw_data.interests.length - 2}
                     </span>
                   )}
@@ -223,7 +225,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
-        <div className="px-6 pb-6 space-y-6 border-t border-dark-border/50 pt-6">
+        <div className="px-6 pb-6 space-y-6 border-t border-dark-border/30 pt-6">
           {/* Bio */}
           {raw_data.bio && (
             <p className="text-sm text-light-secondary leading-relaxed">
@@ -234,14 +236,14 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
           {/* Content Niches */}
           {raw_data.interests && raw_data.interests.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-light-tertiary uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-ember-glow/80 uppercase tracking-wider mb-2">
                 Nichos de Contenido
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {raw_data.interests.map((interest, i) => (
                   <span
                     key={i}
-                    className="px-2.5 py-1 text-xs rounded-full bg-[#06b6d4]/10 text-[#06b6d4] border border-[#06b6d4]/20"
+                    className="px-2.5 py-1 text-xs rounded-full bg-ice-soft/10 text-ice-soft border border-ice-soft/20"
                   >
                     {interest}
                   </span>
@@ -262,7 +264,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 bg-dark-tertiary/50 border-t border-dark-border/30 flex items-center justify-between">
+      <div className="px-6 py-4 bg-dark-ash/40 border-t border-dark-border/20 flex items-center justify-between">
         <div className="text-sm text-light-tertiary">
           Media: <span className="font-mono text-light-secondary">{raw_data.avg_likes > 0 ? formatNumber(raw_data.avg_likes) : 'N/A'}</span> likes,{' '}
           <span className="font-mono text-light-secondary">{raw_data.avg_comments > 0 ? formatNumber(raw_data.avg_comments) : 'N/A'}</span> comentarios
@@ -299,7 +301,7 @@ export function InfluencerCard({ influencer, index = 0, isSelected = false, onCo
             href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-accent-gold hover:text-accent-gold-light text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 text-ember-warm hover:text-ember-hot text-sm font-medium transition-colors"
             aria-label={`Ver perfil de Instagram de ${raw_data.username}`}
             tabIndex={0}
           >

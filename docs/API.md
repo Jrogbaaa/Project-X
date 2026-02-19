@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:8000` (local) | `https://project-x-three-sage.vercel.app/api` (production)
 
-> **Last Updated:** January 30, 2026
+> **Last Updated:** February 19, 2026
 
 ## Overview
 
@@ -39,6 +39,10 @@ An influencer's **niche** is what they post about - their content category. This
 | Health food brand | Fitness, Nutrition, Healthy Lifestyle |
 | Padel equipment | Padel, Racket Sports (NOT soccer players) |
 | Fashion brand | Fashion, Style, Beauty |
+| Spirits/gin brand (Puerto de Indias) | Lifestyle, Entertainment, Social moments |
+| Fintech/payment tech (Square) | Food entrepreneurs, Business, Gastronomy |
+| Perfume/fragrance (Halloween) | Beauty, Lifestyle |
+| Banking app (imagin) | Fintech, Lifestyle, Entertainment |
 
 Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
 

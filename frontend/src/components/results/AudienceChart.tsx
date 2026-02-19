@@ -8,28 +8,28 @@ interface AudienceChartProps {
 }
 
 const GENDER_COLORS = {
-  female: '#ec4899',
+  female: '#ec4899', // Pink for female
   Female: '#ec4899',
-  male: '#6366f1',
-  Male: '#6366f1',
-  unknown: '#6b6b70',
+  male: '#00d4ff', // Ice bright for male (contrast)
+  Male: '#00d4ff',
+  unknown: '#5e5e66',
 };
 
 const AGE_GRADIENT = [
-  '#d4a574', // accent gold
-  '#e8c9a8', // gold light
-  '#d4a574',
-  '#b8895a', // gold dark
-  '#d4a574',
+  '#ff6b4a', // ember-hot
+  '#e8734d', // ember-warm
+  '#d4845c', // ember-core
+  '#c9956a', // ember-glow
+  '#b8a078', // ember-cool
 ];
 
 // Custom tooltip component for dark theme
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-dark-secondary border border-dark-border rounded-lg px-3 py-2 shadow-lg">
+      <div className="bg-dark-secondary border border-ember-core/30 rounded-lg px-3 py-2 shadow-lg shadow-black/30">
         <p className="text-light-secondary text-xs">{label}</p>
-        <p className="text-light-primary font-mono font-medium">
+        <p className="text-ember-warm font-mono font-medium">
           {payload[0].value.toFixed(1)}%
         </p>
       </div>
@@ -72,14 +72,14 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <h4 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
+      <h4 className="text-sm font-semibold text-ember-glow/80 uppercase tracking-wider">
         Demografía de Audiencia
       </h4>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gender Distribution */}
         {hasGenderData && (
-          <div className="bg-dark-tertiary/30 rounded-lg p-4">
+          <div className="bg-dark-ash/40 rounded-lg p-4 border border-dark-border/20">
             <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
               Género
             </h5>
@@ -126,7 +126,7 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
 
         {/* Age Distribution */}
         {hasAgeData && (
-          <div className="bg-dark-tertiary/30 rounded-lg p-4">
+          <div className="bg-dark-ash/40 rounded-lg p-4 border border-dark-border/20">
             <h5 className="text-xs text-light-tertiary mb-3 uppercase tracking-wider">
               Grupos de Edad
             </h5>
@@ -142,13 +142,13 @@ export function AudienceChart({ genders, ageDistribution }: AudienceChartProps) 
                     type="category"
                     dataKey="range"
                     width={40}
-                    tick={{ fontSize: 10, fill: '#a1a1a6' }}
+                    tick={{ fontSize: 10, fill: '#9a9aa3' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     content={<CustomTooltip />}
-                    cursor={{ fill: 'rgba(212, 165, 116, 0.1)' }}
+                    cursor={{ fill: 'rgba(212, 132, 92, 0.08)' }}
                   />
                   <Bar
                     dataKey="value"

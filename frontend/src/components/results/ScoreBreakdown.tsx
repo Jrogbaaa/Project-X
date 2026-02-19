@@ -12,54 +12,63 @@ const SCORE_CONFIG: Record<keyof ScoreComponents, {
   description: string;
   color: string;
   bgColor: string;
+  glowColor: string;
 }> = {
   credibility: {
     label: 'Credibilidad',
     description: 'Autenticidad de la audiencia',
     color: 'bg-[#6366f1]',
-    bgColor: 'bg-[#6366f1]/20',
+    bgColor: 'bg-[#6366f1]/15',
+    glowColor: 'shadow-[#6366f1]/30',
   },
   engagement: {
     label: 'Engagement',
     description: 'Tasa de interacción',
     color: 'bg-metric-excellent',
-    bgColor: 'bg-metric-excellent/20',
+    bgColor: 'bg-metric-excellent/15',
+    glowColor: 'shadow-metric-excellent/30',
   },
   audience_match: {
     label: 'Match Audiencia',
     description: 'Ajuste demográfico',
-    color: 'bg-accent-gold',
-    bgColor: 'bg-accent-gold/20',
+    color: 'bg-ember-core',
+    bgColor: 'bg-ember-core/15',
+    glowColor: 'shadow-ember-core/30',
   },
   growth: {
     label: 'Crecimiento',
     description: 'Tendencia 6 meses',
     color: 'bg-[#ec4899]',
-    bgColor: 'bg-[#ec4899]/20',
+    bgColor: 'bg-[#ec4899]/15',
+    glowColor: 'shadow-[#ec4899]/30',
   },
   geography: {
     label: 'Geografía',
     description: '% audiencia en España',
-    color: 'bg-[#14b8a6]',
-    bgColor: 'bg-[#14b8a6]/20',
+    color: 'bg-ice-soft',
+    bgColor: 'bg-ice-soft/15',
+    glowColor: 'shadow-ice-soft/30',
   },
   brand_affinity: {
     label: 'Afinidad Marca',
     description: 'Overlap audiencia con marca objetivo',
-    color: 'bg-[#f97316]',
-    bgColor: 'bg-[#f97316]/20',
+    color: 'bg-ember-hot',
+    bgColor: 'bg-ember-hot/15',
+    glowColor: 'shadow-ember-hot/30',
   },
   creative_fit: {
     label: 'Encaje Creativo',
     description: 'Alineación con concepto de campaña',
     color: 'bg-[#8b5cf6]',
-    bgColor: 'bg-[#8b5cf6]/20',
+    bgColor: 'bg-[#8b5cf6]/15',
+    glowColor: 'shadow-[#8b5cf6]/30',
   },
   niche_match: {
     label: 'Match Nicho',
     description: 'Alineación de nicho de contenido',
-    color: 'bg-[#06b6d4]',
-    bgColor: 'bg-[#06b6d4]/20',
+    color: 'bg-ice-bright',
+    bgColor: 'bg-ice-bright/15',
+    glowColor: 'shadow-ice-bright/30',
   },
 };
 
@@ -81,7 +90,7 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-light-primary uppercase tracking-wider">
+        <h4 className="text-sm font-semibold text-ember-glow/80 uppercase tracking-wider">
           Desglose de Puntuación
         </h4>
         <span className="text-xs text-light-tertiary">
@@ -103,7 +112,7 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
                   <span className="text-sm text-light-secondary group-hover:text-light-primary transition-colors">
                     {config.label}
                   </span>
-                  <span className="text-[10px] text-light-tertiary px-1.5 py-0.5 rounded bg-dark-tertiary">
+                  <span className="text-[10px] text-light-tertiary px-1.5 py-0.5 rounded bg-dark-ash">
                     {weight}
                   </span>
                 </div>
@@ -113,21 +122,22 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
               </div>
 
               {/* Progress Bar */}
-              <div className="relative h-2 bg-dark-tertiary rounded-full overflow-hidden">
+              <div className="relative h-2 bg-dark-ash rounded-full overflow-hidden">
                 <div
                   className={cn(
-                    'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
-                    config.color
+                    'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-sm',
+                    config.color,
+                    config.glowColor
                   )}
                   style={{ width: `${percentage}%` }}
                 />
-                {/* Glow effect */}
+                {/* Glow effect at fill point */}
                 <div
                   className={cn(
-                    'absolute inset-y-0 left-0 rounded-full blur-sm opacity-50 transition-all duration-700 ease-out',
+                    'absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full blur-md opacity-60 transition-all duration-700 ease-out',
                     config.color
                   )}
-                  style={{ width: `${percentage}%` }}
+                  style={{ left: `calc(${percentage}% - 6px)` }}
                 />
               </div>
 
@@ -141,7 +151,7 @@ export function ScoreBreakdown({ scores }: ScoreBreakdownProps) {
       </div>
 
       {/* Summary */}
-      <div className="pt-3 border-t border-dark-border/50">
+      <div className="pt-3 border-t border-dark-border/30">
         <div className="flex flex-col gap-1">
           <span className="text-xs text-light-tertiary">
             Pesos por defecto: Engagement 20% · Credibilidad 15% · Audiencia 15% · Afinidad Marca 15% · Encaje Creativo 15%

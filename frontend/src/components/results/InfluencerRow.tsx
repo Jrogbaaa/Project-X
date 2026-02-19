@@ -36,23 +36,23 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
     <div
       className={cn(
         'group flex items-center gap-4 px-4 py-3 rounded-lg border transition-all duration-200',
-        'hover:bg-dark-tertiary/50 animate-cascade',
-        isSelected 
-          ? 'bg-accent-gold/5 border-accent-gold/40 ring-1 ring-accent-gold/20' 
-          : 'bg-dark-secondary/50 border-dark-border/50 hover:border-accent-gold/30'
+        'hover:bg-dark-ash/30 animate-card-reveal',
+        isSelected
+          ? 'bg-ember-core/5 border-ember-core/40 ring-1 ring-ember-core/20 shadow-sm shadow-ember-core/10'
+          : 'bg-dark-secondary/40 border-dark-border/40 hover:border-ember-core/30'
       )}
-      style={{ animationDelay: `${index * 30}ms` }}
+      style={{ animationDelay: `${index * 40}ms` }}
       data-index={index}
     >
       {/* Rank */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-accent-gold/10 border border-accent-gold/20 flex items-center justify-center">
-        <span className="font-mono font-bold text-accent-gold text-sm">
+      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-ember-hot/80 to-ember-core flex items-center justify-center shadow-sm shadow-ember-core/30">
+        <span className="font-mono font-bold text-dark-void text-sm">
           {rank_position}
         </span>
       </div>
 
       {/* Avatar */}
-      <div className="relative w-10 h-10 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-1 ring-dark-border group-hover:ring-accent-gold/30 transition-all">
+      <div className="relative w-10 h-10 rounded-full overflow-hidden bg-dark-tertiary flex-shrink-0 ring-1 ring-dark-border/50 group-hover:ring-ember-core/30 transition-all">
         {raw_data.profile_picture_url ? (
           <Image
             src={raw_data.profile_picture_url}
@@ -74,7 +74,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
             @{raw_data.username}
           </span>
           {raw_data.is_verified && (
-            <BadgeCheck className="h-3.5 w-3.5 text-accent-gold flex-shrink-0" />
+            <BadgeCheck className="h-3.5 w-3.5 text-ice-bright flex-shrink-0" />
           )}
           <button
             onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
@@ -154,7 +154,7 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-accent-gold hover:text-accent-gold-light hover:bg-accent-gold/10 transition-all"
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-ember-warm hover:text-ember-hot hover:bg-ember-core/10 transition-all"
           aria-label={`Ver perfil de Instagram de ${raw_data.username}`}
           tabIndex={0}
         >

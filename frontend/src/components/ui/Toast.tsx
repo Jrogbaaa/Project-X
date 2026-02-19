@@ -9,24 +9,27 @@ interface ToastContainerProps {
   onDismiss: (id: string) => void;
 }
 
-const toastStyles: Record<ToastVariant, { bg: string; border: string; icon: typeof CheckCircle; iconColor: string }> = {
+const toastStyles: Record<ToastVariant, { bg: string; border: string; icon: typeof CheckCircle; iconColor: string; glow: string }> = {
   success: {
     bg: 'bg-metric-excellent/10',
     border: 'border-metric-excellent/30',
     icon: CheckCircle,
     iconColor: 'text-metric-excellent',
+    glow: 'shadow-metric-excellent/20',
   },
   info: {
-    bg: 'bg-accent-gold/10',
-    border: 'border-accent-gold/30',
+    bg: 'bg-ember-core/10',
+    border: 'border-ember-core/30',
     icon: Info,
-    iconColor: 'text-accent-gold',
+    iconColor: 'text-ember-warm',
+    glow: 'shadow-ember-core/20',
   },
   error: {
     bg: 'bg-metric-poor/10',
     border: 'border-metric-poor/30',
     icon: XCircle,
     iconColor: 'text-metric-poor',
+    glow: 'shadow-metric-poor/20',
   },
 };
 
@@ -47,10 +50,11 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
           <div
             key={toast.id}
             className={cn(
-              'flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-md',
+              'flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-lg',
               'animate-slide-in-right shadow-lg min-w-[280px] max-w-[400px]',
               style.bg,
-              style.border
+              style.border,
+              style.glow
             )}
             role="alert"
           >

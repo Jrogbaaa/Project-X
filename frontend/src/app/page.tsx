@@ -122,19 +122,20 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-dark-primary">
-      {/* Ambient Background Glow */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-accent-gold/[0.03] via-transparent to-transparent" />
+      {/* Ambient Background Glow - Ember theme */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[700px] bg-gradient-radial from-ember-hot/[0.025] via-ember-core/[0.015] to-transparent" />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-gradient-radial from-ember-core/[0.02] to-transparent opacity-50" />
       </div>
 
       {/* Header */}
-      <header className="relative z-20 border-b border-dark-border/50">
+      <header className="relative z-20 border-b border-dark-border/40 bg-dark-primary/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-accent-gold/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-accent-gold" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-ember-hot/20 to-ember-core/10 flex items-center justify-center border border-ember-core/20">
+                <Sparkles className="w-4 h-4 text-ember-warm" />
               </div>
               <span className="font-serif text-lg text-light-primary tracking-tight">
                 Descubrimiento de Influencers
@@ -143,12 +144,12 @@ export default function Home() {
 
             {/* Nav Actions */}
             <div className="flex items-center gap-6">
-              <button className="flex items-center gap-2 text-light-secondary hover:text-light-primary transition-colors text-sm">
-                <Clock className="w-4 h-4" />
+              <button className="flex items-center gap-2 text-light-secondary hover:text-ember-glow transition-colors text-sm group">
+                <Clock className="w-4 h-4 group-hover:text-ember-core transition-colors" />
                 <span className="hidden sm:inline">Historial</span>
               </button>
-              <button className="flex items-center gap-2 text-light-secondary hover:text-light-primary transition-colors text-sm">
-                <Bookmark className="w-4 h-4" />
+              <button className="flex items-center gap-2 text-light-secondary hover:text-ember-glow transition-colors text-sm group">
+                <Bookmark className="w-4 h-4 group-hover:text-ember-core transition-colors" />
                 <span className="hidden sm:inline">Guardados</span>
               </button>
             </div>
@@ -160,7 +161,7 @@ export default function Home() {
       <section className="relative z-10 pt-16 pb-8 sm:pt-24 sm:pb-12">
         <div className="max-w-4xl mx-auto px-6 text-center">
           {/* Headline */}
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-hero text-light-primary mb-4 animate-fade-in">
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-hero text-gradient mb-4 animate-fade-in tracking-tight">
             Descubre
           </h1>
           <p className="text-light-secondary text-lg sm:text-xl mb-4 max-w-2xl mx-auto animate-fade-in"
@@ -187,10 +188,10 @@ export default function Home() {
                style={{ animationDelay: '300ms' }}>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
                 ${showFilters
-                  ? 'bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
-                  : 'bg-dark-secondary text-light-secondary hover:text-light-primary border border-dark-border hover:border-accent-gold/30'
+                  ? 'bg-ember-core/15 text-ember-warm border border-ember-core/30 shadow-sm shadow-ember-core/10'
+                  : 'bg-dark-secondary text-light-secondary hover:text-light-primary border border-dark-border hover:border-ember-core/30'
                 }`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -199,7 +200,7 @@ export default function Home() {
               Filtros
             </button>
 
-            <div className="hidden sm:block w-px h-4 bg-dark-border" />
+            <div className="hidden sm:block w-px h-4 bg-dark-border/50" />
 
             <div className="flex items-center gap-2 text-sm text-light-tertiary">
               <span>Prueba:</span>
@@ -208,7 +209,7 @@ export default function Home() {
                   key={i}
                   onClick={() => handleExampleClick(example)}
                   disabled={isLoading}
-                  className="px-3 py-1.5 rounded-full bg-dark-secondary/50 text-light-secondary hover:text-accent-gold hover:bg-dark-secondary transition-all text-xs border border-dark-border/50 hover:border-accent-gold/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-full bg-dark-secondary/60 text-light-secondary hover:text-ember-glow hover:bg-dark-ash/50 transition-all text-xs border border-dark-border/40 hover:border-ember-core/25 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Search for: ${example}`}
                   tabIndex={0}
                 >
@@ -235,8 +236,9 @@ export default function Home() {
             <div className="flex justify-center py-16">
               <div className="flex flex-col items-center gap-6">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full border-2 border-dark-border" />
-                  <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-accent-gold border-t-transparent animate-spin" />
+                  <div className="w-12 h-12 rounded-full border-2 border-dark-border/50" />
+                  <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-ember-core border-t-transparent animate-spin" />
+                  <div className="absolute inset-2 w-8 h-8 rounded-full bg-ember-core/10 animate-pulse" />
                 </div>
                 
                 {/* Loading Steps */}
@@ -279,8 +281,8 @@ export default function Home() {
           {!searchResults && !isLoading && (
             <div className="text-center py-16">
               <div className="max-w-lg mx-auto">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-dark-secondary border border-dark-border flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-accent-gold/50" />
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-dark-secondary to-dark-tertiary border border-dark-border/50 flex items-center justify-center shadow-lg shadow-black/20">
+                  <Sparkles className="w-8 h-8 text-ember-core/60" />
                 </div>
                 <h3 className="font-serif text-xl text-light-primary mb-2">
                   Listo para descubrir
@@ -288,9 +290,9 @@ export default function Home() {
                 <p className="text-light-secondary text-sm leading-relaxed mb-6">
                   Pega tu brief de marca arriba. Nuestra IA extrae el contexto de marca, conceptos creativos y requisitos de campaña para encontrar los influencers más alineados.
                 </p>
-                <div className="bg-dark-secondary/50 rounded-xl p-4 text-left border border-dark-border/50">
-                  <p className="text-xs text-light-tertiary mb-2 uppercase tracking-wider">Ejemplo de brief:</p>
-                  <p className="text-sm text-light-secondary italic">
+                <div className="bg-dark-secondary/60 rounded-xl p-4 text-left border border-dark-border/40 shadow-inner shadow-black/10">
+                  <p className="text-xs text-ember-glow/80 mb-2 uppercase tracking-wider font-medium">Ejemplo de brief:</p>
+                  <p className="text-sm text-light-secondary italic leading-relaxed">
                     &quot;Buscar 5 influencers españoles para campaña de Adidas padel. Concepto creativo: serie &apos;Rising Stars&apos; con atletas emergentes en momentos auténticos de entrenamiento, estilo documental. Preferir influencers mid-tier (100K-2M seguidores).&quot;
                   </p>
                 </div>
@@ -301,21 +303,21 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-dark-border/50 py-6">
+      <footer className="relative z-10 border-t border-dark-border/30 py-6 bg-dark-primary/50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <p className="text-xs text-light-tertiary">
               Impulsado por PrimeTag API
             </p>
             <p className="text-xs text-light-tertiary hidden sm:block">
-              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">j</kbd>
-              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono ml-1">k</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary/80 border border-dark-border/50 text-[10px] font-mono text-light-secondary">j</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary/80 border border-dark-border/50 text-[10px] font-mono text-light-secondary ml-1">k</kbd>
               <span className="ml-2">navegar</span>
-              <span className="mx-2">|</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">c</kbd>
+              <span className="mx-2 text-dark-border">|</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary/80 border border-dark-border/50 text-[10px] font-mono text-light-secondary">c</kbd>
               <span className="ml-2">copiar</span>
-              <span className="mx-2">|</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary border border-dark-border text-[10px] font-mono">o</kbd>
+              <span className="mx-2 text-dark-border">|</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-dark-secondary/80 border border-dark-border/50 text-[10px] font-mono text-light-secondary">o</kbd>
               <span className="ml-2">abrir</span>
             </p>
           </div>
@@ -339,18 +341,18 @@ interface LoadingStepIndicatorProps {
 function LoadingStepIndicator({ label, isActive, isComplete }: LoadingStepIndicatorProps) {
   return (
     <div className="flex items-center gap-3">
-      <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-        isComplete 
-          ? 'bg-metric-excellent' 
-          : isActive 
-            ? 'bg-accent-gold animate-pulse-subtle' 
-            : 'bg-dark-border'
+      <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+        isComplete
+          ? 'bg-metric-excellent shadow-sm shadow-metric-excellent/50'
+          : isActive
+            ? 'bg-ember-core animate-pulse-subtle shadow-sm shadow-ember-core/50'
+            : 'bg-dark-border/60'
       }`} />
       <span className={`text-sm transition-colors ${
-        isComplete 
-          ? 'text-metric-excellent' 
-          : isActive 
-            ? 'text-light-primary' 
+        isComplete
+          ? 'text-metric-excellent'
+          : isActive
+            ? 'text-light-primary'
             : 'text-light-tertiary'
       }`}>
         {label}

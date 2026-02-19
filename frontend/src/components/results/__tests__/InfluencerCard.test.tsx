@@ -251,7 +251,7 @@ describe('InfluencerCard', () => {
     it('applies selected styling when isSelected is true', () => {
       const { container } = render(<InfluencerCard influencer={createMockInfluencer()} isSelected={true} />);
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('border-accent-gold');
+      expect(card.className).toContain('border-ember-core');
     });
 
     it('does not apply selected styling when isSelected is false', () => {
