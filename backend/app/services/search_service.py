@@ -17,7 +17,7 @@ from app.schemas.llm import ParsedSearchQuery
 from app.schemas.influencer import RankedInfluencer
 from app.models.search import Search, SearchResult
 from app.models.influencer import Influencer
-from app.core.exceptions import SearchError
+from app.core.exceptions import SearchError, PrimeTagAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -564,10 +564,12 @@ class SearchService:
         try:
             username_encrypted = None
             search_summary = None  # Will be populated if we need to search
-            
+            used_cached_token = False
+
             # OPTIMIZATION: Use cached encrypted username if available (saves 1 API call)
             if influencer.primetag_encrypted_username:
                 username_encrypted = influencer.primetag_encrypted_username
+                used_cached_token = True
                 logger.debug(f"Using cached encrypted username for {username}")
             else:
                 # Need to search Primetag to get the encrypted username
@@ -593,11 +595,47 @@ class SearchService:
                 if not username_encrypted:
                     username_encrypted = search_summary.external_social_profile_id or username
 
-            # Fetch FULL metrics from detail endpoint
-            detail = await self.primetag.get_media_kit_detail(
-                username_encrypted,
-                PrimeTagClient.PLATFORM_INSTAGRAM
-            )
+            # Fetch FULL metrics from detail endpoint.
+            # If the cached encrypted token is stale (404), re-search once to refresh it.
+            detail = None
+            for attempt in range(2):
+                try:
+                    detail = await self.primetag.get_media_kit_detail(
+                        username_encrypted,
+                        PrimeTagClient.PLATFORM_INSTAGRAM
+                    )
+                    break
+                except PrimeTagAPIError as e:
+                    if e.status_code == 404 and used_cached_token and attempt == 0:
+                        logger.info(
+                            f"Cached encrypted token expired for {username} (404), "
+                            "re-searching to get fresh token"
+                        )
+                        search_results = await self.primetag.search_media_kits(
+                            username,
+                            platform_type=PrimeTagClient.PLATFORM_INSTAGRAM,
+                            limit=5
+                        )
+                        search_summary = None
+                        for result in search_results:
+                            if result.username.lower() == username.lower():
+                                search_summary = result
+                                break
+                        if not search_summary:
+                            logger.warning(f"Re-search failed: {username} not found in Primetag")
+                            return None
+                        username_encrypted = PrimeTagClient.extract_encrypted_username(
+                            search_summary.mediakit_url
+                        )
+                        if not username_encrypted:
+                            username_encrypted = search_summary.external_social_profile_id or username
+                        used_cached_token = False
+                        continue  # retry with fresh token
+                    raise  # non-404 or already on retry attempt — propagate
+
+            if detail is None:
+                return None
+
             metrics = self.primetag.extract_metrics(detail)
 
             # Add follower count from search result or existing data if not in detail

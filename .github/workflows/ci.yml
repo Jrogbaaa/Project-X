@@ -201,7 +201,7 @@ jobs:
         run: |
           python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           sleep 5
-          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8000/health
+          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8000/api/health
 
       - name: Start frontend server
         working-directory: frontend

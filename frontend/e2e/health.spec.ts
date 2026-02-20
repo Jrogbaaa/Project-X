@@ -28,7 +28,7 @@ test.describe('Health Checks', () => {
 
   test('API health endpoint responds', async ({ request }) => {
     const apiUrl = process.env.API_BASE_URL || 'http://localhost:8000';
-    const response = await request.get(`${apiUrl}/health`);
+    const response = await request.get(`${apiUrl}/api/health`);
     
     expect(response.ok()).toBeTruthy();
     

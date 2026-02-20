@@ -21,6 +21,8 @@ T = TypeVar('T')
 COUNTRY_NAME_TO_ISO = {
     # Primary markets
     "Spain": "ES",
+    "España": "ES",   # Spanish-language spelling returned by PrimeTag
+    "Espana": "ES",   # Accent-stripped variant
     "United States": "US",
     "Mexico": "MX",
     "Argentina": "AR",
@@ -125,11 +127,19 @@ def with_retry(
                         )
                         raise
                     
-                    # Calculate delay with exponential backoff + jitter
-                    delay = min(base_delay * (2 ** attempt), max_delay)
-                    # Add small jitter (10%) to prevent thundering herd
-                    jitter = delay * 0.1 * (0.5 - asyncio.get_event_loop().time() % 1)
-                    delay = max(0.1, delay + jitter)
+                    # Honour Retry-After header if the server specified one (429 rate-limit)
+                    if e.retry_after is not None:
+                        delay = min(e.retry_after, max_delay)
+                        logger.info(
+                            f"Honouring Retry-After: {e.retry_after:.1f}s "
+                            f"(capped at {max_delay}s)"
+                        )
+                    else:
+                        # Calculate delay with exponential backoff + jitter
+                        delay = min(base_delay * (2 ** attempt), max_delay)
+                        # Add small jitter (10%) to prevent thundering herd
+                        jitter = delay * 0.1 * (0.5 - asyncio.get_event_loop().time() % 1)
+                        delay = max(0.1, delay + jitter)
                     
                     logger.info(
                         f"Retrying {func.__name__} in {delay:.2f}s "
@@ -144,6 +154,29 @@ def with_retry(
         
         return wrapper
     return decorator
+
+
+def _parse_retry_after(header_value: Optional[str]) -> Optional[float]:
+    """
+    Parse Retry-After HTTP header into seconds (float).
+    Accepts both integer-seconds ("30") and HTTP-date formats.
+    Returns None if the header is absent or unparseable.
+    """
+    if not header_value:
+        return None
+    try:
+        return float(header_value)
+    except ValueError:
+        pass
+    # Try HTTP-date format (e.g. "Wed, 21 Oct 2015 07:28:00 GMT")
+    try:
+        from email.utils import parsedate_to_datetime
+        import datetime as _dt
+        retry_dt = parsedate_to_datetime(header_value)
+        delta = (retry_dt - _dt.datetime.now(_dt.timezone.utc)).total_seconds()
+        return max(0.0, delta)
+    except Exception:
+        return None
 
 
 class PrimeTagClient:
@@ -227,10 +260,14 @@ class PrimeTagClient:
 
                 if response.status_code != 200:
                     logger.error(f"PrimeTag search failed: status={response.status_code} | body={response.text[:500]}")
+                    retry_after = None
+                    if response.status_code == 429:
+                        retry_after = _parse_retry_after(response.headers.get("Retry-After"))
                     raise PrimeTagAPIError(
                         f"Search failed with status {response.status_code}",
                         response.text,
-                        status_code=response.status_code
+                        status_code=response.status_code,
+                        retry_after=retry_after,
                     )
 
                 data = response.json()
@@ -287,10 +324,14 @@ class PrimeTagClient:
 
                 if response.status_code != 200:
                     logger.error(f"PrimeTag detail failed: status={response.status_code} | body={response.text[:500]}")
+                    retry_after = None
+                    if response.status_code == 429:
+                        retry_after = _parse_retry_after(response.headers.get("Retry-After"))
                     raise PrimeTagAPIError(
                         f"Detail fetch failed with status {response.status_code}",
                         response.text,
-                        status_code=response.status_code
+                        status_code=response.status_code,
+                        retry_after=retry_after,
                     )
 
                 data = response.json()
@@ -317,15 +358,18 @@ class PrimeTagClient:
         if followers_data and followers_data.genders:
             genders = followers_data.genders
 
-        # Extract age distribution from average_age list
+        # Extract age distribution from average_age list.
+        # PrimeTag schema: [{label: "18-24", female: 18.5, male: 16.3}, ...]
+        # Total per band = female + male (handle None safely).
         age_distribution = {}
         if followers_data and followers_data.average_age:
             for age_item in followers_data.average_age:
                 if isinstance(age_item, dict):
-                    age_range = age_item.get("range", age_item.get("name", ""))
-                    percentage = age_item.get("percentage", age_item.get("value", 0))
-                    if age_range:
-                        age_distribution[age_range] = percentage
+                    label = age_item.get("label", "")
+                    female = age_item.get("female") or 0.0
+                    male = age_item.get("male") or 0.0
+                    if label:
+                        age_distribution[label] = round(female + male, 4)
 
         # Extract geography from location_by_country list
         # PrimeTag API returns country names (e.g., "Spain") in the "name" field,
@@ -350,9 +394,10 @@ class PrimeTagClient:
                             # Store with the original name as fallback (won't match ES filter but preserves data)
                             geography[country_name] = percentage
 
-        # Get credibility score
+        # Get credibility score — only meaningful for Instagram.
+        # PrimeTag does not provide audience credibility for TikTok/other platforms.
         credibility_score = None
-        if followers_data:
+        if followers_data and detail.platform_type == self.PLATFORM_INSTAGRAM:
             credibility_score = followers_data.audience_credibility_percentage
 
         # Extract interests/categories for niche matching

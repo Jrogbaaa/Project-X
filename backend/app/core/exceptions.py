@@ -18,12 +18,15 @@ class PrimeTagAPIError(BaseAppException):
         message: str,
         response_body: Optional[str] = None,
         status_code: Optional[int] = None,
-        is_timeout: bool = False
+        is_timeout: bool = False,
+        retry_after: Optional[float] = None,
     ):
         super().__init__(message, response_body)
         self.response_body = response_body
         self.status_code = status_code
         self.is_timeout = is_timeout
+        # Retry-After delay in seconds (populated from HTTP header on 429 responses)
+        self.retry_after = retry_after
 
     @property
     def is_retryable(self) -> bool:
