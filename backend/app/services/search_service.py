@@ -218,8 +218,8 @@ class SearchService:
             # Ranks candidates by likelihood of being a good match
             # ============================================================
             logger.info(f"⏳ Step 3/6: Pre-filtering candidates by relevance...")
-            # Use larger pool since we're not making API calls for now
-            prefilter_limit = min(100, total_candidates)  # Up to 100 candidates for ranking
+            # Pool must be at least MAX_CANDIDATES_TO_VERIFY; top N go to API verification
+            prefilter_limit = min(100, total_candidates)
             prefiltered = self._soft_prefilter_candidates(
                 candidates,
                 filters_applied,
@@ -230,25 +230,44 @@ class SearchService:
             logger.info(f"")
 
             # ============================================================
-            # Step 6: SKIP API VERIFICATION (temporarily disabled)
-            # Using imported data directly - will re-enable PrimeTag API later
+            # Step 6: Verify top candidates via PrimeTag API to get real Gema data.
+            # Fetches: % España, % Hombres/Mujeres, % Edades, % Credibilidad, % ER.
+            # Uses cached primetag_encrypted_username when available (1 API call).
+            # Falls back to search+detail (2 API calls) for uncached influencers.
+            # Once verified, data is persisted to DB so subsequent searches are free.
             # ============================================================
-            # For now, use prefiltered candidates directly without API verification
-            # This allows imported influencers to pass through based on cached data
-            verified_candidates = prefiltered
-            failed_count = 0
+            logger.info(f"⏳ Step 4/6: Verifying top {min(MAX_CANDIDATES_TO_VERIFY, len(prefiltered))} candidates via PrimeTag API...")
+            verified_candidates, failed_count = await self._verify_candidates_batch(
+                prefiltered[:MAX_CANDIDATES_TO_VERIFY],
+                MAX_CONCURRENT_VERIFICATION
+            )
+            logger.info(f"   ✓ Verified {len(verified_candidates)} candidates ({failed_count} failed/not found)")
+
+            # Graceful degradation: if ALL verifications failed (e.g. API auth error, outage),
+            # fall back to prefiltered candidates so searches still return results.
+            # This keeps the app functional even when PrimeTag is unavailable.
+            if len(verified_candidates) == 0 and failed_count > 0:
+                logger.warning(
+                    f"   ⚠ All {failed_count} PrimeTag verifications failed "
+                    f"(API may be unavailable or credentials expired). "
+                    f"Falling back to prefiltered candidates with lenient mode — "
+                    f"Gema filter values will not be verified until API is restored."
+                )
+                verified_candidates = prefiltered
+            logger.info(f"")
 
             # ============================================================
-            # Step 7: Apply filters with lenient mode for imported data
-            # Allows profiles without full metrics (credibility, etc.) to pass
-            # Uses country fallback for Spain filter when audience_geography is missing
+            # Step 7: Apply hard filters using real Gema data from PrimeTag.
+            # lenient_mode=True allows candidates not found in PrimeTag (no data)
+            # to still pass through — preserves coverage for niche markets.
+            # Verified candidates are filtered strictly using their real metrics.
             # ============================================================
-            logger.info(f"⏳ Step 4/6: Applying hard filters...")
+            logger.info(f"⏳ Step 5/6: Applying hard filters...")
             filtered = self.filter_service.apply_filters(
                 verified_candidates,
                 parsed_query,
                 filters_applied,
-                lenient_mode=True  # LENIENT: Allow imported profiles without full metrics
+                lenient_mode=True  # Lenient for PrimeTag misses; strict for verified data
             )
             total_after_filter = len(filtered)
             logger.info(f"")
@@ -258,7 +277,7 @@ class SearchService:
 
             # Step 8: Rank survivors using 8-factor scoring
             # Enrich campaign_topics with search_keywords if empty (for niche matching)
-            logger.info(f"⏳ Step 5/6: Ranking {total_after_filter} candidates...")
+            logger.info(f"⏳ Step 6/6: Ranking {total_after_filter} candidates...")
             ranking_query = self._enrich_campaign_topics(parsed_query)
             ranked = self.ranking_service.rank_influencers(
                 filtered,

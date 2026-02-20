@@ -259,16 +259,19 @@ The backend has a comprehensive pytest-based test suite with **LLM reflection** 
 - `backend/tests/test_filter_service.py` - 21 unit tests for filter logic
 - `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
 - `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
-- `backend/tests/test_pipeline_gema.py` - **Full pipeline GEMA verification** — 4 messy agency briefs run in parallel via `asyncio.gather`, validated across 5 explicit steps (ingestion → LLM parsing → matching → PrimeTag data → GEMA filters). Prints a diagnostic table.
-- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 GEMA pipeline verification briefs)
+- `backend/tests/test_pipeline_verification.py` - **Full pipeline + Gema filter audit** — 4 independent test classes (Fashion/ElCorteInglés, Sports Nutrition/Myprotein, Gastro/Glovo, Beer/Estrella Damm), each using a messy Spanish agency email brief. Validates all 5 pipeline steps and prints a per-influencer Gema audit table (Spain%, Gender%, Age%, Credibility, ER). Detects PrimeTag API key expiry automatically.
+- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 Gema pipeline briefs: `pipeline_gema_fashion`, `pipeline_gema_sports_nutrition`, `pipeline_gema_gastro`, `pipeline_gema_beer_lifestyle`)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
 
 ```bash
 # Run unit tests (fast, ~0.1s)
 cd backend && pytest tests/test_filter_service.py tests/test_ranking_service.py -v
 
-# Run full pipeline GEMA verification (parallel, ~40s)
-cd backend && pytest tests/test_pipeline_gema.py -v -s
+# Run pipeline + Gema audit — run each class in parallel (each ~20-80s)
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineFashion -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineSportsNutrition -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineGastro -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineBeerLifestyle -v -s
 
 # Run a single E2E test with reflection (~40s due to LLM calls)
 cd backend && pytest tests/test_search_e2e.py::TestNichePrecision::test_padel_excludes_football -v -s

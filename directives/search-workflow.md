@@ -137,20 +137,27 @@ Verify **only candidates needing verification** (up to 15 max):
 **Known Issue:** Some profiles return empty `location_by_country` from PrimeTag, causing Spain % to show as 0%. When this happens, the filter service falls back to checking the `country` field for Spanish influencers.
 
 **Verification Result:**
-- Verified candidates proceed to filtering
-- Failed candidates (not found, API error, missing metrics) are discarded
+- Verified candidates (real Gema data fetched) proceed to filtering
+- Failed candidates (not found in PrimeTag) are discarded from the verified pool
 - `VerificationStats` tracks: total_candidates, verified, failed_verification, passed_filters
 
-### Step 5: Strict Filtering (Execution Layer)
+**Graceful Degradation:** If **all** verifications fail (e.g. `401 Expired authentication header`, API outage), the system automatically falls back to prefiltered candidates with lenient mode. This keeps the app functional when PrimeTag credentials expire. A warning is logged:
+```
+⚠ All 15 PrimeTag verifications failed (API may be unavailable or credentials expired).
+Falling back to prefiltered candidates with lenient mode.
+```
+**Action when this happens:** Refresh `PRIMETAG_API_KEY` in `.env`.
+
+### Step 5: Filtering (Execution Layer)
 **Script:** `backend/app/services/filter_service.py`
 
-Apply filters in **strict mode** (`lenient_mode=False`):
-1. Credibility score >= threshold (default 70%) - **must have data**
-2. Spain audience >= threshold (default 60%) - **must have data**
-3. Engagement rate >= threshold (if specified) - **must have data**
+Apply filters with `lenient_mode=True` (lenient for PrimeTag misses, strict for verified data):
+1. Credibility score >= threshold (default 70%) — skip if data is None
+2. Spain audience >= threshold (default 60%) — skip if data is None, fallback to `country` field
+3. Engagement rate >= threshold (if specified) — skip if data is None
 4. Audience gender match (if specified)
 
-**Note:** No lenient mode - candidates without real Primetag data are rejected.
+**Lenient mode rationale:** Influencers not found in PrimeTag (niche markets, TikTok-only) are allowed through rather than silently discarded, preserving coverage. Once PrimeTag data is populated via verification, their Gema metrics are enforced strictly on subsequent searches (cache hit path).
 
 ### Step 6: Ranking (Execution Layer)
 **Script:** `backend/app/services/ranking_service.py`
