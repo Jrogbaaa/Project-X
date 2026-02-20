@@ -259,12 +259,16 @@ The backend has a comprehensive pytest-based test suite with **LLM reflection** 
 - `backend/tests/test_filter_service.py` - 21 unit tests for filter logic
 - `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
 - `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
-- `backend/tests/test_briefs.py` - 24 test briefs covering various scenarios (incl. 4 real-world Spanish agency briefs)
+- `backend/tests/test_pipeline_gema.py` - **Full pipeline GEMA verification** — 4 messy agency briefs run in parallel via `asyncio.gather`, validated across 5 explicit steps (ingestion → LLM parsing → matching → PrimeTag data → GEMA filters). Prints a diagnostic table.
+- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 GEMA pipeline verification briefs)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
 
 ```bash
 # Run unit tests (fast, ~0.1s)
 cd backend && pytest tests/test_filter_service.py tests/test_ranking_service.py -v
+
+# Run full pipeline GEMA verification (parallel, ~40s)
+cd backend && pytest tests/test_pipeline_gema.py -v -s
 
 # Run a single E2E test with reflection (~40s due to LLM calls)
 cd backend && pytest tests/test_search_e2e.py::TestNichePrecision::test_padel_excludes_football -v -s
@@ -286,6 +290,7 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 3. **Creative Fit** - Documentary style, luxury aesthetic, humorous/casual
 4. **Edge Cases** - Gender splits, micro-influencers, multiple niche exclusions
 5. **Real World** - Real Spanish agency email briefs: Puerto de Indias (spirits/"Tarde con los tuyos"), IKEA Novedades ("primeras veces"), Square (B2B gastro fintech), IKEA GREJSIMOJS (3-phase playful collection)
+6. **Pipeline Verification** - Messy forwarded emails for GEMA filter testing: El Corte Inglés (fashion, female-skewed), Myprotein (fitness, 3M/2F split, football excluded), Glovo (gastro, ER ≥1.5%), Estrella Damm (beer/lifestyle, competitor exclusion)
 
 ### Database Schema
 
