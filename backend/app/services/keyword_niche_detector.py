@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from sqlalchemy import select, update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -253,18 +254,40 @@ async def run_detection(
         return stats
 
     # ── Write in batches ──────────────────────────────────────────────────────
-    async with Session() as session:
-        for i in range(0, len(pending_updates), batch_size):
-            batch = pending_updates[i : i + batch_size]
-            for inf_id, niche, confidence in batch:
-                await session.execute(
-                    update(Influencer)
-                    .where(Influencer.id == inf_id)
-                    .values(primary_niche=niche, niche_confidence=confidence)
-                )
-            await session.commit()
-            end = min(i + batch_size, len(pending_updates))
-            logger.info(f"  Committed records {i + 1}–{end} of {len(pending_updates)}")
+    # UPDATE only rows still NULL — if Option B (LLM) already assigned a niche
+    # while we were scoring, this becomes a no-op for that row, eliminating the
+    # write-write conflict that causes deadlocks when running in parallel.
+    actual_written = 0
+    for i in range(0, len(pending_updates), batch_size):
+        batch = pending_updates[i : i + batch_size]
+        end = min(i + batch_size, len(pending_updates))
+
+        for attempt in range(3):
+            try:
+                async with Session() as session:
+                    for inf_id, niche, confidence in batch:
+                        await session.execute(
+                            update(Influencer)
+                            .where(
+                                Influencer.id == inf_id,
+                                Influencer.primary_niche.is_(None),  # guard: don't overwrite
+                            )
+                            .values(primary_niche=niche, niche_confidence=confidence)
+                        )
+                    await session.commit()
+                actual_written += len(batch)
+                logger.info(f"  Committed records {i + 1}–{end} of {len(pending_updates)}")
+                break  # success
+            except DBAPIError as exc:
+                if "deadlock" in str(exc).lower() and attempt < 2:
+                    wait = 2 ** attempt
+                    logger.warning(f"  Deadlock on batch {i + 1}–{end}, retry in {wait}s…")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"  Batch {i + 1}–{end} failed after retries: {exc}")
+                    break  # skip this batch, continue with next
+
+    stats["assigned"] = actual_written
 
     logger.info(f"\nDone. Assigned primary_niche to {stats['assigned']} influencers.")
     await engine.dispose()
