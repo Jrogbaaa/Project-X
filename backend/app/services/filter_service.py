@@ -143,10 +143,13 @@ class FilterService:
         return filtered
     
     def _passes_max_followers(self, influencer, max_val: int) -> bool:
-        """Check if influencer is under max follower count."""
+        """Check if influencer is under max follower count.
+        
+        Treats None/0 as unknown — allows through (ranking will deprioritize).
+        """
         count = self._get_follower_count(influencer)
-        if count is None:
-            return True  # Allow if unknown
+        if count is None or count == 0:
+            return True  # Allow if unknown; ranking applies size penalty
         return count <= max_val
     
     def _get_follower_count(self, influencer) -> Optional[int]:

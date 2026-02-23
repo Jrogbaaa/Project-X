@@ -109,6 +109,12 @@ class RankingService:
             if follower_range:
                 size_multiplier = self._calculate_size_penalty(inf, follower_range)
                 relevance_score *= size_multiplier
+            else:
+                # Even without a range preference, penalize profiles with
+                # unknown (0/null) follower counts — we can't verify their reach.
+                followers = self._get_value(inf, 'follower_count', 0)
+                if not followers or followers == 0:
+                    relevance_score *= 0.4
 
             # Get raw data dict
             if hasattr(inf, 'to_dict'):
@@ -707,6 +713,8 @@ class RankingService:
         Calculate size multiplier based on preferred follower range.
 
         For anti-celebrity bias - penalize influencers outside the preferred range.
+        Profiles with 0/null follower counts are heavily penalized (0.3x) since
+        we can't verify they match the brief's size requirements.
 
         Args:
             influencer: Influencer data
@@ -718,11 +726,13 @@ class RankingService:
         followers = self._get_value(influencer, 'follower_count', 0)
         min_f, max_f = preferred_range
 
+        if not followers or followers == 0:
+            return 0.3  # Unknown follower count — can't verify size match
+
         if min_f <= followers <= max_f:
             return 1.0  # Perfect range
 
         if followers < min_f:
-            # Too small - scale down
             if min_f == 0:
                 return 1.0
             return max(0.5, followers / min_f)
@@ -731,5 +741,4 @@ class RankingService:
         if max_f == 0:
             return 1.0
         overage_ratio = followers / max_f
-        # Diminishing returns - larger = worse
         return max(0.3, 1.0 / overage_ratio)
