@@ -175,6 +175,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | Cache Service | `cache_service.py` | PostgreSQL-based caching + **`find_by_niche()` for taxonomy-aware discovery with hard exclusion** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |
+| **LLM Niche Enrichment** | `llm_niche_enrichment.py` | **Batch LLM classification** — sends bio + interests + post hashtags to GPT-4o and writes `primary_niche`, `niche_confidence`, `content_themes` back to DB. Processes influencers where `primary_niche IS NULL` in batches of 50 (10 per LLM call). `--dry-run` to preview, `--force` to re-classify all. ~$0.01/influencer. |
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
