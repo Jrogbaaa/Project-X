@@ -234,10 +234,22 @@ if any exclude_niche in interests/bio:
 
 ## Size Penalty (Anti-Celebrity Bias)
 
+### Unknown Follower Count Penalty
+
+Profiles with 0/null follower counts are penalized regardless of whether a size preference is specified:
+- **With follower range preference:** 0.3x multiplier (treated as unknown size)
+- **Without follower range preference:** 0.4x multiplier (can't verify reach)
+
+This prevents the ~95% of profiles with missing follower data from drowning out verified profiles. As of Feb 2026, only ~200 of ~4,000 profiles have real follower counts — PrimeTag enrichment is needed to populate the rest.
+
+### Preferred Range Penalty
+
 When `preferred_follower_min` and/or `preferred_follower_max` are specified, a multiplier adjusts the final score:
 
 ```python
-if min_followers <= follower_count <= max_followers:
+if follower_count == 0 or follower_count is None:
+    multiplier = 0.3  # Unknown size — can't verify match
+elif min_followers <= follower_count <= max_followers:
     multiplier = 1.0  # Perfect range
 elif follower_count < min_followers:
     multiplier = max(0.5, follower_count / min_followers)
@@ -247,7 +259,7 @@ else:  # Too large (anti-celebrity)
 final_score = relevance_score * multiplier
 ```
 
-**Purpose:** Prevents mega-celebrities from dominating results when mid-tier influencers are preferred.
+**Purpose:** Prevents mega-celebrities from dominating results when mid-tier influencers are preferred, and ensures profiles with unknown follower data always rank below verified profiles.
 
 ## Weight Presets
 

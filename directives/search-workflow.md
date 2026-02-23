@@ -174,7 +174,7 @@ score = (
     0.15 × brand_affinity +     # NEW: audience overlap with brand
     0.15 × creative_fit +       # NEW: tone/theme alignment
     0.05 × niche_match          # NEW: content niche match
-) × size_multiplier             # Anti-celebrity bias if size preference specified
+) × size_multiplier             # Anti-celebrity bias + unknown-follower penalty
 ```
 
 **New Scoring Factors:**
@@ -186,8 +186,10 @@ score = (
 | Niche Match | `interests`, `bio` | Boost for `campaign_topics`, penalty for `exclude_niches` |
 
 **Size Multiplier (Anti-Celebrity Bias):**
+- Profiles with 0/null follower counts always get 0.3x-0.4x penalty (unknown reach)
 - If `preferred_follower_max` specified and influencer exceeds it, apply penalty
 - Example: 50M followers with 2M max → multiplier = 0.04
+- Even without size preferences, 0-follower profiles get 0.4x penalty to rank below verified profiles
 
 LLM adjusts weights based on brief context (more brand info → higher brand_affinity weight).
 

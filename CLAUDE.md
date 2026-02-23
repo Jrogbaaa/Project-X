@@ -167,8 +167,8 @@ This allows the system to handle **any brand** - even ones not in our database (
 |---------|------|---------|
 | PrimeTag Client | `primetag_client.py` | API integration for influencer data with **exponential backoff retry** (3 retries, handles 429/5xx) |
 | Search Service | `search_service.py` | Main search orchestration with **taxonomy-aware niche discovery** |
-| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
-| Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
+| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion**. Treats 0/null follower counts as unknown (allows through; ranking deprioritizes). |
+| Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match. **Unknown follower penalty**: 0/null followers get 0.3x-0.4x score multiplier so verified profiles always rank above unverified ones. |
 | **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, **niche taxonomy helpers** (`get_niche_relationships`, `get_all_excluded_niches`) |
 | **Brand Lookup** | `brand_lookup_service.py` | **LLM-based brand recognition** for unknown brands - extracts category, niche, competitors, keywords via GPT-4o |
 | Brand Context | `brand_context_service.py` | Database-backed brand context lookup with category keywords |
@@ -395,11 +395,13 @@ The search pipeline applies these filters in order:
 
 | Filter | Default | Description |
 |--------|---------|-------------|
-| Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers) |
+| Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers). 0/null treated as unknown (passes). |
 | Credibility | ≥70% | Audience authenticity score |
 | Spain Audience | ≥60% | Minimum Spanish audience percentage |
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
+
+**Unknown Follower Penalty (Ranking):** ~95% of profiles have 0/null follower counts (imported without PrimeTag enrichment). These pass filters but receive a 0.3x-0.4x ranking penalty so verified profiles always rank above them. Refresh PrimeTag key and re-enrich to populate real follower data.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 
