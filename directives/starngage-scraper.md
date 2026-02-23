@@ -116,13 +116,42 @@ CSV file at project root: `starngage_spain_influencers_{year}.csv`
 - **DOM parsing**: Uses `DOMParser` in-browser to parse the fetched HTML, then `querySelectorAll` to extract table rows. No external libraries needed.
 - **100 influencers per page**: Each page has exactly 100 rows.
 
+## Step 4: Import CSV into database
+
+After creating the CSV, upsert it into the database:
+
+```bash
+# Dry run (preview changes)
+cd backend && python -m app.services.starngage_scraper import \
+    --csv ../starngage_spain_influencers_2026.csv --dry-run
+
+# Actual import
+cd backend && python -m app.services.starngage_scraper import \
+    --csv ../starngage_spain_influencers_2026.csv
+```
+
+**Upsert logic:**
+- **Existing influencers** (matched by username): updates `follower_count`, `display_name`, `interests`, `engagement_rate`
+- **New influencers**: creates new record with Starngage data
+- **Preserves** (never overwrites): `primary_niche`, `niche_confidence`, `content_themes`, `credibility_score`, `audience_*`, `bio`, `post_content_aggregated`, `detected_brands`, PrimeTag IDs
+
+After import, new influencers will need niche classification:
+
+```bash
+# Cheap keyword-based niche detection for clear-cut cases
+cd backend && python -m app.services.keyword_niche_detector
+
+# LLM enrichment for remaining unclassified (~$0.01/influencer)
+cd backend && python -m app.services.llm_niche_enrichment
+```
+
 ## Integration with Enrichment Pipeline
 
 The Starngage CSV is the starting point for the enrichment pipeline:
 
 ```
-Starngage scrape (this directive)
-  → Import to DB (import_influencers.py)
+Starngage scrape (Steps 1-3)
+  → Import to DB (Step 4 / starngage_scraper.py import)
     → Keyword niche detection (keyword_niche_detector.py)
       → LLM niche enrichment (llm_niche_enrichment.py)
         → PrimeTag enrichment (cache_service.py)
