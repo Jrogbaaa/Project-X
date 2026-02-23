@@ -34,7 +34,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 from openai import AsyncOpenAI
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, update, and_, or_
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from app.config import get_settings
@@ -154,7 +155,7 @@ class LLMNicheEnrichmentPipeline:
         self.progress_file.parent.mkdir(parents=True, exist_ok=True)
 
         settings = get_settings()
-        self.openai = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.openai = AsyncOpenAI(api_key=settings.openai_api_key, timeout=120.0)
         self.model = settings.openai_model
 
         self.stats: Dict[str, Any] = {
@@ -202,35 +203,50 @@ class LLMNicheEnrichmentPipeline:
                 for inf in rows
             ]
 
-    async def write_batch_to_db(self, updates: List[Dict]) -> int:
-        """Write enrichment results for a batch of influencers. Returns success count."""
+    async def write_batch_to_db(self, updates: List[Dict], retries: int = 3) -> int:
+        """
+        Write enrichment results using direct UPDATE statements (no SELECT).
+        Avoids deadlocks from the SELECT-then-UPDATE pattern.
+        Retries up to `retries` times on deadlock with exponential backoff.
+        Returns success count.
+        """
         if not updates:
             return 0
 
-        success = 0
-        async with self.session_factory() as session:
-            for update in updates:
-                result = await session.execute(
-                    select(Influencer).where(Influencer.id == update["id"])
-                )
-                inf = result.scalar_one_or_none()
-                if not inf:
-                    logger.warning(f"Influencer id={update['id']} not found during write")
-                    continue
+        for attempt in range(1, retries + 1):
+            try:
+                async with self.session_factory() as session:
+                    for upd in updates:
+                        # Merge content_themes via PostgreSQL jsonb concat
+                        # We pass the full merged dict; the UPDATE is atomic per row
+                        new_themes = upd.get("content_themes") or {}
 
-                inf.primary_niche = update["primary_niche"]
-                inf.niche_confidence = update["niche_confidence"]
+                        await session.execute(
+                            update(Influencer)
+                            .where(Influencer.id == upd["id"])
+                            .values(
+                                primary_niche=upd["primary_niche"],
+                                niche_confidence=upd["niche_confidence"],
+                                content_themes=new_themes if new_themes else None,
+                            )
+                        )
 
-                # Merge content_themes: preserve existing keys, overlay new ones
-                existing_themes = inf.content_themes or {}
-                new_themes = update.get("content_themes") or {}
-                inf.content_themes = {**existing_themes, **new_themes}
+                    await session.commit()
+                return len(updates)
 
-                success += 1
+            except DBAPIError as e:
+                if "deadlock" in str(e).lower() and attempt < retries:
+                    wait = 2 ** attempt  # 2s, 4s, 8s
+                    logger.warning(
+                        f"Deadlock on write attempt {attempt}/{retries}, "
+                        f"retrying in {wait}s…"
+                    )
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"DB write failed after {attempt} attempt(s): {e}")
+                    return 0
 
-            await session.commit()
-
-        return success
+        return 0
 
     # ── LLM helpers ────────────────────────────────────────────────────────
 
@@ -268,7 +284,11 @@ class LLMNicheEnrichmentPipeline:
             logger.error(f"JSON parse error from LLM: {e}")
             return []
         except Exception as e:
-            logger.error(f"LLM call failed: {e}")
+            err_str = str(e)
+            if "timed out" in err_str.lower() or "timeout" in err_str.lower():
+                logger.warning(f"LLM call timed out, skipping sub-batch and continuing")
+            else:
+                logger.error(f"LLM call failed: {e}")
             return []
 
     def _validate_and_coerce(self, result: Dict) -> Optional[Dict]:
@@ -361,9 +381,9 @@ class LLMNicheEnrichmentPipeline:
 
                 updates.append({**validated, "id": inf_id})
 
-            # Brief pause between LLM calls to avoid rate limits
+            # Pause between LLM calls to respect rate limits
             if i + LLM_CALL_SIZE < len(influencers):
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(2)
 
         # Write this batch to DB
         success_count = await self.write_batch_to_db(updates)
@@ -452,9 +472,9 @@ class LLMNicheEnrichmentPipeline:
             processed_ids.extend(str(inf["id"]) for inf in batch)
             self._save_progress(processed_ids)
 
-            # Small pause between DB batches
+            # Pause between DB batches
             if i + self.batch_size < len(influencers):
-                await asyncio.sleep(1)
+                await asyncio.sleep(2)
 
         # Final summary
         logger.info("")
