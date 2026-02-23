@@ -180,7 +180,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | **Keyword Niche Detector** | `keyword_niche_detector.py` | **Free, instant niche detection** — pattern-matches bio + interests + post hashtags against `niche_taxonomy.yaml` keywords. Assigns `primary_niche` + `niche_confidence` where currently NULL. No LLM cost. Run before LLM enrichment to cover clear-cut cases cheaply. `cd backend && python -m app.services.keyword_niche_detector --confidence-threshold 0.5` |
 | **Tier Computation** | `compute_tiers.py` | Bulk-populate `influencer_tier` (micro/mid/macro/mega) from `follower_count`. Idempotent — safe to re-run. `cd backend && python -m app.services.compute_tiers` |
 | **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
-| **Starngage Scraper** | `starngage_scraper.py` | Helper utilities for the interactive Starngage scrape (see `directives/starngage-scraper.md`). Provides `parse_follower_count()`, `extract_page()`, `combine_and_write_csv()`. The actual scraping is done via Cursor's Playwright MCP browser — user logs in manually, then agent uses `browser_evaluate` with `fetch()` to extract pages in batches. |
+| **Starngage Scraper** | `starngage_scraper.py` | Interactive Starngage scrape + DB import (see `directives/starngage-scraper.md`). Two subcommands: `combine` merges batch JSON extracts into CSV; `import` upserts CSV into DB (updates follower_count/display_name/interests/engagement_rate for existing, creates new, preserves all enrichment data). Scraping done via Playwright MCP browser — user logs in, agent uses `browser_evaluate` with `fetch()`. `cd backend && python -m app.services.starngage_scraper import --csv ../starngage_spain_influencers_2026.csv` |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
@@ -305,7 +305,7 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 
 | Table | Purpose |
 |-------|---------|
-| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate` |
+| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`. As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
 | `searches` | Search history with parsed queries and filters |
 | `search_results` | Links searches to influencers with ranking scores |
 | `ranking_presets` | Configurable weight presets (Balanced, Engagement Focus, etc.) |
