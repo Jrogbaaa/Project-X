@@ -23,10 +23,12 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 
 import pytest
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from tests.test_briefs import PIPELINE_VERIFICATION_BRIEFS, TestBrief
 from app.services.search_service import SearchService
 from app.schemas.search import SearchRequest, SearchResponse
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,37 @@ class PipelineResult:
     @property
     def pass_count(self) -> int:
         return sum(1 for r in self.step_results.values() if r.passed)
+
+
+# ============================================================
+# Session factory for parallel execution
+# ============================================================
+
+async def _create_independent_session() -> AsyncSession:
+    """Create an independent DB session (own connection) for parallel-safe execution."""
+    settings = get_settings()
+    engine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        pool_pre_ping=True,
+    )
+    session_factory = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    return session_factory(), engine
+
+
+async def _run_single_brief_isolated(brief: TestBrief) -> PipelineResult:
+    """Run one brief with its own DB session to avoid concurrent-session conflicts."""
+    session, engine = await _create_independent_session()
+    try:
+        svc = SearchService(session)
+        return await _run_single_brief(svc, brief)
+    finally:
+        await session.close()
+        await engine.dispose()
 
 
 # ============================================================
@@ -379,9 +412,11 @@ class TestPipelineGEMA:
     across 5 explicit pipeline steps with a diagnostic table printed at the end.
     """
 
-    async def test_parallel_pipeline_all_briefs(self, search_service: SearchService):
+    async def test_parallel_pipeline_all_briefs(self):
         """
         Main test: run all 4 PIPELINE_VERIFICATION_BRIEFS in parallel.
+
+        Each brief gets its own DB session to avoid asyncpg concurrent-operation errors.
 
         Pass criteria (lenient on data-dependent steps):
         - Step 1 (ingestion):  all 4 briefs must complete without exception
@@ -393,7 +428,7 @@ class TestPipelineGEMA:
         assert PIPELINE_VERIFICATION_BRIEFS, "PIPELINE_VERIFICATION_BRIEFS is empty"
 
         tasks = [
-            _run_single_brief(search_service, brief)
+            _run_single_brief_isolated(brief)
             for brief in PIPELINE_VERIFICATION_BRIEFS
         ]
         pipeline_results: List[PipelineResult] = await asyncio.gather(*tasks)
