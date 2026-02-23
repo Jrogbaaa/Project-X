@@ -177,6 +177,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |
 | **LLM Niche Enrichment** | `llm_niche_enrichment.py` | **Batch LLM classification** — sends bio + interests + post hashtags to GPT-4o and writes `primary_niche`, `niche_confidence`, `content_themes` back to DB. Processes influencers where `primary_niche IS NULL` in batches of 50 (10 per LLM call). `--dry-run` to preview, `--force` to re-classify all. ~$0.01/influencer. |
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
+| **Starngage Scraper** | `starngage_scraper.py` | Helper utilities for the interactive Starngage scrape (see `directives/starngage-scraper.md`). Provides `parse_follower_count()`, `extract_page()`, `combine_and_write_csv()`. The actual scraping is done via Cursor's Playwright MCP browser — user logs in manually, then agent uses `browser_evaluate` with `fetch()` to extract pages in batches. |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 

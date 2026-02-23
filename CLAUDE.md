@@ -180,6 +180,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | **Keyword Niche Detector** | `keyword_niche_detector.py` | **Free, instant niche detection** — pattern-matches bio + interests + post hashtags against `niche_taxonomy.yaml` keywords. Assigns `primary_niche` + `niche_confidence` where currently NULL. No LLM cost. Run before LLM enrichment to cover clear-cut cases cheaply. `cd backend && python -m app.services.keyword_niche_detector --confidence-threshold 0.5` |
 | **Tier Computation** | `compute_tiers.py` | Bulk-populate `influencer_tier` (micro/mid/macro/mega) from `follower_count`. Idempotent — safe to re-run. `cd backend && python -m app.services.compute_tiers` |
 | **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
+| **Starngage Scraper** | `starngage_scraper.py` | Helper utilities for the interactive Starngage scrape (see `directives/starngage-scraper.md`). Provides `parse_follower_count()`, `extract_page()`, `combine_and_write_csv()`. The actual scraping is done via Cursor's Playwright MCP browser — user logs in manually, then agent uses `browser_evaluate` with `fetch()` to extract pages in batches. |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
