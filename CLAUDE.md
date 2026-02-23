@@ -179,6 +179,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
 | **Keyword Niche Detector** | `keyword_niche_detector.py` | **Free, instant niche detection** — pattern-matches bio + interests + post hashtags against `niche_taxonomy.yaml` keywords. Assigns `primary_niche` + `niche_confidence` where currently NULL. No LLM cost. Run before LLM enrichment to cover clear-cut cases cheaply. `cd backend && python -m app.services.keyword_niche_detector --confidence-threshold 0.5` |
 | **Tier Computation** | `compute_tiers.py` | Bulk-populate `influencer_tier` (micro/mid/macro/mega) from `follower_count`. Idempotent — safe to re-run. `cd backend && python -m app.services.compute_tiers` |
+| **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
@@ -263,6 +264,7 @@ The backend has a comprehensive pytest-based test suite with **LLM reflection** 
 - `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
 - `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
 - `backend/tests/test_pipeline_verification.py` - **Full pipeline + Gema filter audit** — 4 independent test classes (Fashion/ElCorteInglés, Sports Nutrition/Myprotein, Gastro/Glovo, Beer/Estrella Damm), each using a messy Spanish agency email brief. Validates all 5 pipeline steps and prints a per-influencer Gema audit table (Spain%, Gender%, Age%, Credibility, ER). Detects PrimeTag API key expiry automatically.
+- `backend/tests/test_pipeline_diagnostic.py` - **Live pipeline diagnostic** — requires a running server at `localhost:8000`. Marked `@pytest.mark.e2e` so it is excluded from CI (`-m "not e2e"`). Run locally only.
 - `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 Gema pipeline briefs: `pipeline_gema_fashion`, `pipeline_gema_sports_nutrition`, `pipeline_gema_gastro`, `pipeline_gema_beer_lifestyle`)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
 

@@ -794,6 +794,7 @@ def format_diagnostic_report(results: List[BriefDiagnosticResult]) -> str:
 # ---------------------------------------------------------------------------
 
 @pytest.mark.diagnostic
+@pytest.mark.e2e
 @pytest.mark.asyncio
 class TestPipelineDiagnostic:
     """
