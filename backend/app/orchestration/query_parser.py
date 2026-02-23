@@ -24,7 +24,8 @@ Brand category mappings:
 - IKEA, furniture stores -> home_furniture
 - Zara, H&M, fashion brands -> fashion
 - Nike, Adidas, Puma -> sports_apparel
-- L'Oreal, beauty brands -> beauty
+- L'Oreal, general beauty/makeup brands -> beauty
+- Skincare brands (CeraVe, The Ordinary, La Roche-Posay, vitamin C serums, natural skincare) -> skincare
 - Perfume, fragrance brands (Halloween, Loewe Perfumes, Carolina Herrera) -> beauty
 - Tech companies -> technology
 - Food/restaurant brands -> food_lifestyle
@@ -52,7 +53,8 @@ Extract the creative/campaign concept if described:
 ### Niche/Topic Targeting
 1. campaign_niche: The PRIMARY niche for this campaign (SINGLE value, most important one). Choose from the taxonomy:
    - Sports: "padel", "tennis", "football", "basketball", "golf", "running", "cycling", "swimming", "triathlon", "motorsport", "fitness", "crossfit"
-   - Lifestyle: "fashion", "beauty", "luxury", "lifestyle", "travel", "food"
+   - Fashion & Beauty: "fashion", "beauty", "skincare", "luxury"
+   - Lifestyle: "lifestyle", "travel", "food"
    - Wellness: "yoga", "wellness", "nutrition"
    - Entertainment: "music", "gaming", "comedy", "nightlife"
    - Family: "parenting"
@@ -61,6 +63,7 @@ Extract the creative/campaign concept if described:
    - Food & Beverages: "alcoholic_beverages", "soft_drinks"
    - Retail: "retail", "ecommerce"
    - Automotive: "automotive"
+   IMPORTANT: Use "skincare" (not "beauty") when the brief is specifically about skincare products, serums, facial routines, dermatology, SPF, etc. Use "beauty" only for general beauty/makeup/cosmetics.
    This will be matched against influencers' primary_niche column.
 2. campaign_topics: Additional specific topics relevant to the campaign (array)
 3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)

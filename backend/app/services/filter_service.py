@@ -1,10 +1,45 @@
 import logging
-from typing import List, Any, Optional
+import re
+from typing import List, Any, Optional, Tuple
 from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.search import FilterConfig
 from app.services.brand_intelligence_service import get_brand_intelligence_service
 
 logger = logging.getLogger(__name__)
+
+# Common Spanish/international female and male first-name signals for gender inference.
+# These are checked against the FIRST word of display_name and bio keywords.
+_FEMALE_NAMES = {
+    "maria", "maría", "ana", "elena", "lucia", "lucía", "carmen", "laura",
+    "marta", "sara", "paula", "claudia", "andrea", "irene", "alba", "nuria",
+    "silvia", "rosa", "isabel", "cristina", "patricia", "eva", "pilar",
+    "raquel", "monica", "mónica", "blanca", "beatriz", "sandra", "ines",
+    "inés", "julia", "natalia", "alicia", "diana", "carolina", "lola",
+    "rocio", "rocío", "marina", "olga", "sonia", "angeles", "ángeles",
+    "vanessa", "veronica", "verónica", "susana", "belén", "belen",
+    "esther", "teresa", "begoña", "concepcion", "concepción", "jannys",
+    "águeda", "agueda", "mariona", "jimena",
+}
+_MALE_NAMES = {
+    "carlos", "david", "javier", "daniel", "jose", "josé", "miguel",
+    "antonio", "francisco", "manuel", "pedro", "alejandro", "rafael",
+    "fernando", "pablo", "sergio", "jorge", "alberto", "angel", "ángel",
+    "luis", "ramon", "ramón", "juan", "diego", "victor", "víctor",
+    "enrique", "roberto", "marcos", "mario", "ivan", "iván", "adrian",
+    "adrián", "oscar", "óscar", "santiago", "andres", "andrés", "raul",
+    "raúl", "hugo", "alejo", "facundo", "israel", "caio", "ren",
+}
+_FEMALE_BIO_SIGNALS = {
+    "she/her", "ella", "mamá", "madre", "actriz", "escritora",
+    "maquilladora", "creadora", "influencer mujer", "blogger",
+    "fotógrafa", "diseñadora", "periodista", "profesora",
+    "enfermera", "psicóloga", "nutricionista",
+}
+_MALE_BIO_SIGNALS = {
+    "he/him", "él", "papá", "padre", "actor", "escritor",
+    "creador", "fotógrafo", "diseñador", "periodista",
+    "profesor", "enfermero", "psicólogo", "nutricionista",
+}
 
 
 class FilterService:
@@ -38,6 +73,23 @@ class FilterService:
         logger.info(f"🔍 FILTERING {initial_count} candidates")
         logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
+        # HARD FILTER: Preferred follower range from brief (e.g. "15K-150K")
+        follower_range = parsed_query.get_follower_range()
+        if follower_range:
+            pref_min, pref_max = follower_range
+            before_count = len(filtered)
+            filtered = [
+                inf for inf in filtered
+                if self._passes_follower_range(inf, pref_min, pref_max)
+            ]
+            removed = before_count - len(filtered)
+            min_str = f"{pref_min/1000:.0f}K" if pref_min else "0"
+            max_str = f"{pref_max/1000:.0f}K" if pref_max < 999_999_999 else "∞"
+            if removed > 0:
+                logger.info(f"   ❌ Follower range ({min_str}–{max_str}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Follower range ({min_str}–{max_str}): all passed")
+
         # Filter by max follower count (exclude mega-celebrities) - HARD FILTER
         max_followers = config.max_follower_count
         before_count = len(filtered)
@@ -50,6 +102,19 @@ class FilterService:
             logger.info(f"   ❌ Max followers (<{max_followers:,}): removed {removed} mega-celebrities")
         else:
             logger.info(f"   ✓ Max followers (<{max_followers:,}): all passed")
+
+        # HARD FILTER: Influencer gender (the creator's own gender, not audience)
+        if parsed_query.influencer_gender and parsed_query.influencer_gender != GenderFilter.ANY:
+            before_count = len(filtered)
+            filtered = [
+                inf for inf in filtered
+                if self._passes_influencer_gender(inf, parsed_query.influencer_gender)
+            ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Influencer gender ({parsed_query.influencer_gender.value}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Influencer gender ({parsed_query.influencer_gender.value}): all passed")
 
         # Filter by credibility (allow None in lenient mode)
         min_credibility = parsed_query.min_credibility_score or config.min_credibility_score
@@ -314,3 +379,79 @@ class FilterService:
         if isinstance(influencer, dict):
             return influencer.get('brand_mentions', []) or []
         return []
+
+    def _passes_follower_range(self, influencer, min_followers: int, max_followers: int) -> bool:
+        """Hard filter: reject influencers outside the brief's preferred follower range.
+        
+        Treats None/0 as unknown — allows through (ranking will deprioritize).
+        """
+        count = self._get_follower_count(influencer)
+        if count is None or count == 0:
+            return True
+        if min_followers and count < min_followers:
+            return False
+        if max_followers < 999_999_999 and count > max_followers:
+            return False
+        return True
+
+    def _passes_influencer_gender(self, influencer, target_gender: GenderFilter) -> bool:
+        """Filter by the influencer's own gender (not audience gender).
+        
+        Uses three signals in priority order:
+        1. audience_genders inverse heuristic (female influencers → male-heavy audience)
+        2. Bio keyword scan for pronouns/gendered words
+        3. Display name first-name matching against common Spanish names
+        
+        Returns True (passes) if gender matches OR cannot be determined.
+        """
+        inferred = self._infer_influencer_gender(influencer)
+        if inferred is None:
+            return True
+        return inferred == target_gender.value
+
+    def _infer_influencer_gender(self, influencer) -> Optional[str]:
+        """Infer the influencer's own gender from available profile data.
+        
+        Returns 'male', 'female', or None if indeterminate.
+        """
+        # Signal 1: audience_genders inverse heuristic
+        genders = self._get_genders(influencer)
+        if genders:
+            male_pct = genders.get("male", genders.get("Male", 0))
+            female_pct = genders.get("female", genders.get("Female", 0))
+            if male_pct > 65:
+                return "female"
+            if female_pct > 65:
+                return "male"
+
+        # Signal 2: bio keyword scan
+        bio = ""
+        if hasattr(influencer, 'bio'):
+            bio = (influencer.bio or "").lower()
+        elif isinstance(influencer, dict):
+            bio = (influencer.get('bio') or "").lower()
+
+        if bio:
+            for signal in _FEMALE_BIO_SIGNALS:
+                if signal in bio:
+                    return "female"
+            for signal in _MALE_BIO_SIGNALS:
+                if signal in bio:
+                    return "male"
+
+        # Signal 3: display name first-name matching
+        display_name = ""
+        if hasattr(influencer, 'display_name'):
+            display_name = (influencer.display_name or "").strip()
+        elif isinstance(influencer, dict):
+            display_name = (influencer.get('display_name') or "").strip()
+
+        if display_name:
+            first_word = re.split(r'[\s|·•\-_]+', display_name)[0].lower()
+            first_word = first_word.strip('✖️💀🧸☠️👑🌸🌺💫✨🔥')
+            if first_word in _FEMALE_NAMES:
+                return "female"
+            if first_word in _MALE_NAMES:
+                return "male"
+
+        return None

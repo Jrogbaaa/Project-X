@@ -61,7 +61,7 @@ CATEGORY_TO_NICHE = {
     "luxury": "luxury",
     "beauty": "beauty",
     "cosmetics": "beauty",
-    "skincare": "beauty",
+    "skincare": "skincare",
     "jewelry": "fashion",
     "accessories": "fashion",
     

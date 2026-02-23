@@ -342,14 +342,65 @@ niches:
       - "belleza"
       - "makeup"
       - "maquillaje"
-      - "skincare"
       - "cosmetics"
       - "cosméticos"
       - "tutorial"
     related_niches:
+      - skincare
       - fashion
       - lifestyle
     conflicting_niches: []
+    parent_category: "fashion_beauty"
+
+  skincare:
+    keywords:
+      - "skincare"
+      - "skin care"
+      - "cuidado de la piel"
+      - "cuidado facial"
+      - "rutina facial"
+      - "serum"
+      - "sérum"
+      - "vitamina c"
+      - "dermatology"
+      - "dermatología"
+      - "dermatologist"
+      - "dermatologa"
+      - "dermatólogo"
+      - "anti-aging"
+      - "antienvejecimiento"
+      - "moisturizer"
+      - "hidratante"
+      - "cleanser"
+      - "limpiador facial"
+      - "spf"
+      - "sunscreen"
+      - "protector solar"
+      - "acne"
+      - "acné"
+      - "piel"
+      - "skin routine"
+      - "night routine"
+      - "morning routine"
+      - "rutina de noche"
+      - "rutina de mañana"
+      - "get ready with me"
+      - "grwm"
+      - "exfoliante"
+      - "retinol"
+      - "niacinamide"
+      - "ácido hialurónico"
+      - "hyaluronic acid"
+      - "colágeno"
+      - "collagen"
+    related_niches:
+      - beauty
+      - wellness
+      - health
+    conflicting_niches:
+      - tattoo
+      - piercing
+      - nail_art
     parent_category: "fashion_beauty"
 
   # ==================== LIFESTYLE ====================
@@ -708,11 +759,12 @@ categories:
       - nutrition
 
   fashion_beauty:
-    description: "Fashion and beauty"
+    description: "Fashion, beauty and skincare"
     niches:
       - fashion
       - luxury
       - beauty
+      - skincare
 
   lifestyle:
     description: "General lifestyle content"

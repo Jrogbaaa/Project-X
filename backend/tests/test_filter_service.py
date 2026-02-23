@@ -336,6 +336,146 @@ class TestLenientMode:
 
 
 # ============================================================
+# FOLLOWER RANGE FILTER TESTS (HARD FILTER)
+# ============================================================
+
+class TestFollowerRangeFilter:
+    """Tests for preferred follower range hard filter."""
+
+    def test_within_range_passes(self, filter_service, default_config):
+        """Influencer within preferred range should pass."""
+        influencers = [
+            create_mock_influencer(follower_count=50_000),
+            create_mock_influencer(follower_count=100_000),
+        ]
+        query = create_mock_query(preferred_follower_min=15_000, preferred_follower_max=150_000)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 2
+
+    def test_over_max_filtered(self, filter_service, default_config):
+        """Influencer over preferred max should be hard-filtered."""
+        influencers = [
+            create_mock_influencer(follower_count=50_000),
+            create_mock_influencer(follower_count=500_000),
+            create_mock_influencer(follower_count=1_500_000),
+        ]
+        query = create_mock_query(preferred_follower_min=15_000, preferred_follower_max=150_000)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 1
+        assert results[0]["follower_count"] == 50_000
+
+    def test_under_min_filtered(self, filter_service, default_config):
+        """Influencer under preferred min should be hard-filtered."""
+        influencers = [
+            create_mock_influencer(follower_count=5_000),
+            create_mock_influencer(follower_count=50_000),
+        ]
+        query = create_mock_query(preferred_follower_min=15_000, preferred_follower_max=150_000)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 1
+        assert results[0]["follower_count"] == 50_000
+
+    def test_unknown_followers_passes(self, filter_service, default_config):
+        """Influencer with unknown follower count should pass (can't verify)."""
+        influencers = [
+            create_mock_influencer(follower_count=None),
+            create_mock_influencer(follower_count=0),
+        ]
+        query = create_mock_query(preferred_follower_min=15_000, preferred_follower_max=150_000)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 2
+
+    def test_no_range_specified_all_pass(self, filter_service, default_config):
+        """Without preferred range, all should pass."""
+        influencers = [
+            create_mock_influencer(follower_count=1_000),
+            create_mock_influencer(follower_count=5_000_000),
+        ]
+        query = create_mock_query()
+        results = filter_service.apply_filters(influencers, query, default_config)
+        # 5M still filtered by max_follower_count (2.5M default)
+        assert len(results) == 1
+
+
+# ============================================================
+# INFLUENCER GENDER FILTER TESTS
+# ============================================================
+
+class TestInfluencerGenderFilter:
+    """Tests for influencer's own gender filter."""
+
+    def test_female_filter_removes_males_by_audience(self, filter_service, default_config):
+        """Female filter should remove influencers with female-heavy audience (= likely male influencer)."""
+        influencers = [
+            create_mock_influencer(
+                display_name="María García",
+                audience_genders={"male": 70.0, "female": 30.0},
+            ),
+            create_mock_influencer(
+                display_name="Carlos Ruiz",
+                audience_genders={"male": 30.0, "female": 70.0},
+            ),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.FEMALE)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 1
+        assert results[0]["display_name"] == "María García"
+
+    def test_female_filter_removes_males_by_name(self, filter_service, default_config):
+        """Female filter should remove obvious male names when no audience data."""
+        influencers = [
+            create_mock_influencer(display_name="Belén Aguilera", audience_genders=None),
+            create_mock_influencer(display_name="Facundo Hernández", audience_genders=None),
+            create_mock_influencer(display_name="Jose Maria Manzanares", audience_genders=None),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.FEMALE)
+        results = filter_service.apply_filters(influencers, query, default_config, lenient_mode=True)
+        assert len(results) == 1
+        assert "Belén" in results[0]["display_name"]
+
+    def test_male_filter_removes_females_by_name(self, filter_service, default_config):
+        """Male filter should remove obvious female names when no audience data."""
+        influencers = [
+            create_mock_influencer(display_name="María López", audience_genders=None),
+            create_mock_influencer(display_name="Carlos Ruiz", audience_genders=None),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.MALE)
+        results = filter_service.apply_filters(influencers, query, default_config, lenient_mode=True)
+        assert len(results) == 1
+        assert "Carlos" in results[0]["display_name"]
+
+    def test_unknown_gender_passes(self, filter_service, default_config):
+        """Influencer with indeterminate gender should pass through."""
+        influencers = [
+            create_mock_influencer(display_name="🌟 Creator 🌟", audience_genders=None, bio=""),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.FEMALE)
+        results = filter_service.apply_filters(influencers, query, default_config, lenient_mode=True)
+        assert len(results) == 1
+
+    def test_any_gender_all_pass(self, filter_service, default_config):
+        """With gender=any, all should pass."""
+        influencers = [
+            create_mock_influencer(display_name="María"),
+            create_mock_influencer(display_name="Carlos"),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.ANY)
+        results = filter_service.apply_filters(influencers, query, default_config)
+        assert len(results) == 2
+
+    def test_bio_pronouns_override_name(self, filter_service, default_config):
+        """Bio pronouns should be used for gender inference."""
+        influencers = [
+            create_mock_influencer(
+                display_name="Alex", bio="she/her | content creator", audience_genders=None
+            ),
+        ]
+        query = create_mock_query(influencer_gender=GenderFilter.FEMALE)
+        results = filter_service.apply_filters(influencers, query, default_config, lenient_mode=True)
+        assert len(results) == 1
+
+
+# ============================================================
 # COMBINED FILTER TESTS
 # ============================================================
 
