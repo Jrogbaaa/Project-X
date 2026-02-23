@@ -47,17 +47,19 @@ class RankingService:
     AFTER initial matching and are used for display/filtering, not ranking.
     """
 
-    # Simplified weights focusing on data we have (from Apify scrape)
-    # Other factors (credibility, engagement, etc.) will be populated by PrimeTag later
+    # Balanced weights: niche/creative remain dominant, PrimeTag signals now active
+    # PrimeTag factors (credibility, engagement, geography) contribute where data exists;
+    # their scores default to neutral (0.5) when not yet fetched, so they don't harm
+    # influencers that haven't been verified yet.
     DEFAULT_WEIGHTS = RankingWeights(
-        credibility=0.00,      # From PrimeTag (not used in initial ranking)
-        engagement=0.00,       # From PrimeTag (not used in initial ranking)
-        audience_match=0.00,   # From PrimeTag (not used in initial ranking)
-        growth=0.00,           # From PrimeTag (not used in initial ranking)
-        geography=0.00,        # All influencers are Spanish (not useful)
-        brand_affinity=0.25,   # Uses detected_brands from scrape
-        creative_fit=0.35,     # Uses content_themes from scrape
-        niche_match=0.40       # Uses primary_niche from scrape
+        credibility=0.10,      # PrimeTag: audience authenticity (0-100 → 0-1)
+        engagement=0.10,       # PrimeTag: interaction rate (capped at 15%)
+        audience_match=0.05,   # PrimeTag: gender/age demographic overlap
+        growth=0.05,           # PrimeTag: 6-month follower growth trajectory
+        geography=0.05,        # PrimeTag: Spain audience % (already filtered ≥60%)
+        brand_affinity=0.15,   # Apify: detected brand mentions + overlap data
+        creative_fit=0.20,     # Apify: content themes / narrative style alignment
+        niche_match=0.30       # Apify: primary_niche taxonomy matching (dominant signal)
     )
 
     def __init__(self, weights: RankingWeights = None):
