@@ -345,8 +345,9 @@ niches:
       - "cosmetics"
       - "cosméticos"
       - "tutorial"
-    related_niches:
+    aliases:
       - skincare
+    related_niches:
       - fashion
       - lifestyle
     conflicting_niches: []
@@ -393,8 +394,9 @@ niches:
       - "hyaluronic acid"
       - "colágeno"
       - "collagen"
-    related_niches:
+    aliases:
       - beauty
+    related_niches:
       - wellness
       - health
     conflicting_niches:

@@ -656,11 +656,16 @@ class RankingService:
                 niche_info = brand_intel.get_niche(campaign_niche_lower)
                 
                 if niche_info:
+                    # Check for alias (scored same as exact match)
+                    if primary_niche_lower in [n.lower() for n in niche_info.aliases]:
+                        final_score = 0.95 * niche_confidence
+                        return min(final_score, 1.0), None
+
                     # Check for related niche
                     if primary_niche_lower in [n.lower() for n in niche_info.related_niches]:
                         final_score = 0.70 * niche_confidence
                         return final_score, None
-                    
+
                     # Check for conflicting niche
                     if primary_niche_lower in [n.lower() for n in niche_info.conflicting_niches]:
                         warning = f"Conflicting niche: {primary_niche} conflicts with {campaign_niche}"
