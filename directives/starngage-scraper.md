@@ -145,6 +145,24 @@ cd backend && python -m app.services.keyword_niche_detector
 cd backend && python -m app.services.llm_niche_enrichment
 ```
 
+## Step 5: Verify import freshness (audit)
+
+After importing, verify all DB records match the CSV:
+
+```bash
+cd backend && python -m app.services.starngage_scraper audit \
+    --csv ../starngage_spain_influencers_2026.csv
+```
+
+The audit is **read-only** and reports:
+- **Recently updated**: DB records refreshed within the freshness window (default 48h)
+- **Stale**: DB records the import didn't touch (older `updated_at`)
+- **Missing from DB**: CSV usernames that failed to import
+- **Orphans in DB**: DB records not in the latest CSV (leftovers from old imports)
+- **Follower mismatches**: spot-checks CSV vs DB follower counts for the first 200 entries
+
+Use `--freshness-hours N` to adjust the window (default: 48).
+
 ## Integration with Enrichment Pipeline
 
 The Starngage CSV is the starting point for the enrichment pipeline:
@@ -152,9 +170,10 @@ The Starngage CSV is the starting point for the enrichment pipeline:
 ```
 Starngage scrape (Steps 1-3)
   → Import to DB (Step 4 / starngage_scraper.py import)
-    → Keyword niche detection (keyword_niche_detector.py)
-      → LLM niche enrichment (llm_niche_enrichment.py)
-        → PrimeTag enrichment (cache_service.py)
+    → Audit freshness (Step 5 / starngage_scraper.py audit)
+      → Keyword niche detection (keyword_niche_detector.py)
+        → LLM niche enrichment (llm_niche_enrichment.py)
+          → PrimeTag enrichment (cache_service.py)
 ```
 
 The `topics` column from Starngage maps to the `interests` field in the database and is used for niche matching when `primary_niche` is not set.

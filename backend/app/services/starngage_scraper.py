@@ -10,6 +10,7 @@ This module provides:
   - extract_page(): Parse one page of Starngage HTML into dicts
   - combine_and_write_csv(): Merge batch JSON files, filter by threshold, write CSV
   - import_to_db(): Upsert Starngage CSV data into the influencers table
+  - audit_db(): Read-only cross-reference of DB vs CSV to verify import freshness
 
 Usage:
     # Combine batch extracts into CSV
@@ -24,6 +25,10 @@ Usage:
     # Dry run import (see what would change)
     cd backend && python -m app.services.starngage_scraper import \\
         --csv ../starngage_spain_influencers_2026.csv --dry-run
+
+    # Audit: verify DB matches latest CSV (read-only)
+    cd backend && python -m app.services.starngage_scraper audit \\
+        --csv ../starngage_spain_influencers_2026.csv
 """
 
 import argparse
@@ -374,6 +379,203 @@ async def import_to_db(
 
 
 # ---------------------------------------------------------------------------
+# Database audit (read-only)
+# ---------------------------------------------------------------------------
+
+async def audit_db(csv_path: str, freshness_hours: int = 48) -> dict:
+    """
+    Read-only cross-reference of the DB against a Starngage CSV.
+
+    Reports:
+      - Updated: DB records whose updated_at falls within freshness_hours
+      - Stale: DB records with older updated_at (import may not have touched them)
+      - Missing from DB: CSV usernames not found in the DB
+      - Follower mismatches: spot-check CSV vs DB follower counts
+    """
+    import ssl
+
+    from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.config import get_settings, needs_ssl
+    from app.models.influencer import Influencer
+
+    settings = get_settings()
+
+    connect_args: dict = {}
+    if needs_ssl(settings.database_url_raw):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = ctx
+
+    engine = create_async_engine(settings.database_url, echo=False, connect_args=connect_args)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    # --- Load CSV ---
+    rows: list[dict] = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        if content.startswith("\ufeff"):
+            content = content[1:]
+        reader = csv.DictReader(content.splitlines())
+        rows = list(reader)
+
+    csv_map: dict[str, dict] = {}
+    for row in rows:
+        username = clean_handle(row.get("handle", ""))
+        if username:
+            csv_map[username] = row
+
+    logger.info("CSV: %d unique usernames from %s", len(csv_map), csv_path)
+
+    # --- Load DB ---
+    async with async_session() as session:
+        result = await session.execute(
+            select(
+                Influencer.username,
+                Influencer.follower_count,
+                Influencer.primary_niche,
+                Influencer.engagement_rate,
+                Influencer.created_at,
+                Influencer.updated_at,
+            ).where(Influencer.platform_type == "instagram")
+        )
+        db_rows = result.all()
+
+    await engine.dispose()
+
+    db_map: dict[str, dict] = {}
+    for r in db_rows:
+        db_map[r.username] = {
+            "follower_count": r.follower_count,
+            "primary_niche": r.primary_niche,
+            "engagement_rate": r.engagement_rate,
+            "created_at": r.created_at,
+            "updated_at": r.updated_at,
+        }
+
+    logger.info("DB:  %d influencers loaded", len(db_map))
+
+    # --- Cross-reference ---
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=freshness_hours)
+
+    updated = []
+    stale = []
+    for username, info in db_map.items():
+        ts = info["updated_at"]
+        if ts and ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if ts and ts >= cutoff:
+            updated.append(username)
+        else:
+            stale.append((username, info))
+
+    missing_from_db = [u for u in csv_map if u not in db_map]
+    orphans_in_db = [u for u in db_map if u not in csv_map]
+
+    # --- Follower count spot-check ---
+    mismatches = []
+    for username in list(csv_map.keys())[:200]:
+        if username not in db_map:
+            continue
+        csv_fc = int(parse_follower_count(csv_map[username].get("followers", "")))
+        db_fc = db_map[username]["follower_count"]
+        if db_fc is None:
+            mismatches.append((username, csv_fc, db_fc, "DB is NULL"))
+        elif csv_fc != db_fc:
+            mismatches.append((username, csv_fc, db_fc, "mismatch"))
+
+    # --- Print report ---
+    print(f"\n{'='*70}")
+    print(f"  STARNGAGE IMPORT FRESHNESS AUDIT")
+    print(f"  CSV: {csv_path}  ({len(csv_map):,} influencers)")
+    print(f"  DB:  {len(db_map):,} influencers")
+    print(f"  Freshness window: last {freshness_hours}h (since {cutoff:%Y-%m-%d %H:%M} UTC)")
+    print(f"{'='*70}")
+
+    print(f"\n  Recently updated (within {freshness_hours}h): {len(updated):,}")
+    print(f"  Stale (older updated_at):                   {len(stale):,}")
+    print(f"  Missing from DB (in CSV but not DB):        {len(missing_from_db):,}")
+    print(f"  Orphans in DB (in DB but not CSV):          {len(orphans_in_db):,}")
+
+    if stale:
+        print(f"\n{'─'*70}")
+        print(f"  STALE RECORDS  (updated_at before {cutoff:%Y-%m-%d %H:%M} UTC)")
+        print(f"{'─'*70}")
+        print(f"  {'Username':<30} {'Followers':>12} {'Niche':<18} {'Updated At':<20}")
+        print(f"  {'─'*30} {'─'*12} {'─'*18} {'─'*20}")
+        for username, info in sorted(stale, key=lambda x: str(x[1].get("updated_at") or "")):
+            fc = f"{info['follower_count']:,}" if info["follower_count"] else "NULL"
+            niche = info["primary_niche"] or "—"
+            ua = info["updated_at"].strftime("%Y-%m-%d %H:%M") if info["updated_at"] else "NULL"
+            print(f"  {username:<30} {fc:>12} {niche:<18} {ua:<20}")
+
+    if missing_from_db:
+        print(f"\n{'─'*70}")
+        print(f"  MISSING FROM DB  (in CSV, not in database)")
+        print(f"{'─'*70}")
+        for username in missing_from_db[:30]:
+            csv_fc = csv_map[username].get("followers", "?")
+            print(f"  @{username:<30} {csv_fc:>12} followers")
+        if len(missing_from_db) > 30:
+            print(f"  ... and {len(missing_from_db) - 30} more")
+
+    if orphans_in_db:
+        print(f"\n{'─'*70}")
+        print(f"  ORPHANS IN DB  (in database, not in latest CSV)")
+        print(f"{'─'*70}")
+        print(f"  {'Username':<30} {'Followers':>12} {'Niche':<18} {'Updated At':<20}")
+        print(f"  {'─'*30} {'─'*12} {'─'*18} {'─'*20}")
+        for username in sorted(orphans_in_db):
+            info = db_map[username]
+            fc = f"{info['follower_count']:,}" if info["follower_count"] else "NULL"
+            niche = info["primary_niche"] or "—"
+            ua = info["updated_at"].strftime("%Y-%m-%d %H:%M") if info["updated_at"] else "NULL"
+            print(f"  {username:<30} {fc:>12} {niche:<18} {ua:<20}")
+
+    if mismatches:
+        print(f"\n{'─'*70}")
+        print(f"  FOLLOWER COUNT MISMATCHES  (first 200 CSV entries checked)")
+        print(f"{'─'*70}")
+        print(f"  {'Username':<30} {'CSV':>12} {'DB':>12} {'Note':<15}")
+        print(f"  {'─'*30} {'─'*12} {'─'*12} {'─'*15}")
+        for username, csv_fc, db_fc, note in mismatches[:30]:
+            db_str = f"{db_fc:,}" if db_fc is not None else "NULL"
+            print(f"  {username:<30} {csv_fc:>12,} {db_str:>12} {note:<15}")
+        if len(mismatches) > 30:
+            print(f"  ... and {len(mismatches) - 30} more mismatches")
+    else:
+        print(f"\n  Follower count spot-check (200 entries): ALL MATCH")
+
+    print(f"\n{'='*70}")
+    verdict = "HEALTHY" if not stale and not missing_from_db and not mismatches else "NEEDS REVIEW"
+    print(f"  VERDICT: {verdict}")
+    if stale:
+        print(f"    - {len(stale)} stale records were not refreshed by the import")
+    if orphans_in_db:
+        print(f"    - {len(orphans_in_db)} orphan records exist in DB but not in the latest CSV")
+    if missing_from_db:
+        print(f"    - {len(missing_from_db)} CSV entries failed to import into DB")
+    if mismatches:
+        print(f"    - {len(mismatches)} follower count mismatches detected")
+    if verdict == "HEALTHY":
+        print(f"    All {len(updated):,} DB records were updated recently and match the CSV")
+    print(f"{'='*70}\n")
+
+    return {
+        "csv_count": len(csv_map),
+        "db_count": len(db_map),
+        "updated": len(updated),
+        "stale": len(stale),
+        "missing_from_db": len(missing_from_db),
+        "orphans_in_db": len(orphans_in_db),
+        "follower_mismatches": len(mismatches),
+    }
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -415,6 +617,19 @@ def main():
         help="Records per DB commit batch (default: 100)",
     )
 
+    # --- audit subcommand ---
+    audit_parser = subparsers.add_parser(
+        "audit", help="Read-only: verify DB matches latest CSV (freshness check)",
+    )
+    audit_parser.add_argument(
+        "--csv", required=True,
+        help="Path to the authoritative Starngage CSV",
+    )
+    audit_parser.add_argument(
+        "--freshness-hours", type=int, default=48,
+        help="Consider records updated within this window as 'fresh' (default: 48)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "combine":
@@ -429,6 +644,11 @@ def main():
             csv_path=args.csv,
             dry_run=args.dry_run,
             batch_size=args.batch_size,
+        ))
+    elif args.command == "audit":
+        asyncio.run(audit_db(
+            csv_path=args.csv,
+            freshness_hours=args.freshness_hours,
         ))
 
 
