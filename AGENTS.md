@@ -272,10 +272,17 @@ The backend has a comprehensive pytest-based test suite with **LLM reflection** 
 - `backend/tests/test_pipeline_gema.py` - **Full pipeline GEMA verification** — 4 messy agency briefs run in parallel via `asyncio.gather`, validated across 5 explicit steps (ingestion → LLM parsing → matching → PrimeTag data → GEMA filters). Prints a diagnostic table.
 - `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 GEMA pipeline verification briefs)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
+- `backend/tests/test_result_differentiation.py` - **Result differentiation tests** — 3 unit tests verifying RankingService differentiates by niche + 3 integration tests (marked `@pytest.mark.e2e`) verifying full pipeline produces distinct results for different brand briefs (home_decor vs padel vs fashion: 0% overlap). Validates brand intelligence → campaign_niche extraction and niche discovery relevance.
 
 ```bash
 # Run unit tests (fast, ~0.1s)
 cd backend && pytest tests/test_filter_service.py tests/test_ranking_service.py -v
+
+# Run ranking differentiation unit tests (fast, ~0.1s)
+cd backend && pytest tests/test_result_differentiation.py::TestRankingDifferentiation -v -s
+
+# Run full pipeline differentiation tests (requires DB + OpenAI, ~80s)
+cd backend && pytest tests/test_result_differentiation.py::TestPipelineDifferentiation -v -s -m e2e
 
 # Run full pipeline GEMA verification (parallel, ~40s)
 cd backend && pytest tests/test_pipeline_gema.py -v -s
@@ -389,6 +396,15 @@ npm run test:e2e:ui
 - `health.spec.ts` - App loads, API responds
 - `search.spec.ts` - Search flow works end-to-end
 - `accessibility.spec.ts` - Basic a11y checks
+- `search-differentiation.spec.ts` - **Result differentiation tests** — 5 tests that hit the search API directly (not UI) to verify: (1) different niches return different influencer sets (<50% overlap), (2) brand intelligence extracts correct campaign_niche (or graceful fallback when LLM unavailable), (3) niche_match scores are meaningful, (4) primary_niche data coverage >= 70%, (5) PrimeTag graceful degradation
+
+```bash
+# Run differentiation tests against Vercel
+cd frontend && PLAYWRIGHT_BASE_URL=https://project-x-three-sage.vercel.app npx playwright test e2e/search-differentiation.spec.ts
+
+# Run against local dev
+cd frontend && npx playwright test e2e/search-differentiation.spec.ts
+```
 
 ### Search Filtering
 
