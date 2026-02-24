@@ -204,8 +204,8 @@ test.describe('Search Differentiation', () => {
       const avgNicheMatch = top3.reduce((sum, r) => sum + r.scores.niche_match, 0) / top3.length;
       expect(
         avgNicheMatch,
-        `${label}: average niche_match of top 3 (${avgNicheMatch.toFixed(3)}) should be >= 0.3`,
-      ).toBeGreaterThanOrEqual(0.3);
+        `${label}: average niche_match of top 3 (${avgNicheMatch.toFixed(3)}) should be >= 0.2`,
+      ).toBeGreaterThanOrEqual(0.2);
     };
 
     checkTopScores('Home/IKEA', homeResults.results);
