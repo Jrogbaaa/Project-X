@@ -225,6 +225,16 @@ class RankingService:
         if parsed_query.suggested_ranking_weights:
             suggested = parsed_query.suggested_ranking_weights
 
+            # If the LLM suggests equal (or near-equal) weights for all factors,
+            # it has no meaningful preference — fall back to system defaults.
+            # This happens when the LLM hedges (e.g. all 1.0 or all 0.5), and
+            # applying equal weights collapses niche_match's 0.50 dominance.
+            _weight_keys = ['credibility', 'engagement', 'audience_match', 'growth',
+                            'geography', 'brand_affinity', 'creative_fit', 'niche_match']
+            _vals = [suggested.get(k) for k in _weight_keys if suggested.get(k) is not None]
+            if _vals and (max(_vals) - min(_vals)) < 0.15:
+                return self.weights  # Equal-ish weights → ignore, use defaults
+
             def clamp(key, default):
                 # If the default weight is zero (data source unavailable),
                 # keep it zero regardless of LLM suggestion
