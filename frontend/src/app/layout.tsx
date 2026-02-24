@@ -29,11 +29,11 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Descubrimiento de Influencers',
+  title: 'Look After You — Influencer Discovery',
   description: 'Plataforma de descubrimiento de influencers con IA. Encuentra el influencer ideal para tu marca mediante búsqueda en lenguaje natural.',
   keywords: ['influencer', 'marketing', 'descubrimiento', 'brand partnerships', 'redes sociales'],
   openGraph: {
-    title: 'Descubrimiento de Influencers',
+    title: 'Look After You — Influencer Discovery',
     description: 'Encuentra tu influencer ideal con búsqueda por IA',
     type: 'website',
   },

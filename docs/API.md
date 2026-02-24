@@ -22,7 +22,7 @@ This API powers an intelligent influencer discovery platform. Users can paste br
 
 The frontend interface is fully localized in **Spanish** for the Spanish market. Key UI elements include:
 
-- **Descubrimiento de Influencers**: Main header
+- **Look After You**: Logo in main header
 - **Perfiles verificados**: Trust badge showing all influencers are vetted
 - **Filtros**: Filter panel with credibility, Spain audience %, engagement, growth filters
 - **Resultados**: Results display with match scores and detailed breakdowns

@@ -8,6 +8,7 @@ import { ToastContainer } from '@/components/ui/Toast';
 import { SearchResponse, FilterConfig } from '@/types/search';
 import { useToast } from '@/hooks/useToast';
 import { SlidersHorizontal, Clock, Bookmark } from 'lucide-react';
+import Image from 'next/image';
 
 type LoadingStep = 'parsing' | 'searching' | 'ranking' | null;
 
@@ -123,15 +124,15 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
 
-            {/* Wordmark */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 bg-ember-warm rounded-sm flex items-center justify-center flex-shrink-0">
-                <span className="font-serif text-white font-bold text-sm leading-none">D</span>
-              </div>
-              <span className="font-serif text-[1.1rem] text-light-primary tracking-tight font-medium">
-                Descubrimiento
-              </span>
-            </div>
+            {/* Logo */}
+            <Image
+              src="/look-after-you-logo.png"
+              alt="Look After You"
+              width={160}
+              height={32}
+              className="h-7 w-auto object-contain"
+              priority
+            />
 
             {/* Nav */}
             <nav className="flex items-center gap-5">
