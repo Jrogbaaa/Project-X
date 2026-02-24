@@ -410,6 +410,48 @@ RESPONSE_FORMAT = {
 }
 
 
+# Fallback: campaign_niche → PrimeTag interest categories when LLM returns empty discovery_interests.
+# These map to the interests field stored on influencers (coarse PrimeTag categories).
+_NICHE_DISCOVERY_FALLBACK: dict[str, list[str]] = {
+    "food":                ["Lifestyle", "Family", "Entertainment and Music"],
+    "alcoholic_beverages": ["Lifestyle", "Entertainment and Music", "Family"],
+    "soft_drinks":         ["Lifestyle", "Sports", "Entertainment and Music"],
+    "fitness":             ["Fitness", "Sports", "Health"],
+    "wellness":            ["Health", "Fitness", "Lifestyle"],
+    "nutrition":           ["Health", "Fitness", "Lifestyle"],
+    "running":             ["Sports", "Fitness", "Health"],
+    "cycling":             ["Sports", "Fitness"],
+    "yoga":                ["Health", "Fitness", "Lifestyle"],
+    "crossfit":            ["Fitness", "Sports"],
+    "fashion":             ["Fashion", "Lifestyle", "Clothes Shoes Handbags & Accessories"],
+    "beauty":              ["Beauty", "Lifestyle", "Fashion"],
+    "skincare":            ["Beauty", "Health", "Lifestyle"],
+    "luxury":              ["Luxury Goods", "Fashion", "Jewellery & Watches"],
+    "lifestyle":           ["Lifestyle", "Entertainment and Music", "Family"],
+    "travel":              ["Lifestyle", "Entertainment and Music", "Family"],
+    "home_decor":          ["Lifestyle", "Family", "Parenting"],
+    "diy":                 ["Lifestyle", "Family"],
+    "pets":                ["Lifestyle", "Family", "Parenting"],
+    "parenting":           ["Parenting", "Family", "Lifestyle"],
+    "music":               ["Entertainment and Music", "Lifestyle", "Celebrity"],
+    "comedy":              ["Entertainment and Music", "Lifestyle", "Family"],
+    "nightlife":           ["Entertainment and Music", "Lifestyle"],
+    "gaming":              ["Entertainment and Music"],
+    "tech":                ["Entertainment and Music", "Lifestyle"],
+    "padel":               ["Sports", "Tennis", "Fitness"],
+    "tennis":              ["Sports", "Tennis", "Fitness"],
+    "football":            ["Sports", "Soccer", "Entertainment and Music"],
+    "basketball":          ["Sports", "Entertainment and Music"],
+    "golf":                ["Sports", "Golf", "Lifestyle"],
+    "motorsport":          ["Sports", "Cars & Motorbikes"],
+    "automotive":          ["Cars & Motorbikes", "Lifestyle"],
+    "business":            ["Lifestyle", "Entertainment and Music"],
+    "finance":             ["Lifestyle"],
+    "retail":              ["Fashion", "Lifestyle", "Entertainment and Music"],
+    "ecommerce":           ["Lifestyle", "Fashion"],
+}
+
+
 async def parse_search_query(query: str) -> ParsedSearchQuery:
     """Parse natural language query into structured search parameters using GPT-4o."""
     settings = get_settings()
@@ -468,7 +510,11 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             content_themes=parsed_data.get("content_themes", []),
 
             # Creative discovery (PrimeTag interest mapping)
-            discovery_interests=parsed_data.get("discovery_interests", []),
+            # If LLM returned empty discovery_interests, fall back to niche-based defaults
+            discovery_interests=(
+                parsed_data.get("discovery_interests")
+                or _NICHE_DISCOVERY_FALLBACK.get(parsed_data.get("campaign_niche") or "", [])
+            ),
             exclude_interests=parsed_data.get("exclude_interests", []),
             influencer_reasoning=parsed_data.get("influencer_reasoning", ""),
 
