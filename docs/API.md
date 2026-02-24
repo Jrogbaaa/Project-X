@@ -733,17 +733,18 @@ curl -X POST http://localhost:8000/search/ \
   -d '{
     "query": "Nike running campaign, gritty black-and-white documentary style, everyday athletes pushing limits",
     "ranking_weights": {
-      "credibility": 0.10,
-      "engagement": 0.15,
-      "audience_match": 0.10,
-      "growth": 0.05,
-      "geography": 0.10,
-      "brand_affinity": 0.15,
-      "creative_fit": 0.25,
-      "niche_match": 0.10
+      "credibility": 0.00,
+      "engagement": 0.10,
+      "audience_match": 0.00,
+      "growth": 0.00,
+      "geography": 0.00,
+      "brand_affinity": 0.10,
+      "creative_fit": 0.40,
+      "niche_match": 0.40
     }
   }'
 ```
+> **Note:** PrimeTag-dependent factors (credibility, audience_match, growth, geography) are currently zeroed due to API unavailability. LLM-suggested weights for these factors are clamped to 0 automatically.
 
 ### Gender-Split Search
 Request specific counts of male and female influencers:
@@ -772,12 +773,29 @@ curl -O http://localhost:8000/exports/{search_id}/excel
 
 ### Local-First Discovery
 The search service prioritizes the local database for candidate discovery:
-1. **Step 1**: Search local cache by interests/niches matching the brief
-2. **Step 2**: Search local cache by keywords in bio/interests
-3. **Step 3**: Fall back to generic cache query if needed
-4. **Step 4**: Verify ALL candidates via PrimeTag API to fetch fresh metrics
+1. **Step 1**: Parse query with LLM — extract brand, niche, creative concept, filters
+2. **Step 2**: Search local DB by taxonomy-aware niche matching (exact → related → interests)
+3. **Step 3**: Expand via creative discovery interests if niche matches are sparse
+4. **Step 4**: Pre-filter and verify top candidates via PrimeTag API for fresh metrics
+5. **Step 5**: Apply hard filters (Spain %, credibility, ER, follower range, gender)
+6. **Step 6**: Rank survivors using 8-factor weighted scoring
 
-PrimeTag API is used **only for verification** (fetching Spain %, credibility, engagement rate, demographics) - not for discovering new influencers. This ensures fast searches and reduces API costs.
+PrimeTag API is used **only for verification** — not for discovering new influencers. When PrimeTag is unavailable, the system falls back gracefully to cached data with lenient filtering.
+
+### Niche Selection Rules
+The LLM follows specificity rules when selecting campaign_niche:
+- **"skincare"** (not "beauty") for skincare products, serums, facial routines
+- **"gaming"** (not "tech") for gaming peripherals, headsets, esports, streaming
+- **"home_decor"** (not "lifestyle") for furniture, mattresses, home appliances
+- **"pets"** for pet stores and animal brands
+- Most specific niche always preferred: "padel" > "sports", "running" > "fitness"
+- `exclude_niches` never contains niches related to `campaign_niche` (e.g., never exclude "beauty" for a skincare campaign)
+
+### Graceful Fallbacks
+The system avoids returning empty results through cascading fallbacks:
+- **Follower range**: If the requested range (e.g., 10K-80K) would remove ALL candidates, the filter relaxes and ranking's size penalty handles deprioritization
+- **Tier distribution**: If requested tiers (e.g., micro only) have 0 candidates, falls back to best-ranked from any tier
+- **PrimeTag unavailable**: Falls back to cached data with lenient mode filters
 
 ### Default Result Limit
 - Default: **20 results** returned
