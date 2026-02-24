@@ -70,7 +70,10 @@ Extract the creative/campaign concept if described:
    - Use "skincare" (not "beauty") when the brief is specifically about skincare products, serums, facial routines, dermatology, SPF, etc. Use "beauty" only for general beauty/makeup/cosmetics.
    - Use "gaming" (not "tech") when the brief is about gaming peripherals, headsets, consoles, video games, esports, Twitch, streaming gear. Use "tech" only for smartphones, general gadgets, software, SaaS, or B2B tech.
    - Use "home_decor" (not "lifestyle") when the brief is about furniture, mattresses, bedding, home appliances, interior design, or any product used in the home. Use "lifestyle" only when nothing more specific fits.
-   - Always prefer the MOST SPECIFIC niche over a broader one. "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle".
+   - Use "food" (not "lifestyle") for restaurant chains (VIPS, McDonald's, TGI Friday's), food delivery (Telepizza, Domino's, Glovo), food manufacturers (Campofrío, Nestlé, Danone), grocery brands. Food is more specific than lifestyle.
+   - Use "alcoholic_beverages" (not "lifestyle") for beer brands (Estrella Damm, Mahou, San Miguel, Heineken), gin/spirits (Puerto de Indias, Hendrick's), wine brands. Always use the specific beverage niche.
+   - Use "soft_drinks" for energy drinks (Celsius, Monster, Relentless) unless the brand positioning is clearly fitness/sports — in that case "fitness" is acceptable.
+   - Always prefer the MOST SPECIFIC niche over a broader one. "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle", "food" > "lifestyle", "alcoholic_beverages" > "lifestyle".
    This will be matched against influencers' primary_niche column.
 2. campaign_topics: Additional specific topics relevant to the campaign (array)
 3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
@@ -79,6 +82,7 @@ Extract the creative/campaign concept if described:
    - running campaign → do NOT exclude "fitness" (fitness includes runners)
    - gaming campaign → do NOT exclude "tech" (tech and gaming overlap)
    - Only exclude genuinely CONFLICTING niches (e.g., football for padel, fitness for beer/spirits)
+   CRITICAL: NEVER add the brand's OWN niche to exclude_niches. If the campaign is FOR a beer brand, "alcoholic_beverages" is the campaign_niche — do NOT put it in exclude_niches. Competitor brand mentions like "no Mahou, no Heineken, no San Miguel" mean exclude those specific brand ambassadors — use exclude_interests with the competitor brand names (e.g., ["Mahou", "Heineken", "San Miguel"]), NOT a niche exclusion.
 
 ### Size Preferences (Anti-Celebrity Bias)
 If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:
@@ -169,6 +173,23 @@ Think creatively about WHO would authentically represent this brand. Our databas
 
 - Home/retail brand amplifying a youth social cause or competition (e.g. IKEA + Museo Picasso housing competition) → discovery_interests: ["Lifestyle", "Parenting", "Family"], campaign_niche: "lifestyle"
   Reasoning: "Social cause campaigns targeting young people (18-35) need accessible, authentic voices. Lifestyle creators who care about youth issues and housing connect best — not interior design specialists."
+
+- Casual restaurant chain (VIPS, McDonald's, TGI Friday's, Foster's Hollywood) → discovery_interests: ["Lifestyle", "Family", "Entertainment and Music"], campaign_niche: "food"
+  Reasoning: "Casual dining appeals to social, family-oriented, and entertainment creators who authentically share meals, outings, and gatherings. Food is the right niche — lifestyle alone is too broad."
+
+- Food brand / humour campaign (Campofrío, El Pozo, Argal) → discovery_interests: ["Lifestyle", "Family", "Entertainment and Music"], campaign_niche: "food"
+  Reasoning: "Food manufacturers with a humorous or family tone need relatable, everyday creators. Family, lifestyle, and entertainment creators connect best with this warmth."
+
+- Beer or lifestyle beverage brand (Estrella Damm, Mahou, San Miguel) → discovery_interests: ["Lifestyle", "Entertainment and Music", "Family"], campaign_niche: "alcoholic_beverages"
+  Reasoning: "Beer brands need lifestyle and entertainment creators who show authentic social moments — friends, summer, music. Note: campaign_niche is 'alcoholic_beverages' so beer/bartender creators will get exact-match scores. DO NOT put 'alcoholic_beverages' in exclude_niches."
+
+- Food delivery (Telepizza, Glovo, Just Eat, Uber Eats) → discovery_interests: ["Lifestyle", "Entertainment and Music", "Family"], campaign_niche: "food"
+  Reasoning: "Food delivery brands are fundamentally about food and social occasions. Food influencers and lifestyle/entertainment creators who share casual evenings, gaming nights, or friend gatherings are ideal."
+
+- Energy drink brand (Celsius, Monster, Red Bull) with fitness positioning → discovery_interests: ["Fitness", "Sports", "Health"], campaign_niche: "fitness"
+  Reasoning: "Sports energy drinks need fitness, gym, and sports creators who authentically incorporate the product into an active lifestyle."
+
+IMPORTANT: discovery_interests MUST always be populated. Every campaign has relevant PrimeTag interest categories — never leave this empty. Even broad lifestyle/food campaigns need at least 2-3 interest categories specified.
 
 Always return valid JSON matching the schema."""
 
