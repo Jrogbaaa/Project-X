@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:8000` (local) | `https://project-x-three-sage.vercel.app/api` (production)
 
-> **Last Updated:** February 19, 2026
+> **Last Updated:** February 24, 2026
 
 ## Overview
 
@@ -43,6 +43,8 @@ An influencer's **niche** is what they post about - their content category. This
 | Fintech/payment tech (Square) | Food entrepreneurs, Business, Gastronomy |
 | Perfume/fragrance (Halloween) | Beauty, Lifestyle |
 | Banking app (imagin) | Fintech, Lifestyle, Entertainment |
+| Pet store (Tiendanimal, Kiwoko) | Pets, Lifestyle, Family |
+| Skincare brand (CeraVe, The Ordinary) | Skincare, Beauty, Wellness |
 
 Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
 
@@ -77,14 +79,14 @@ Execute an influencer search by pasting a brand brief or natural language query.
     "exclude_competitor_ambassadors": true
   },
   "ranking_weights": {
-    "credibility": 0.15,
-    "engagement": 0.20,
-    "audience_match": 0.15,
-    "growth": 0.05,
-    "geography": 0.10,
-    "brand_affinity": 0.15,
-    "creative_fit": 0.15,
-    "niche_match": 0.05
+    "credibility": 0.00,
+    "engagement": 0.10,
+    "audience_match": 0.00,
+    "growth": 0.00,
+    "geography": 0.00,
+    "brand_affinity": 0.10,
+    "creative_fit": 0.30,
+    "niche_match": 0.50
   }
 }
 ```
@@ -584,19 +586,21 @@ All endpoints return errors in the following format:
 ### RankingWeights
 ```typescript
 {
-  // Original 5 factors
-  credibility: number;    // default 0.15
-  engagement: number;     // default 0.20
-  audience_match: number; // default 0.15
-  growth: number;         // default 0.05
-  geography: number;      // default 0.10
-  
-  // New brand/creative factors
-  brand_affinity: number; // default 0.15 - audience overlap with brand
-  creative_fit: number;   // default 0.15 - alignment with creative concept
-  niche_match: number;    // default 0.05 - content niche alignment
+  // PrimeTag factors (zeroed until API restored — low/no data coverage)
+  credibility: number;    // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  audience_match: number; // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  growth: number;         // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  geography: number;      // default 0.00 — zeroed, PrimeTag 0.0% coverage
+
+  // Active factors (where data exists)
+  engagement: number;     // default 0.10 — Starngage 98.6% coverage
+  brand_affinity: number; // default 0.10 — Apify 3.4% coverage, helps when present
+  creative_fit: number;   // default 0.30 — Apify+LLM 50.3% coverage, key differentiator
+  niche_match: number;    // default 0.50 — LLM+keyword 98.6% coverage, dominant signal
 }
 // Note: All weights must sum to 1.0
+// LLM-suggested weights are clamped: factors with default 0.0 stay zeroed.
+// When PrimeTag is restored, rebalance credibility/geography/audience_match.
 ```
 
 ### ScoreComponents
@@ -639,6 +643,11 @@ All endpoints return errors in the following format:
   target_female_count?: number;   // Specific number of female influencers requested
   // When set, returns 3x the requested count per gender (e.g., 3 male + 3 female = 18 results)
   
+  // Tier-specific counts
+  target_micro_count?: number;    // Micro influencers (1K-50K) requested
+  target_mid_count?: number;      // Mid-tier influencers (50K-500K) requested
+  target_macro_count?: number;    // Macro influencers (500K-2.5M) requested
+  
   // Brand context
   brand_name?: string;            // e.g., "Adidas"
   brand_handle?: string;          // e.g., "@adidas" for audience overlap
@@ -646,13 +655,20 @@ All endpoints return errors in the following format:
   
   // Creative concept
   creative_concept?: string;      // The campaign creative brief
+  creative_format?: string;       // "documentary", "day_in_the_life", "tutorial", "challenge", "testimonial", "storytelling", "lifestyle"
   creative_tone: string[];        // e.g., ["authentic", "documentary"]
   creative_themes: string[];      // e.g., ["dedication", "rising stars"]
   
   // Niche targeting
+  campaign_niche?: string;        // PRIMARY niche (single): "padel", "fitness", "beauty", "pets", etc.
   campaign_topics: string[];      // e.g., ["padel", "tennis"]
-  exclude_niches: string[];       // e.g., ["soccer"] - avoid these niches
+  exclude_niches: string[];       // e.g., ["soccer"] - avoid these niches (never exclude related niches)
   content_themes: string[];       // Related content themes
+  
+  // Creative discovery (PrimeTag interest mapping)
+  discovery_interests: string[];  // PrimeTag interest categories for discovery, e.g., ["Sports", "Tennis", "Fitness"]
+  exclude_interests: string[];    // PrimeTag interest categories to AVOID, e.g., ["Soccer"]
+  influencer_reasoning: string;   // LLM reasoning about what types of influencers fit
   
   // Size preferences (anti-celebrity bias)
   preferred_follower_min?: number; // e.g., 100000

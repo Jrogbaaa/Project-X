@@ -98,6 +98,8 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 - **Conflicting niches**: Content areas that should be excluded (e.g., padel ✗ football/soccer)
 - **Distinct niches**: "skincare" is separate from "beauty" — skincare matches wellness/health creators, while beauty catches general makeup/cosmetics. Use "skincare" for serum, SPF, facial routine briefs.
 - **Pets niche**: "pets" matches pet owners, animal care creators. Related to lifestyle/parenting. Use for pet stores (Tiendanimal, Kiwoko) and animal brands (Royal Canin, Purina).
+- **Niche selection rules**: Always prefer the MOST SPECIFIC niche over a broader one: "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle". Use "gaming" for gaming peripherals/esports, "tech" for smartphones/software. Use "home_decor" for furniture/interior design, "lifestyle" only when nothing specific fits.
+- **Exclude-niche safety**: The LLM is instructed to NEVER exclude a niche that is closely related to campaign_niche (e.g., don't exclude "beauty" for a skincare campaign, don't exclude "fitness" for a running campaign). Only genuinely conflicting niches should be excluded.
 
 **Discovery Pipeline:**
 1. LLM extracts `campaign_niche` and `exclude_niches` from the brief
@@ -407,7 +409,7 @@ The search pipeline applies these filters in order:
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
 
-**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), and engagement (0.10) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), engagement (0.10), and brand affinity (0.10) carry the weight; credibility/geography/audience_match/growth are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 
