@@ -231,7 +231,12 @@ class RankingService:
                 if default == 0.0:
                     return 0.0
                 v = suggested.get(key, default)
-                return max(0, min(1, v)) if v is not None else default
+                result = max(0, min(1, v)) if v is not None else default
+                # niche_match is the primary quality signal — never let the LLM reduce it
+                # below the system default. It can be boosted but not weakened.
+                if key == 'niche_match':
+                    result = max(result, default)
+                return result
 
             weights = RankingWeights(
                 credibility=clamp('credibility', self.DEFAULT_WEIGHTS.credibility),
