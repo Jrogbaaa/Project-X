@@ -476,6 +476,34 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
         # Parse the JSON response
         parsed_data = json.loads(response_text)
 
+        # --- Safety guards applied before building the Pydantic model ---
+
+        # Guard 1: Strip related niches from exclude_niches.
+        # The LLM sometimes excludes niches that are closely related to campaign_niche
+        # (e.g. excludes "beauty" for a skincare campaign). These are hard-excluded at DB
+        # level, which destroys the candidate pool. Remove any such exclusions here.
+        _PROTECTED_RELATED: dict[str, set[str]] = {
+            "skincare":            {"beauty", "wellness", "health"},
+            "food":                {"lifestyle", "nutrition"},
+            "fitness":             {"sports", "wellness", "health", "nutrition", "running",
+                                    "yoga", "crossfit"},
+            "padel":               {"tennis", "fitness", "sports", "racket_sports"},
+            "running":             {"fitness", "sports", "triathlon"},
+            "travel":              {"lifestyle"},
+            "fashion":             {"beauty", "luxury", "lifestyle"},
+            "gaming":              {"tech", "entertainment"},
+            "home_decor":          {"lifestyle", "diy"},
+            "yoga":                {"wellness", "fitness", "health"},
+            "alcoholic_beverages": {"alcoholic_beverages", "food", "lifestyle", "nightlife"},
+        }
+        raw_campaign_niche = (parsed_data.get("campaign_niche") or "").lower()
+        raw_exclude_niches = parsed_data.get("exclude_niches") or []
+        protected_set = _PROTECTED_RELATED.get(raw_campaign_niche, set())
+        safe_exclude_niches = [n for n in raw_exclude_niches if n.lower() not in protected_set]
+
+        # Guard 2: Never put the brand's own niche in exclude_niches.
+        safe_exclude_niches = [n for n in safe_exclude_niches if n.lower() != raw_campaign_niche]
+
         # Convert to Pydantic model with validation
         return ParsedSearchQuery(
             # Count and gender
@@ -506,7 +534,7 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             # Niche targeting
             campaign_niche=parsed_data.get("campaign_niche"),
             campaign_topics=parsed_data.get("campaign_topics", []),
-            exclude_niches=parsed_data.get("exclude_niches", []),
+            exclude_niches=safe_exclude_niches,
             content_themes=parsed_data.get("content_themes", []),
 
             # Creative discovery (PrimeTag interest mapping)
