@@ -154,7 +154,7 @@ class SearchRequest(BaseModel):
         description="Optional ranking weight overrides"
     )
     limit: int = Field(
-        default=10,
+        default=20,
         ge=1,
         le=50,
         description="Maximum number of results to return"

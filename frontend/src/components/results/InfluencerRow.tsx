@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ExternalLink, Users, BadgeCheck, Copy, Check, TrendingUp, TrendingDown } from 'lucide-react';
+import { ExternalLink, Users, BadgeCheck, Copy, Check, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { RankedInfluencer } from '@/types/search';
 import { formatNumber, cn, getMetricClass, getMatchScoreClass } from '@/lib/utils';
 
@@ -74,6 +74,15 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           </span>
           {raw_data.is_verified && (
             <BadgeCheck className="h-3.5 w-3.5 text-ice-bright flex-shrink-0" />
+          )}
+          {raw_data.profile_active === false && (
+            <span
+              title="Este perfil puede no existir en Instagram"
+              className="flex items-center gap-0.5 text-[9px] font-medium text-amber-400/80 bg-amber-400/10 border border-amber-400/20 px-1 py-0.5 rounded"
+            >
+              <AlertTriangle className="h-2 w-2" />
+              No verificado
+            </span>
           )}
           <button
             onClick={() => handleCopy(`@${raw_data.username}`, 'username')}

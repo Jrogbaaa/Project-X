@@ -72,6 +72,9 @@ class Influencer(Base):
     # Relationship to posts
     posts = relationship("InfluencerPost", back_populates="influencer", cascade="all, delete-orphan")
 
+    # Profile validity (set False when Instagram handle resolves to 404/gone)
+    profile_active = Column(Boolean, default=True, nullable=False, server_default="true")
+
     # Cache metadata
     cached_at = Column(DateTime(timezone=True), server_default=func.now())
     cache_expires_at = Column(DateTime(timezone=True), nullable=True)
@@ -128,5 +131,6 @@ class Influencer(Base):
             "sponsored_ratio": self.sponsored_ratio,
             "content_language": self.content_language,
             "content_themes": self.content_themes,
+            "profile_active": self.profile_active,
             "cached_at": self.cached_at.isoformat() if self.cached_at else None,
         }

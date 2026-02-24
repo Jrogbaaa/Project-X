@@ -107,9 +107,9 @@ Only set these if EXPLICIT tier counts are mentioned. Do NOT set if just "10 inf
 If the brief just says "micro-influencers" without a count, set target_count to the total and set target_micro_count to that same number.
 
 ### Default Settings
-1. Default to Spanish audience focus (min 60% Spain audience)
+1. Default to Spanish audience focus (min 60% Spain audience) UNLESS the brief explicitly targets a non-Spanish market (e.g., Argentina, Colombia, Chile, Mexico, LATAM, US, UK, etc.) — in that case set min_spain_audience_pct=0 to disable the Spain filter. Note: our database contains Spanish influencers; for non-Spain briefs we return the best niche/content matches available.
 2. Default credibility threshold is 70%
-3. If no count is specified, default to 5 influencers
+3. If no count is specified, default to 20 influencers
 
 ### Ranking Weight Suggestions
 Consider the context when suggesting ranking weights:
@@ -486,7 +486,7 @@ def _fallback_parse(query: str, error_reason: str) -> ParsedSearchQuery:
     query_lower = query.lower()
 
     # Try to extract count
-    target_count = 5
+    target_count = 20
     for word in query.split():
         if word.isdigit():
             count = int(word)

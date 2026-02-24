@@ -35,7 +35,7 @@ class ParsedSearchQuery(BaseModel):
 
     # Extracted count
     target_count: int = Field(
-        default=5,
+        default=20,
         ge=1,
         le=50,
         description="Number of influencers to find"
