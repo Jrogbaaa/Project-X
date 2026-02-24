@@ -128,10 +128,12 @@ export default function Home() {
             <Image
               src="/look-after-you-logo.png"
               alt="Look After You"
-              width={160}
-              height={32}
-              className="h-7 w-auto object-contain"
+              width={1428}
+              height={336}
+              className="h-12 w-auto object-contain"
               priority
+              quality={100}
+              unoptimized
             />
 
             {/* Nav */}
