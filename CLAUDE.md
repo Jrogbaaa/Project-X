@@ -186,6 +186,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 | **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
 | **Match Quality Review** | `match_quality_review.py` | Repeatable human review of matching quality — picks N random briefs (default 4) from a diverse pool of 23, runs each through the full search pipeline in parallel, and prints LLM parsing + discovery funnel + matched influencers table for manual evaluation. No assertions. `cd backend && python -m app.services.match_quality_review` / `--seed 42` / `--brief "custom text"` / `--all` |
 | **Starngage Scraper** | `starngage_scraper.py` | Interactive Starngage scrape + DB import (see `directives/starngage-scraper.md`). Three subcommands: `combine` merges batch JSON extracts into CSV; `import` upserts CSV into DB (updates follower_count/display_name/interests/engagement_rate for existing, creates new, preserves all enrichment data); `audit` read-only cross-reference of DB vs CSV to verify import freshness, detect stale/orphan records, and spot-check follower counts. Scraping done via Playwright MCP browser — user logs in, agent uses `browser_evaluate` with `fetch()`. `cd backend && python -m app.services.starngage_scraper import --csv ../starngage_spain_influencers_2026.csv` / `audit --csv ../starngage_spain_influencers_2026.csv` |
+| **Profile Validator** | `validate_profiles.py` | Batch HEAD-checks `instagram.com/{username}` and sets `profile_active=False` for 404 (deleted/renamed) accounts. Excluded from all search results automatically. Rate-limited (1 req/s default). `cd backend && python -m app.services.validate_profiles --dry-run` to preview, then run without flag to apply. Options: `--delay 0.3` (faster), `--since-days 30` (only check profiles not updated in N days). ~77 min for full DB at 1 req/s. |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
@@ -317,7 +318,7 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 
 | Table | Purpose |
 |-------|---------|
-| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`. As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
+| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`, `profile_active` (bool, default true — false = Instagram handle confirmed dead, excluded from all searches). As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
 | `searches` | Search history with parsed queries and filters |
 | `search_results` | Links searches to influencers with ranking scores |
 | `ranking_presets` | Configurable weight presets (Balanced, Engagement Focus, etc.) |
