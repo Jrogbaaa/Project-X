@@ -52,6 +52,20 @@ TONE_KEYWORDS = {
     'aspiracional': ['aspirational', 'dream', 'luxury', 'goal', 'aspiracional', 'lujo', 'premium'],
     'divertido': ['divertido', 'fun', 'funny', 'humor', 'risa', 'entretenimiento'],
     'social': ['social', 'friends', 'together', 'community', 'amigos', 'juntos', 'comunidad'],
+    'adventurous': ['adventure', 'explore', 'discover', 'travel', 'aventura', 'explorar', 'descubrir', 'viaje'],
+    'luxurious': ['luxury', 'premium', 'exclusive', 'elegant', 'lujo', 'premium', 'exclusivo', 'elegante'],
+    'romantic': ['romantic', 'love', 'couple', 'romance', 'romántico', 'amor', 'pareja', 'corazón'],
+    'feminine': ['feminine', 'woman', 'girl', 'beauty', 'femenino', 'mujer', 'chica', 'belleza'],
+    'masculine': ['masculine', 'man', 'strong', 'power', 'masculino', 'hombre', 'fuerza'],
+    'trendy': ['trendy', 'trend', 'viral', 'hot', 'tendencia', 'moda', 'viral'],
+    'minimalist': ['minimal', 'minimalist', 'simple', 'clean', 'minimalista', 'sencillo', 'limpio'],
+    'sporty': ['sport', 'athletic', 'active', 'fitness', 'deportivo', 'atlético', 'activo'],
+    'rebellious': ['rebel', 'alternative', 'punk', 'counter-culture', 'rebelde', 'alternativo'],
+    'cozy': ['cozy', 'warm', 'home', 'comfort', 'acogedor', 'cálido', 'hogar', 'confort'],
+    'auténtico': ['auténtico', 'real', 'genuine', 'natural', 'verdadero', 'honesto'],
+    'eco-conscious': ['eco', 'sustainable', 'green', 'environment', 'sostenible', 'ecológico', 'reciclaje'],
+    'sustainable': ['sustainable', 'eco', 'green', 'recycl', 'sostenible', 'ecológico', 'reciclaje'],
+    'funny': ['funny', 'comedy', 'humor', 'laugh', 'fun', 'divertido', 'risa', 'comedia', 'gracioso'],
 }
 
 
@@ -75,13 +89,13 @@ class RankingService:
     # When PrimeTag is restored, rebalance credibility/geography/audience_match.
     DEFAULT_WEIGHTS = RankingWeights(
         credibility=0.00,      # PrimeTag: 0.4% coverage — zeroed until API restored
-        engagement=0.15,       # Starngage: 98.6% coverage — works
+        engagement=0.10,       # Starngage: 98.6% coverage — reduced to prevent ER outliers dominating
         audience_match=0.00,   # PrimeTag: 0.4% coverage — zeroed until API restored
         growth=0.00,           # PrimeTag: 0.4% coverage — zeroed until API restored
         geography=0.00,        # PrimeTag: 0.0% coverage — zeroed until API restored
         brand_affinity=0.10,   # Apify: 3.4% coverage — mostly neutral, helps when present
         creative_fit=0.30,     # Apify+LLM: 50.3% coverage — key differentiator
-        niche_match=0.45,      # LLM+keyword: 98.6% coverage — dominant signal
+        niche_match=0.50,      # LLM+keyword: 98.6% coverage — dominant signal (boosted from 0.45)
     )
 
     def __init__(self, weights: RankingWeights = None):

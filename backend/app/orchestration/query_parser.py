@@ -57,18 +57,28 @@ Extract the creative/campaign concept if described:
    - Fashion & Beauty: "fashion", "beauty", "skincare", "luxury"
    - Lifestyle: "lifestyle", "travel", "food"
    - Wellness: "yoga", "wellness", "nutrition"
-   - Entertainment: "music", "gaming", "comedy", "nightlife"
+   - Entertainment: "music", "comedy", "nightlife"
+   - Gaming & Tech: "gaming", "tech"
    - Pets & Animals: "pets"
    - Family: "parenting"
-   - Business: "tech", "business", "finance", "ecommerce"
+   - Business: "business", "finance", "ecommerce"
    - Home & Living: "home_decor", "diy"
    - Food & Beverages: "alcoholic_beverages", "soft_drinks"
    - Retail: "retail", "ecommerce"
    - Automotive: "automotive"
-   IMPORTANT: Use "skincare" (not "beauty") when the brief is specifically about skincare products, serums, facial routines, dermatology, SPF, etc. Use "beauty" only for general beauty/makeup/cosmetics.
+   IMPORTANT NICHE SELECTION RULES:
+   - Use "skincare" (not "beauty") when the brief is specifically about skincare products, serums, facial routines, dermatology, SPF, etc. Use "beauty" only for general beauty/makeup/cosmetics.
+   - Use "gaming" (not "tech") when the brief is about gaming peripherals, headsets, consoles, video games, esports, Twitch, streaming gear. Use "tech" only for smartphones, general gadgets, software, SaaS, or B2B tech.
+   - Use "home_decor" (not "lifestyle") when the brief is about furniture, mattresses, bedding, home appliances, interior design, or any product used in the home. Use "lifestyle" only when nothing more specific fits.
+   - Always prefer the MOST SPECIFIC niche over a broader one. "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle".
    This will be matched against influencers' primary_niche column.
 2. campaign_topics: Additional specific topics relevant to the campaign (array)
 3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
+   CRITICAL: NEVER exclude a niche that is closely RELATED to campaign_niche. Related niches are valuable fallbacks when exact matches are scarce.
+   - skincare campaign → do NOT exclude "beauty" (beauty influencers often do skincare content)
+   - running campaign → do NOT exclude "fitness" (fitness includes runners)
+   - gaming campaign → do NOT exclude "tech" (tech and gaming overlap)
+   - Only exclude genuinely CONFLICTING niches (e.g., football for padel, fitness for beer/spirits)
 
 ### Size Preferences (Anti-Celebrity Bias)
 If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:

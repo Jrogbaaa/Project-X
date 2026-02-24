@@ -403,7 +403,7 @@ The search pipeline applies these filters in order:
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
 
-**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.45), creative fit (0.30), and engagement (0.15) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), and engagement (0.10) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 
