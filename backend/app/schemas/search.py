@@ -30,6 +30,11 @@ class FilterConfig(BaseModel):
         default=None,
         description="Minimum 6-month follower growth rate"
     )
+    min_follower_count: int = Field(
+        default=100_000,
+        ge=0,
+        description="Minimum follower count (default 100K — DB is sourced from 100K+ profiles)"
+    )
     max_follower_count: int = Field(
         default=2_500_000,
         ge=0,
@@ -74,28 +79,29 @@ class RankingWeights(BaseModel):
     When not provided, brand_affinity, creative_fit, niche_match default to neutral (0.5)
     and their weights are effectively redistributed.
     """
-    # Original factors
-    credibility: float = Field(default=0.15, ge=0, le=1)
-    engagement: float = Field(default=0.20, ge=0, le=1)
-    audience_match: float = Field(default=0.15, ge=0, le=1)
-    growth: float = Field(default=0.05, ge=0, le=1)
-    geography: float = Field(default=0.10, ge=0, le=1)
+    # PrimeTag-dependent factors (zeroed out until API is restored —
+    # these fields have 0-0.4% data coverage without live verification)
+    credibility: float = Field(default=0.00, ge=0, le=1)
+    audience_match: float = Field(default=0.00, ge=0, le=1)
+    growth: float = Field(default=0.00, ge=0, le=1)
+    geography: float = Field(default=0.00, ge=0, le=1)
 
-    # New brand/creative matching factors
+    # Factors with actual data coverage (Starngage + LLM enrichment)
+    engagement: float = Field(default=0.15, ge=0, le=1)
     brand_affinity: float = Field(
-        default=0.15,
+        default=0.10,
         ge=0,
         le=1,
         description="Weight for audience overlap with target brand"
     )
     creative_fit: float = Field(
-        default=0.15,
+        default=0.30,
         ge=0,
         le=1,
         description="Weight for alignment with creative concept"
     )
     niche_match: float = Field(
-        default=0.05,
+        default=0.45,
         ge=0,
         le=1,
         description="Weight for content niche alignment"

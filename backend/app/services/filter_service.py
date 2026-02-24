@@ -90,6 +90,20 @@ class FilterService:
             else:
                 logger.info(f"   ✓ Follower range ({min_str}–{max_str}): all passed")
 
+        # Filter by min follower count - HARD FILTER
+        min_followers = getattr(config, 'min_follower_count', 100_000)
+        if min_followers and min_followers > 0:
+            before_count = len(filtered)
+            filtered = [
+                inf for inf in filtered
+                if self._passes_min_followers(inf, min_followers)
+            ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Min followers (>={min_followers:,}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Min followers (>={min_followers:,}): all passed")
+
         # Filter by max follower count (exclude mega-celebrities) - HARD FILTER
         max_followers = config.max_follower_count
         before_count = len(filtered)
@@ -207,6 +221,13 @@ class FilterService:
 
         return filtered
     
+    def _passes_min_followers(self, influencer, min_val: int) -> bool:
+        """Check if influencer meets minimum follower count."""
+        count = self._get_follower_count(influencer)
+        if count is None or count == 0:
+            return False
+        return count >= min_val
+
     def _passes_max_followers(self, influencer, max_val: int) -> bool:
         """Check if influencer is under max follower count.
         

@@ -395,13 +395,14 @@ The search pipeline applies these filters in order:
 |--------|---------|-------------|
 | **Follower Range** | From brief | **HARD FILTER** — when the brief specifies a preferred range (e.g., "15K-150K"), influencers outside that range are removed. 0/null treated as unknown (passes). |
 | **Influencer Gender** | From brief | **HARD FILTER** — when the brief specifies influencer gender (e.g., "female"), uses 3-signal inference: (1) audience_genders inverse heuristic, (2) bio keyword scan for pronouns/gendered words, (3) display_name first-name matching against common Spanish names. Unknown gender passes through. |
+| Min Followers | 100,000 | Minimum follower count (DB sourced from 100K+ profiles). |
 | Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers). 0/null treated as unknown (passes). |
 | Credibility | ≥70% | Audience authenticity score |
 | Spain Audience | ≥60% | Minimum Spanish audience percentage |
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
 
-**Unknown Follower Penalty (Ranking):** Profiles with 0/null follower counts pass filters but receive a 0.3x-0.4x ranking penalty so verified profiles always rank above them. Refresh PrimeTag key and re-enrich to populate real follower data.
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.45), creative fit (0.30), and engagement (0.15) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 

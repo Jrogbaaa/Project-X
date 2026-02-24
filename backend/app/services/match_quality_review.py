@@ -338,7 +338,8 @@ def _print_brief_result(result: BriefResult, total: int) -> None:
 
             es_str = f"{es_pct:.0f}%" if es_pct else "  -"
             cred_str = f"{cred:.0f}%" if cred is not None else "  -"
-            er_str = f"{er:.1f}%" if er is not None else "  -"
+            er_pct = (er * 100) if (er is not None and er < 1) else er
+            er_str = f"{er_pct:.1f}%" if er_pct is not None else "  -"
 
             print(
                 f"  {i:<3} @{r.username:<23} {fol:>10} {niche:<18} "

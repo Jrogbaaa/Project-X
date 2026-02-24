@@ -555,5 +555,6 @@ def default_config():
     return FilterConfig(
         min_credibility_score=70.0,
         min_spain_audience_pct=60.0,
+        min_follower_count=0,
         max_follower_count=2_500_000,
     )

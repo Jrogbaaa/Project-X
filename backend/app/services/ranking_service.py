@@ -51,15 +51,17 @@ class RankingService:
     # PrimeTag factors (credibility, engagement, geography) contribute where data exists;
     # their scores default to neutral (0.5) when not yet fetched, so they don't harm
     # influencers that haven't been verified yet.
+    # Weights tuned for current data reality (no PrimeTag API).
+    # When PrimeTag is restored, rebalance credibility/geography/audience_match.
     DEFAULT_WEIGHTS = RankingWeights(
-        credibility=0.10,      # PrimeTag: audience authenticity (0-100 → 0-1)
-        engagement=0.10,       # PrimeTag: interaction rate (capped at 15%)
-        audience_match=0.05,   # PrimeTag: gender/age demographic overlap
-        growth=0.05,           # PrimeTag: 6-month follower growth trajectory
-        geography=0.05,        # PrimeTag: Spain audience % (already filtered ≥60%)
-        brand_affinity=0.15,   # Apify: detected brand mentions + overlap data
-        creative_fit=0.20,     # Apify: content themes / narrative style alignment
-        niche_match=0.30       # Apify: primary_niche taxonomy matching (dominant signal)
+        credibility=0.00,      # PrimeTag: 0.4% coverage — zeroed until API restored
+        engagement=0.15,       # Starngage: 98.6% coverage — works
+        audience_match=0.00,   # PrimeTag: 0.4% coverage — zeroed until API restored
+        growth=0.00,           # PrimeTag: 0.4% coverage — zeroed until API restored
+        geography=0.00,        # PrimeTag: 0.0% coverage — zeroed until API restored
+        brand_affinity=0.10,   # Apify: 3.4% coverage — mostly neutral, helps when present
+        creative_fit=0.30,     # Apify+LLM: 50.3% coverage — key differentiator
+        niche_match=0.45,      # LLM+keyword: 98.6% coverage — dominant signal
     )
 
     def __init__(self, weights: RankingWeights = None):
