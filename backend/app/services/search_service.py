@@ -908,6 +908,16 @@ class SearchService:
                     f"   → Added {min(len(others), remaining_slots)} unclassified "
                     f"influencers (tier data unavailable)"
                 )
+
+            # Graceful degradation: if requested tiers yielded 0 candidates,
+            # fall back to ranked list to avoid returning empty results
+            if len(combined) == 0 and len(ranked) > 0:
+                logger.warning(
+                    f"   ⚠ Requested tier distribution (micro={tier_dist['micro']}, "
+                    f"mid={tier_dist['mid']}, macro={tier_dist['macro']}) returned 0 "
+                    f"candidates. Falling back to best-ranked influencers."
+                )
+                combined = ranked[:request_limit * 3]
         else:
             # Default: balanced distribution (1/3 each tier)
             per_tier = max(request_limit // 3, 1)

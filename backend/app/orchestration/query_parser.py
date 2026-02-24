@@ -34,6 +34,7 @@ Brand category mappings:
 - Spirits, gin, whisky, beer brands (Puerto de Indias, Mahou, Estrella, Hendrick's) -> alcoholic_beverages
 - Fintech, payment technology brands (Square, iZettle, SumUp) -> fintech
 - Banking apps, digital finance (imagin, BBVA, Revolut) -> fintech
+- Pet stores, animal brands (Tiendanimal, Royal Canin, Purina) -> pets
 
 ### Creative Concept Extraction
 Extract the creative/campaign concept if described:
@@ -57,6 +58,7 @@ Extract the creative/campaign concept if described:
    - Lifestyle: "lifestyle", "travel", "food"
    - Wellness: "yoga", "wellness", "nutrition"
    - Entertainment: "music", "gaming", "comedy", "nightlife"
+   - Pets & Animals: "pets"
    - Family: "parenting"
    - Business: "tech", "business", "finance", "ecommerce"
    - Home & Living: "home_decor", "diy"
@@ -151,6 +153,9 @@ Think creatively about WHO would authentically represent this brand. Our databas
 
 - B2B fintech / payment tech brand targeting restaurant and bar owners (e.g. Square) → discovery_interests: ["Lifestyle", "Family"], campaign_niche: "food", search_keywords: ["restaurante", "gastronomia", "chef", "emprendedor"]
   Reasoning: "B2B event campaigns need credible entrepreneur voices with real business audiences. Gastro entrepreneurs spread across Spanish cities (Madrid, Barcelona, Sevilla, Valencia) are ideal. Geographic spread matters as much as follower size."
+
+- Pet store brand (Tiendanimal, Kiwoko) → discovery_interests: ["Lifestyle", "Family"], campaign_niche: "pets", search_keywords: ["mascota", "perro", "gato", "pet", "dog", "cat"]
+  Reasoning: "Pet store campaigns need authentic pet owners who post daily about their animals. Lifestyle and family creators who are also pet lovers connect best."
 
 - Home/retail brand amplifying a youth social cause or competition (e.g. IKEA + Museo Picasso housing competition) → discovery_interests: ["Lifestyle", "Parenting", "Family"], campaign_niche: "lifestyle"
   Reasoning: "Social cause campaigns targeting young people (18-35) need accessible, authentic voices. Lifestyle creators who care about youth issues and housing connect best — not interior design specialists."

@@ -97,6 +97,7 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 - **Related niches**: Similar content areas that are good matches (e.g., padel ↔ tennis ↔ fitness, skincare ↔ beauty ↔ wellness)
 - **Conflicting niches**: Content areas that should be excluded (e.g., padel ✗ football/soccer)
 - **Distinct niches**: "skincare" is separate from "beauty" — skincare matches wellness/health creators, while beauty catches general makeup/cosmetics. Use "skincare" for serum, SPF, facial routine briefs.
+- **Pets niche**: "pets" matches pet owners, animal care creators. Related to lifestyle/parenting. Use for pet stores (Tiendanimal, Kiwoko) and animal brands (Royal Canin, Purina).
 
 **Discovery Pipeline:**
 1. LLM extracts `campaign_niche` and `exclude_niches` from the brief
@@ -393,7 +394,7 @@ The search pipeline applies these filters in order:
 
 | Filter | Default | Description |
 |--------|---------|-------------|
-| **Follower Range** | From brief | **HARD FILTER** — when the brief specifies a preferred range (e.g., "15K-150K"), influencers outside that range are removed. 0/null treated as unknown (passes). |
+| **Follower Range** | From brief | **HARD FILTER with graceful fallback** — when the brief specifies a preferred range (e.g., "15K-150K"), influencers outside that range are removed. If range would remove ALL candidates (e.g., requesting micro-influencers when DB only has 100K+), filter is relaxed and ranking's size penalty handles deprioritization instead. 0/null treated as unknown (passes). |
 | **Influencer Gender** | From brief | **HARD FILTER** — when the brief specifies influencer gender (e.g., "female"), uses 3-signal inference: (1) audience_genders inverse heuristic, (2) bio keyword scan for pronouns/gendered words, (3) display_name first-name matching against common Spanish names. Unknown gender passes through. |
 | Min Followers | 100,000 | Minimum follower count (DB sourced from 100K+ profiles). |
 | Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers). 0/null treated as unknown (passes). |
@@ -402,7 +403,7 @@ The search pipeline applies these filters in order:
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
 
-**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.45), creative fit (0.30), and engagement (0.15) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.45), creative fit (0.30), and engagement (0.15) carry the weight; credibility/geography/audience_match are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 

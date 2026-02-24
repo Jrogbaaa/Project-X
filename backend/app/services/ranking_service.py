@@ -23,15 +23,35 @@ class RankingResult:
 
 # Tone keywords for creative fit matching
 TONE_KEYWORDS = {
-    'authentic': ['real', 'genuine', 'honest', 'raw', 'unfiltered', 'natural'],
-    'luxury': ['premium', 'exclusive', 'elegant', 'sophisticated', 'high-end', 'lujo'],
-    'humorous': ['funny', 'comedy', 'laugh', 'humor', 'fun', 'divertido'],
-    'casual': ['everyday', 'relax', 'chill', 'lifestyle', 'daily', 'cotidiano'],
+    'authentic': ['real', 'genuine', 'honest', 'raw', 'unfiltered', 'natural', 'auténtico', 'verdadero'],
+    'luxury': ['premium', 'exclusive', 'elegant', 'sophisticated', 'high-end', 'lujo', 'exclusivo'],
+    'humorous': ['funny', 'comedy', 'laugh', 'humor', 'fun', 'divertido', 'risa', 'comedia'],
+    'casual': ['everyday', 'relax', 'chill', 'lifestyle', 'daily', 'cotidiano', 'relajado'],
     'documentary': ['story', 'journey', 'behind', 'real', 'making of', 'documental'],
-    'inspirational': ['inspire', 'motivate', 'dream', 'achieve', 'success', 'inspirar'],
+    'inspirational': ['inspire', 'motivate', 'dream', 'achieve', 'success', 'inspirar', 'motivar'],
     'edgy': ['bold', 'daring', 'provocative', 'rebel', 'alternative', 'atrevido'],
     'gritty': ['raw', 'intense', 'real', 'street', 'urban', 'hardcore'],
-    'polished': ['professional', 'clean', 'refined', 'quality', 'premium'],
+    'polished': ['professional', 'clean', 'refined', 'quality', 'premium', 'profesional'],
+    'creative': ['creative', 'art', 'artist', 'design', 'creativo', 'artista', 'diseño', 'original'],
+    'artistic': ['art', 'artist', 'creative', 'gallery', 'arte', 'artista', 'museo', 'pintura'],
+    'warm': ['warm', 'cozy', 'heart', 'love', 'cariño', 'hogar', 'familia', 'acogedor'],
+    'fun': ['fun', 'funny', 'enjoy', 'laugh', 'divertido', 'humor', 'entretenimiento', 'fiesta'],
+    'approachable': ['friendly', 'close', 'relatable', 'everyday', 'cercano', 'accesible', 'normal'],
+    'heartwarming': ['heart', 'love', 'family', 'cute', 'adorable', 'corazón', 'amor', 'ternura'],
+    'playful': ['play', 'fun', 'game', 'colorful', 'juego', 'divertido', 'color', 'alegre'],
+    'bold': ['bold', 'daring', 'strong', 'powerful', 'atrevido', 'fuerte', 'valiente'],
+    'natural': ['natural', 'organic', 'real', 'eco', 'nature', 'naturaleza', 'sostenible'],
+    'professional': ['professional', 'business', 'expert', 'credible', 'profesional', 'experto'],
+    'colorful': ['color', 'colorful', 'vibrant', 'bright', 'colorido', 'vibrante', 'alegre'],
+    'urban': ['urban', 'city', 'street', 'metropolitan', 'urbano', 'ciudad', 'callejero'],
+    'dynamic': ['dynamic', 'energy', 'active', 'fast', 'dinámico', 'energía', 'activo'],
+    'modern': ['modern', 'contemporary', 'trendy', 'current', 'moderno', 'actual', 'tendencia'],
+    'sophisticated': ['sophisticated', 'elegant', 'refined', 'chic', 'sofisticado', 'elegante'],
+    'elegant': ['elegant', 'classy', 'refined', 'grace', 'elegante', 'refinado', 'clase'],
+    'cercano': ['cercano', 'close', 'relatable', 'friendly', 'accesible', 'familiar'],
+    'aspiracional': ['aspirational', 'dream', 'luxury', 'goal', 'aspiracional', 'lujo', 'premium'],
+    'divertido': ['divertido', 'fun', 'funny', 'humor', 'risa', 'entretenimiento'],
+    'social': ['social', 'friends', 'together', 'community', 'amigos', 'juntos', 'comunidad'],
 }
 
 
@@ -190,10 +210,13 @@ class RankingService:
 
         if parsed_query.suggested_ranking_weights:
             suggested = parsed_query.suggested_ranking_weights
-            # Clamp values to [0, 1] before creating RankingWeights
-            # The LLM may return relative weights > 1, which will be normalized
-            def clamp(val, default):
-                v = suggested.get(val, default)
+
+            def clamp(key, default):
+                # If the default weight is zero (data source unavailable),
+                # keep it zero regardless of LLM suggestion
+                if default == 0.0:
+                    return 0.0
+                v = suggested.get(key, default)
                 return max(0, min(1, v)) if v is not None else default
 
             weights = RankingWeights(
@@ -532,7 +555,18 @@ class RankingService:
         # 4. Past brand experience - USE detected_brands
         has_experience = len(brand_mentions) > 0 or len(detected_brands) > 0
         experience_score = 0.7 if has_experience else 0.5
-        score_components.append(('experience', experience_score, 0.15))
+        score_components.append(('experience', experience_score, 0.10))
+
+        # 5. Engagement as creative quality proxy — high engagement indicates
+        # content that resonates with audiences, a signal of creative competence
+        engagement_raw = self._get_value(influencer, 'engagement_rate', 0)
+        if engagement_raw and engagement_raw < 1:
+            engagement_raw = engagement_raw * 100
+        if engagement_raw and engagement_raw > 0:
+            engagement_quality = min(engagement_raw / 8.0, 1.0)
+        else:
+            engagement_quality = 0.3
+        score_components.append(('engagement_quality', engagement_quality, 0.15))
 
         # Calculate weighted score
         if not score_components:

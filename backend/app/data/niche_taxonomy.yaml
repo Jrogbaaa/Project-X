@@ -502,6 +502,40 @@ niches:
     conflicting_niches: []
     parent_category: "entertainment"
 
+  # ==================== PETS & ANIMALS ====================
+  pets:
+    keywords:
+      - "pet"
+      - "pets"
+      - "mascota"
+      - "mascotas"
+      - "dog"
+      - "perro"
+      - "perros"
+      - "cat"
+      - "gato"
+      - "gatos"
+      - "puppy"
+      - "cachorro"
+      - "kitten"
+      - "gatito"
+      - "animal"
+      - "animales"
+      - "rescue"
+      - "adopta"
+      - "veterinario"
+      - "vet"
+      - "petlover"
+      - "doglife"
+      - "catlife"
+      - "dogsofinstagram"
+      - "catsofinstagram"
+    related_niches:
+      - lifestyle
+      - parenting
+    conflicting_niches: []
+    parent_category: "pets_animals"
+
   # ==================== PARENTING & FAMILY ====================
   parenting:
     keywords:
@@ -818,6 +852,11 @@ categories:
     niches:
       - retail
       - ecommerce
+
+  pets_animals:
+    description: "Pets, animals, and animal care"
+    niches:
+      - pets
 
 # Special handling rules
 rules:

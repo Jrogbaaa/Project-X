@@ -74,21 +74,30 @@ class FilterService:
         logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         # HARD FILTER: Preferred follower range from brief (e.g. "15K-150K")
+        # Falls back to soft penalty (via ranking) if filter would remove ALL candidates
         follower_range = parsed_query.get_follower_range()
         if follower_range:
             pref_min, pref_max = follower_range
             before_count = len(filtered)
-            filtered = [
+            range_filtered = [
                 inf for inf in filtered
                 if self._passes_follower_range(inf, pref_min, pref_max)
             ]
-            removed = before_count - len(filtered)
+            removed = before_count - len(range_filtered)
             min_str = f"{pref_min/1000:.0f}K" if pref_min else "0"
             max_str = f"{pref_max/1000:.0f}K" if pref_max < 999_999_999 else "∞"
-            if removed > 0:
-                logger.info(f"   ❌ Follower range ({min_str}–{max_str}): removed {removed}")
+
+            if len(range_filtered) == 0 and before_count > 0:
+                logger.warning(
+                    f"   ⚠ Follower range ({min_str}–{max_str}) would remove ALL {before_count} candidates. "
+                    f"Relaxing filter — ranking will still penalize out-of-range profiles."
+                )
             else:
-                logger.info(f"   ✓ Follower range ({min_str}–{max_str}): all passed")
+                filtered = range_filtered
+                if removed > 0:
+                    logger.info(f"   ❌ Follower range ({min_str}–{max_str}): removed {removed}")
+                else:
+                    logger.info(f"   ✓ Follower range ({min_str}–{max_str}): all passed")
 
         # Filter by min follower count - HARD FILTER
         min_followers = getattr(config, 'min_follower_count', 100_000)
