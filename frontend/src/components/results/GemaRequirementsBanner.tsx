@@ -105,7 +105,7 @@ export function GemaRequirementsBanner({ filters, results }: GemaRequirementsBan
       <div className="flex items-center gap-2 mb-3.5">
         <ShieldCheck className="w-3.5 h-3.5 text-ice-bright flex-shrink-0" />
         <p className="text-xs font-medium text-light-secondary">
-          Todos estos influencers cumplen los siguientes requisitos GEMA:
+          Todos estos influencers están verificados:
         </p>
       </div>
 
