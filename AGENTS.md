@@ -234,7 +234,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 ### Frontend UX Features
 
-**Auto-scroll**: Results section automatically scrolls into view when search completes.
+**Auto-scroll**: Page scrolls to the loading indicator when a search starts, then scrolls to results when the search completes.
 
 **View Modes**: Toggle between card view (detailed) and list view (compact, scannable).
 

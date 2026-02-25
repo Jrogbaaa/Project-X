@@ -25,8 +25,19 @@ export default function Home() {
 
   const searchBarRef = useRef<SearchBarRef>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const loadingSectionRef = useRef<HTMLElement>(null);
 
   const { toasts, toast, dismiss } = useToast();
+
+  // Auto-scroll to loading section when search starts
+  useEffect(() => {
+    if (isLoading && loadingSectionRef.current) {
+      const timer = setTimeout(() => {
+        loadingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   // Auto-scroll to results when search completes
   useEffect(() => {
@@ -232,7 +243,7 @@ export default function Home() {
       </div>
 
       {/* ─── Results ─────────────────────────────────────────────── */}
-      <section className="pb-24 pt-10">
+      <section className="pb-24 pt-10" ref={loadingSectionRef}>
         <div className="max-w-6xl mx-auto px-6">
 
           {/* Loading */}
@@ -255,7 +266,7 @@ export default function Home() {
                   />
                   <LoadingStepIndicator
                     step="searching"
-                    label="Buscando en PrimeTag..."
+                    label="Buscando influencers..."
                     isActive={loadingStep === 'searching'}
                     isComplete={loadingStep === 'ranking'}
                   />
@@ -317,9 +328,6 @@ export default function Home() {
       <footer className="border-t border-dark-border/40 py-5">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-light-tertiary/70">
-              Impulsado por PrimeTag API
-            </p>
             <p className="text-xs text-light-tertiary/60 hidden sm:flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 rounded border border-dark-border bg-dark-secondary text-[10px] font-mono text-light-secondary">j</kbd>
               <kbd className="px-1.5 py-0.5 rounded border border-dark-border bg-dark-secondary text-[10px] font-mono text-light-secondary">k</kbd>
