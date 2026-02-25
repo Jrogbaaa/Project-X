@@ -183,9 +183,11 @@ This allows the system to handle **any brand** - even ones not in our database (
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
 | **Keyword Niche Detector** | `keyword_niche_detector.py` | **Free, instant niche detection** — pattern-matches bio + interests + post hashtags against `niche_taxonomy.yaml` keywords. Assigns `primary_niche` + `niche_confidence` where currently NULL. No LLM cost. Run before LLM enrichment to cover clear-cut cases cheaply. `cd backend && python -m app.services.keyword_niche_detector --confidence-threshold 0.5` |
 | **Tier Computation** | `compute_tiers.py` | Bulk-populate `influencer_tier` (micro/mid/macro/mega) from `follower_count`. Idempotent — safe to re-run. `cd backend && python -m app.services.compute_tiers` |
+| **Gender Computation** | `compute_gender.py` | Pre-compute `influencer_gender` ('male'/'female'/NULL) from display name, bio, and audience signals using expanded Spanish/Catalan/Latin name lists (300+ names). Populates NULL rows by default. `cd backend && python -m app.services.compute_gender` / `--dry-run` to preview / `--force` to re-classify all. Run after importing new influencers. |
 | **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
 | **Match Quality Review** | `match_quality_review.py` | Repeatable human review of matching quality — picks N random briefs (default 4) from a diverse pool of 23, runs each through the full search pipeline in parallel, and prints LLM parsing + discovery funnel + matched influencers table for manual evaluation. No assertions. `cd backend && python -m app.services.match_quality_review` / `--seed 42` / `--brief "custom text"` / `--all` |
 | **Starngage Scraper** | `starngage_scraper.py` | Interactive Starngage scrape + DB import (see `directives/starngage-scraper.md`). Three subcommands: `combine` merges batch JSON extracts into CSV; `import` upserts CSV into DB (updates follower_count/display_name/interests/engagement_rate for existing, creates new, preserves all enrichment data); `audit` read-only cross-reference of DB vs CSV to verify import freshness, detect stale/orphan records, and spot-check follower counts. Scraping done via Playwright MCP browser — user logs in, agent uses `browser_evaluate` with `fetch()`. `cd backend && python -m app.services.starngage_scraper import --csv ../starngage_spain_influencers_2026.csv` / `audit --csv ../starngage_spain_influencers_2026.csv` |
+| **Profile Validator** | `validate_profiles.py` | Batch HEAD-checks `instagram.com/{username}` and sets `profile_active=False` for 404 (deleted/renamed) accounts. Excluded from all search results automatically. Rate-limited (1 req/s default). `cd backend && python -m app.services.validate_profiles --dry-run` to preview, then run without flag to apply. Options: `--delay 0.3` (faster), `--since-days 30` (only check profiles not updated in N days). ~77 min for full DB at 1 req/s. |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
@@ -269,8 +271,9 @@ The backend has a comprehensive pytest-based test suite with **LLM reflection** 
 - `backend/tests/test_filter_service.py` - 32 unit tests for filter logic (including follower range + influencer gender)
 - `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
 - `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
-- `backend/tests/test_pipeline_gema.py` - **Full pipeline GEMA verification** — 4 messy agency briefs run in parallel via `asyncio.gather`, validated across 5 explicit steps (ingestion → LLM parsing → matching → PrimeTag data → GEMA filters). Prints a diagnostic table.
-- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 GEMA pipeline verification briefs)
+- `backend/tests/test_pipeline_verification.py` - **Full pipeline + Gema filter audit** — 4 independent test classes (Fashion/ElCorteInglés, Sports Nutrition/Myprotein, Gastro/Glovo, Beer/Estrella Damm), each using a messy Spanish agency email brief. Validates all 5 pipeline steps and prints a per-influencer Gema audit table (Spain%, Gender%, Age%, Credibility, ER). Detects PrimeTag API key expiry automatically.
+- `backend/tests/test_pipeline_diagnostic.py` - **Live pipeline diagnostic** — requires a running server at `localhost:8000`. Marked `@pytest.mark.e2e` so it is excluded from CI (`-m "not e2e"`). Run locally only.
+- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 Gema pipeline briefs: `pipeline_gema_fashion`, `pipeline_gema_sports_nutrition`, `pipeline_gema_gastro`, `pipeline_gema_beer_lifestyle`)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
 - `backend/tests/test_result_differentiation.py` - **Result differentiation tests** — 3 unit tests verifying RankingService differentiates by niche + 3 integration tests (marked `@pytest.mark.e2e`) verifying full pipeline produces distinct results for different brand briefs (home_decor vs padel vs fashion: 0% overlap). Validates brand intelligence → campaign_niche extraction and niche discovery relevance.
 
@@ -284,8 +287,11 @@ cd backend && pytest tests/test_result_differentiation.py::TestRankingDifferenti
 # Run full pipeline differentiation tests (requires DB + OpenAI, ~80s)
 cd backend && pytest tests/test_result_differentiation.py::TestPipelineDifferentiation -v -s -m e2e
 
-# Run full pipeline GEMA verification (parallel, ~40s)
-cd backend && pytest tests/test_pipeline_gema.py -v -s
+# Run pipeline + Gema audit — run each class in parallel (each ~20-80s)
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineFashion -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineSportsNutrition -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineGastro -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineBeerLifestyle -v -s
 
 # Run a single E2E test with reflection (~40s due to LLM calls)
 cd backend && pytest tests/test_search_e2e.py::TestNichePrecision::test_padel_excludes_football -v -s
@@ -313,7 +319,7 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 
 | Table | Purpose |
 |-------|---------|
-| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`. As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
+| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`, `profile_active` (bool, default true — false = Instagram handle confirmed dead, excluded from all searches). As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
 | `searches` | Search history with parsed queries and filters |
 | `search_results` | Links searches to influencers with ranking scores |
 | `ranking_presets` | Configurable weight presets (Balanced, Engagement Focus, etc.) |
@@ -421,7 +427,9 @@ The search pipeline applies these filters in order:
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
 
-**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), engagement (0.10), and brand affinity (0.10) carry the weight; credibility/geography/audience_match/growth are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped: factors with default weight 0.0 stay zeroed regardless of LLM suggestion, preventing score distortion from empty data fields. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), engagement (0.10), and brand affinity (0.10) carry the weight; credibility/geography/audience_match/growth are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped with two guards: (1) factors with default weight 0.0 stay zeroed regardless of LLM suggestion; (2) `niche_match` can only be boosted, never reduced below its default (0.50) — prevents engagement from overriding niche relevance in sparse-niche scenarios. Additionally, if the LLM suggests near-equal weights for all factors (variance < 0.15, e.g. all 1.0), the system falls back to default weights — this indicates the LLM has no meaningful preference. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+
+**Query Parsing Safeguards (Feb 2026):** `query_parser.py` applies three post-LLM guards before building the search parameters: (1) **Niche mapping** — food/restaurant brands (`campaign_niche: "food"`), beer/spirits brands (`"alcoholic_beverages"`), energy drinks (`"soft_drinks"` or `"fitness"`). (2) **`exclude_niches` safety** — related niches are stripped from exclusion lists (e.g. `beauty` is never excluded for a skincare campaign; `lifestyle` is never excluded for a food campaign). A brand's own niche is also never self-excluded. (3) **`discovery_interests` fallback** — if the LLM returns an empty array, a `_NICHE_DISCOVERY_FALLBACK` dict maps `campaign_niche` to default PrimeTag interest categories to ensure creative discovery always has interests to work with.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 

@@ -309,6 +309,10 @@ Get detailed information about a cached influencer.
   "interests": ["fitness", "lifestyle"],
   "brand_mentions": ["nike", "head"],
   "country": "Spain",
+  "primary_niche": "fitness",
+  "niche_confidence": 0.92,
+  "influencer_gender": "female",
+  "profile_active": true,
   "cached_at": "2025-01-20T12:00:00Z",
   "cache_expires_at": "2025-01-21T12:00:00Z"
 }
