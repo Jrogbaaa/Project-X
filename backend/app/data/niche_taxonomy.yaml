@@ -532,9 +532,12 @@ niches:
       - "catlife"
       - "dogsofinstagram"
       - "catsofinstagram"
+      - "animallover"
+      - "dogmom"
+      - "catmom"
+      - "petstagram"
     related_niches:
       - lifestyle
-      - parenting
     conflicting_niches: []
     parent_category: "pets_animals"
 

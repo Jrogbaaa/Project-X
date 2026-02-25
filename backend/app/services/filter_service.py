@@ -1,5 +1,6 @@
 import logging
 import re
+import unicodedata
 from typing import List, Any, Optional, Tuple
 from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.search import FilterConfig
@@ -19,6 +20,22 @@ _FEMALE_NAMES = {
     "vanessa", "veronica", "verónica", "susana", "belén", "belen",
     "esther", "teresa", "begoña", "concepcion", "concepción", "jannys",
     "águeda", "agueda", "mariona", "jimena",
+    # Additional common names missed from initial list
+    "clara", "salma", "ingrid", "claudia", "daniela", "valeria", "paola",
+    "valentina", "camila", "gabriela", "martina", "sofía", "sofia",
+    "lorena", "noelia", "tamara", "carla", "celia", "judith", "gemma",
+    "aitana", "laia", "mireia", "anna", "noa", "nerea", "amaia", "ane",
+    "maider", "june", "izaskun", "ainara", "ainhoa", "leire",
+    "rebeca", "berta", "macarena", "inmaculada", "adriana", "fernanda",
+    "rebeka", "meritxell", "greta", "kira", "sara", "nadia", "lidia",
+    "olga", "vera", "lea", "victoria", "claudia", "emma", "luna",
+    "ariadna", "miriam", "helen", "helena", "isabela", "isabella",
+    "sofía", "alejandra", "daniela", "luciana", "valeria",
+    # Common short forms / nicknames
+    "jenni", "jenny", "vicky", "naty", "bea", "susi", "cris", "isa",
+    # Further omissions found during live testing
+    "lara", "angie", "kira", "candela", "arabella", "nieves",
+    "yerlina", "alba", "nuria", "nadina", "sandrita", "michelle",
 }
 _MALE_NAMES = {
     "carlos", "david", "javier", "daniel", "jose", "josé", "miguel",
@@ -441,9 +458,20 @@ class FilterService:
 
     def _infer_influencer_gender(self, influencer) -> Optional[str]:
         """Infer the influencer's own gender from available profile data.
-        
+
+        Checks pre-computed stored value first (set by compute_gender.py), then
+        falls back to the 3-signal runtime heuristic.
         Returns 'male', 'female', or None if indeterminate.
         """
+        # Signal 0: use pre-computed stored value if available
+        stored = (
+            getattr(influencer, "influencer_gender", None)
+            if not isinstance(influencer, dict)
+            else influencer.get("influencer_gender")
+        )
+        if stored in ("male", "female"):
+            return stored
+
         # Signal 1: audience_genders inverse heuristic
         genders = self._get_genders(influencer)
         if genders:
@@ -477,11 +505,38 @@ class FilterService:
             display_name = (influencer.get('display_name') or "").strip()
 
         if display_name:
+            # Normalize Unicode fancy fonts (mathematical bold/italic/monospace etc.)
+            # so that "𝙻𝚞𝚌𝚒𝚊" matches "lucia" in the name set.
+            display_name = unicodedata.normalize('NFKC', display_name)
             first_word = re.split(r'[\s|·•\-_]+', display_name)[0].lower()
             first_word = first_word.strip('✖️💀🧸☠️👑🌸🌺💫✨🔥')
             if first_word in _FEMALE_NAMES:
                 return "female"
             if first_word in _MALE_NAMES:
                 return "male"
+
+        # Signal 3b: username first segment (split by _ or digits) as fallback
+        username = ""
+        if hasattr(influencer, 'username'):
+            username = (influencer.username or "").strip()
+        elif isinstance(influencer, dict):
+            username = (influencer.get('username') or "").strip()
+
+        if username:
+            # Strip leading/trailing underscores before splitting
+            cleaned = username.strip('_')
+            first_seg = re.split(r'[_\d]', cleaned)[0].lower()
+            if len(first_seg) >= 3:
+                if first_seg in _FEMALE_NAMES:
+                    return "female"
+                if first_seg in _MALE_NAMES:
+                    return "male"
+                # Prefix match: "kirahuberman" → startswith "kira"
+                for name in _FEMALE_NAMES:
+                    if len(name) >= 4 and first_seg.startswith(name):
+                        return "female"
+                for name in _MALE_NAMES:
+                    if len(name) >= 4 and first_seg.startswith(name):
+                        return "male"
 
         return None

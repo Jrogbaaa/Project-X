@@ -72,6 +72,10 @@ class Influencer(Base):
     # Relationship to posts
     posts = relationship("InfluencerPost", back_populates="influencer", cascade="all, delete-orphan")
 
+    # Inferred creator gender ('male', 'female', or None if indeterminate).
+    # Pre-computed by compute_gender.py — checked first in filter_service gender inference.
+    influencer_gender = Column(String(10), nullable=True)
+
     # Profile validity (set False when Instagram handle resolves to 404/gone)
     profile_active = Column(Boolean, default=True, nullable=False, server_default="true")
 
@@ -98,6 +102,7 @@ class Influencer(Base):
         Index("idx_influencers_detected_brands", "detected_brands", postgresql_using="gin"),
         Index("idx_influencers_content_language", "content_language"),
         Index("idx_influencers_content_themes", "content_themes", postgresql_using="gin"),
+        Index("idx_influencers_influencer_gender", "influencer_gender"),
     )
 
     def to_dict(self) -> dict:
@@ -131,6 +136,7 @@ class Influencer(Base):
             "sponsored_ratio": self.sponsored_ratio,
             "content_language": self.content_language,
             "content_themes": self.content_themes,
+            "influencer_gender": self.influencer_gender,
             "profile_active": self.profile_active,
             "cached_at": self.cached_at.isoformat() if self.cached_at else None,
         }

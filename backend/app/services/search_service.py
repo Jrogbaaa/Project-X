@@ -230,30 +230,14 @@ class SearchService:
             logger.info(f"")
 
             # ============================================================
-            # Step 6: Verify top candidates via PrimeTag API to get real Gema data.
-            # Fetches: % España, % Hombres/Mujeres, % Edades, % Credibilidad, % ER.
-            # Uses cached primetag_encrypted_username when available (1 API call).
-            # Falls back to search+detail (2 API calls) for uncached influencers.
-            # Once verified, data is persisted to DB so subsequent searches are free.
+            # Step 4: Use prefiltered candidates directly (PrimeTag API disabled).
+            # Verification via API is bypassed — all filtering uses cached DB data.
+            # Re-enable when PrimeTag credentials are restored.
             # ============================================================
-            logger.info(f"⏳ Step 4/6: Verifying top {min(MAX_CANDIDATES_TO_VERIFY, len(prefiltered))} candidates via PrimeTag API...")
-            verified_candidates, failed_count = await self._verify_candidates_batch(
-                prefiltered[:MAX_CANDIDATES_TO_VERIFY],
-                MAX_CONCURRENT_VERIFICATION
-            )
-            logger.info(f"   ✓ Verified {len(verified_candidates)} candidates ({failed_count} failed/not found)")
-
-            # Graceful degradation: if ALL verifications failed (e.g. API auth error, outage),
-            # fall back to prefiltered candidates so searches still return results.
-            # This keeps the app functional even when PrimeTag is unavailable.
-            if len(verified_candidates) == 0 and failed_count > 0:
-                logger.warning(
-                    f"   ⚠ All {failed_count} PrimeTag verifications failed "
-                    f"(API may be unavailable or credentials expired). "
-                    f"Falling back to prefiltered candidates with lenient mode — "
-                    f"Gema filter values will not be verified until API is restored."
-                )
-                verified_candidates = prefiltered
+            logger.info(f"⏳ Step 4/6: Using {len(prefiltered)} prefiltered candidates (PrimeTag verification disabled)...")
+            verified_candidates = prefiltered
+            failed_count = 0
+            logger.info(f"   ✓ Proceeding with {len(verified_candidates)} candidates from DB cache")
             logger.info(f"")
 
             # ============================================================

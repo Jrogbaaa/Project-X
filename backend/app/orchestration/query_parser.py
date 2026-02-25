@@ -1,4 +1,5 @@
 import json
+import re
 from openai import AsyncOpenAI
 from typing import Optional
 
@@ -19,6 +20,29 @@ Queries may be in English or Spanish, and often arrive as messy forwarded email 
 1. Extract brand_name (e.g., "Adidas", "Nike", "IKEA")
 2. Infer brand_handle - the brand's social media handle (e.g., "@adidas", "@nike", "@ikea")
 3. Infer brand_category from the brand name
+
+CRITICAL - ALWAYS extract brand_name when the brief follows Spanish agency patterns:
+- "Os paso el brief de X" → brand = X
+- "Brief para X" / "brief de X" → brand = X
+- "Campaña de X" / "campaña para X" → brand = X
+- "Para la campaña de X" → brand = X
+- "Brief para campaña de X" → brand = X
+- "Reenvío el brief de X" / "FW: Brief X" → brand = X
+Even if X is also a common word (e.g. "Mango" is a fashion brand, "Camper" is a shoe brand,
+"Aire" could be a spa brand, "Flora" could be a margarine brand). In a campaign brief context,
+the word following these Spanish patterns is always a brand name.
+
+Known Spanish/international brands that are also common words — always treat as brands in brief context:
+- Mango → Spanish fast-fashion brand (not the fruit)
+- Camper → Spanish footwear brand (not camping)
+- Cupra → SEAT's performance car brand
+- Aire → Spanish spa/wellness brand
+- Flex → Spanish mattress brand
+- Bimbo → Mexican bread/bakery brand sold in Spain
+- Flora → margarine/food brand
+- Estrella → Estrella Damm (beer) or Estrella Galicia (beer)
+- Alhambra → Cervezas Alhambra (craft beer brand)
+- Silence → Spanish electric scooter brand
 
 Brand category mappings:
 - IKEA, furniture stores -> home_furniture
@@ -88,6 +112,11 @@ Extract the creative/campaign concept if described:
 If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:
 - preferred_follower_min: Minimum follower count (e.g., 100000 for "100K+")
 - preferred_follower_max: Maximum follower count (e.g., 2000000 to avoid mega-celebrities)
+
+### Influencer Gender Filter
+When the brief restricts to a single gender (e.g., "only women", "solo hombres", "female influencers only"):
+- influencer_gender: Set to "male" or "female" when the brief clearly restricts to one gender. Default "any".
+- Spanish gender terms: "hombres"/"hombre" = male, "mujeres"/"mujer" = female, "masculino" = male, "femenino" = female, "solo hombres" = male only, "solo mujeres" = female only, "chicos" = male, "chicas" = female, "varones" = male.
 
 ### Gender-Specific Counts
 When the brief specifies separate male and female requirements (e.g., "3 male, 3 female influencers" or "we need 5 women and 5 men"):
@@ -431,7 +460,7 @@ _NICHE_DISCOVERY_FALLBACK: dict[str, list[str]] = {
     "travel":              ["Lifestyle", "Entertainment and Music", "Family"],
     "home_decor":          ["Lifestyle", "Family", "Parenting"],
     "diy":                 ["Lifestyle", "Family"],
-    "pets":                ["Lifestyle", "Family", "Parenting"],
+    "pets":                ["Lifestyle", "Family"],
     "parenting":           ["Parenting", "Family", "Lifestyle"],
     "music":               ["Entertainment and Music", "Lifestyle", "Celebrity"],
     "comedy":              ["Entertainment and Music", "Lifestyle", "Family"],
@@ -452,17 +481,35 @@ _NICHE_DISCOVERY_FALLBACK: dict[str, list[str]] = {
 }
 
 
+def _normalize_spanish_numbers(text: str) -> str:
+    """
+    Normalize Spanish-format numbers (periods as thousands separators) to plain integers.
+    E.g. '100.000' → '100000', '1.500.000' → '1500000'.
+    Only converts unambiguous thousands-separator patterns (groups of exactly 3 digits).
+    Decimal numbers like '3.5' or '0.7' are left untouched.
+    """
+    return re.sub(
+        r'\b(\d{1,3})(\.\d{3})+\b',
+        lambda m: m.group(0).replace('.', ''),
+        text
+    )
+
+
 async def parse_search_query(query: str) -> ParsedSearchQuery:
     """Parse natural language query into structured search parameters using GPT-4o."""
     settings = get_settings()
     client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    # Normalize Spanish number format before sending to LLM so follower ranges
+    # like "100.000 y 300.000" are correctly interpreted as 100000 and 300000.
+    normalized_query = _normalize_spanish_numbers(query)
 
     try:
         completion = await client.chat.completions.create(
             model=settings.openai_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": query}
+                {"role": "user", "content": normalized_query}
             ],
             response_format=RESPONSE_FORMAT,
             temperature=0.1,  # Low temperature for consistent parsing
@@ -589,11 +636,13 @@ def _fallback_parse(query: str, error_reason: str) -> ParsedSearchQuery:
                 target_count = count
                 break
 
-    # Try to extract gender
+    # Try to extract gender (English + Spanish terms)
     influencer_gender = GenderFilter.ANY
-    if "female" in query_lower or "woman" in query_lower or "women" in query_lower:
+    _female_terms = {"female", "woman", "women", "mujeres", "mujer", "femenino", "chicas"}
+    _male_terms = {"male", "man", "men", "hombres", "hombre", "masculino", "chicos", "varones"}
+    if any(t in query_lower for t in _female_terms):
         influencer_gender = GenderFilter.FEMALE
-    elif "male" in query_lower or "man" in query_lower or "men" in query_lower:
+    elif any(t in query_lower for t in _male_terms):
         influencer_gender = GenderFilter.MALE
 
     # Extract keywords (non-common words)
