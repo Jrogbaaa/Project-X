@@ -73,6 +73,11 @@ _FEMALE_NAMES = {
     "jessica", "jennifer", "stephanie", "natalie", "samantha",
     "amanda", "ashley", "brittany", "kayla", "madison", "taylor",
     "victoria", "alexandra", "stephanie", "deborah", "lisa",
+    # Additional names found missing from DB analysis (Feb 2026)
+    "aida", "elsa", "carlota", "nicole", "paloma", "judit", "lydia",
+    "elisa", "carol", "arantxa", "ester", "martita", "gisela",
+    "antonella", "anabel", "fanny", "yvonne", "maribel", "adara",
+    "leena", "leena", "izzy",
 }
 
 _MALE_NAMES = {
@@ -111,6 +116,13 @@ _MALE_NAMES = {
     "nicholas", "matthew", "joshua", "anthony", "andrew", "christopher",
     "michael", "james", "robert", "william", "richard", "charles",
     "thomas", "mark", "donald", "steven", "edward", "george",
+    # Spanish nickname forms and shortenings missing from initial list (Feb 2026)
+    "aaron", "aarón", "willy", "fran", "jesus", "jesús", "manu",
+    "rafa", "edu", "leo", "kike", "javi", "pepe", "jon",
+    "julio", "gabriel", "toni", "ramiro", "alfonso", "frank",
+    "christian", "michel", "mauro", "gianluca", "adam", "felipe",
+    "moha", "curro", "nacho", "paco", "santi", "xavi", "nando",
+    "vito", "miki", "toño",
 }
 
 _FEMALE_BIO_SIGNALS = {
