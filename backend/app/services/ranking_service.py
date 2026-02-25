@@ -152,6 +152,12 @@ class RankingService:
                 if not followers or followers == 0:
                     relevance_score *= 0.4
 
+            # Gender confidence boost: prefer DB-confirmed gender over runtime-inferred.
+            # Only activates when a gender filter is specified; zero impact on general searches.
+            if parsed_query.influencer_gender and parsed_query.influencer_gender != GenderFilter.ANY:
+                gender_multiplier = self._calculate_gender_confidence_multiplier(inf, parsed_query.influencer_gender)
+                relevance_score *= gender_multiplier
+
             # Get raw data dict
             if hasattr(inf, 'to_dict'):
                 raw_data = inf.to_dict()
@@ -773,6 +779,18 @@ class RankingService:
             return (exclusions / len(exclude_niches)) * 0.4
 
         return 0.0
+
+    def _calculate_gender_confidence_multiplier(self, influencer: Any, requested_gender: GenderFilter) -> float:
+        """Small boost for influencers with DB-confirmed gender vs runtime-inferred.
+
+        Returns 1.08 if the stored influencer_gender matches the requested gender.
+        Returns 1.00 for inferred/unknown profiles (they passed the hard filter,
+        just no DB confirmation). Never penalizes — all passing influencers appear in results.
+        """
+        stored = self._get_value(influencer, 'influencer_gender', None)
+        if stored and stored == requested_gender.value:
+            return 1.08
+        return 1.0
 
     def _calculate_size_penalty(
         self,
