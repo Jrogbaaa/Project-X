@@ -248,10 +248,15 @@ class RankingService:
                     return 0.0
                 v = suggested.get(key, default)
                 result = max(0, min(1, v)) if v is not None else default
-                # niche_match is the primary quality signal — never let the LLM reduce it
-                # below the system default. It can be boosted but not weakened.
-                if key == 'niche_match':
+                # niche_match and creative_fit are the primary quality signals —
+                # never let the LLM reduce them below the system default.
+                # They can be boosted but not weakened.
+                if key in ('niche_match', 'creative_fit'):
                     result = max(result, default)
+                # Engagement is a secondary signal — cap it to prevent high-ER
+                # off-niche influencers from overtaking better-matched ones.
+                if key == 'engagement':
+                    result = min(result, 0.20)
                 return result
 
             weights = RankingWeights(
