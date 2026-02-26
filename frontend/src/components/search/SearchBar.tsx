@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import { searchInfluencers } from '@/lib/api';
@@ -21,6 +21,16 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
     const [query, setQuery] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const resizeTextarea = useCallback(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }, []);
+
+    useEffect(() => { resizeTextarea(); }, [query, resizeTextarea]);
 
     const searchMutation = useMutation({
       mutationFn: searchInfluencers,
@@ -84,6 +94,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
 
           {/* Textarea */}
           <textarea
+            ref={textareaRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -95,12 +106,11 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="Pega tu brief de marca o describe tu campaña..."
-            className="w-full min-h-[58px] max-h-[200px] pl-11 pr-32 py-[0.95rem] text-sm leading-relaxed
+            className="w-full min-h-[58px] pl-11 pr-32 py-[0.95rem] text-sm leading-relaxed
                        bg-transparent text-light-primary rounded-xl focus:outline-none resize-none
                        placeholder:text-light-tertiary/45"
             disabled={searchMutation.isPending}
-            rows={1}
-            style={{ height: query.length > 100 ? 'auto' : '58px' }}
+            style={{ height: '58px', overflow: 'hidden' }}
           />
 
           {/* Submit button */}

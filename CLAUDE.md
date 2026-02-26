@@ -217,7 +217,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries (expandable textarea) |
+| SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries. Textarea **auto-resizes** to fit all pasted content (no internal scroll), starting at 58px and expanding dynamically via `scrollHeight`. |
 | FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds (credibility, Spain %, engagement, growth, gender, age brackets) |
 | ResultsGrid | `results/ResultsGrid.tsx` | Grid layout with **card/list view toggle**, sticky header, export/save actions |
 | InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics, **quick copy buttons** |
@@ -248,6 +248,8 @@ This allows the system to handle **any brand** - even ones not in our database (
 **Quick Copy**: Hover over influencer cards/rows to reveal one-click copy buttons for username and MediaKit URL.
 
 **Toast Notifications**: Visual feedback for copy, save, and export actions.
+
+**Dynamic SearchBar**: Textarea auto-expands to show full pasted brief — no internal scrolling. Shrinks back when cleared.
 
 ### Frontend Testing
 
