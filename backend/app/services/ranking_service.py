@@ -324,7 +324,8 @@ class RankingService:
             influencer,
             parsed_query.creative_tone,
             parsed_query.creative_themes,
-            getattr(parsed_query, 'creative_format', None)
+            getattr(parsed_query, 'creative_format', None),
+            getattr(parsed_query, 'creative_concept', None)
         )
 
         # Niche Match: content niche alignment with campaign topics
@@ -480,7 +481,8 @@ class RankingService:
         influencer: Any,
         creative_tone: List[str],
         creative_themes: List[str],
-        creative_format: Optional[str] = None
+        creative_format: Optional[str] = None,
+        creative_concept: Optional[str] = None
     ) -> float:
         """
         Calculate how well influencer matches the creative concept.
@@ -490,11 +492,15 @@ class RankingService:
         - content_themes.narrative_style: "storytelling", "casual", "promotional"
         - content_themes.format_preference: Post formats used (Reel, Sidecar, etc.)
 
+        Also uses creative_concept (free-text campaign idea) directly as a
+        keyword source — so big narrative ideas ("cultural movement", "brand of a
+        generation") influence scoring even when not captured by tone/themes alone.
+
         Returns:
             Score from 0-1 (0.5 = neutral/no creative context)
         """
-        # Return neutral if no creative context
-        if not creative_tone and not creative_themes and not creative_format:
+        # Return neutral if no creative context at all
+        if not creative_tone and not creative_themes and not creative_format and not creative_concept:
             return 0.5
 
         score_components = []
@@ -536,14 +542,14 @@ class RankingService:
                         theme_matches += 1
                         
             theme_score = theme_matches / len(creative_themes) if creative_themes else 0
-            score_components.append(('theme', theme_score, 0.35))
+            score_components.append(('theme', theme_score, 0.25))
 
         # 2. Narrative style / format alignment - USE content_themes.narrative_style
         format_score = 0.5  # Neutral default
         if content_themes:
             narrative_style = content_themes.get('narrative_style', '')
             format_preference = content_themes.get('format_preference', [])
-            
+
             # Match creative format to narrative style
             if creative_format:
                 format_map = {
@@ -562,12 +568,12 @@ class RankingService:
                     format_score = 0.85
                 elif narrative_style != 'promotional' and creative_format != 'testimonial':
                     format_score = 0.6
-            
+
             # Boost for Reels if challenge/tutorial format
             if creative_format in ['challenge', 'tutorial'] and 'Reel' in format_preference:
                 format_score = min(format_score + 0.15, 1.0)
-                
-        score_components.append(('format', format_score, 0.30))
+
+        score_components.append(('format', format_score, 0.25))
 
         # 3. Tone alignment using keyword matching
         if creative_tone:
@@ -585,7 +591,7 @@ class RankingService:
                     elif tone_lower in ['polished', 'luxury'] and narrative == 'promotional':
                         tone_matches += 0.3
             tone_score = min(tone_matches / len(creative_tone), 1.0) if creative_tone else 0
-            score_components.append(('tone', tone_score, 0.20))
+            score_components.append(('tone', tone_score, 0.15))
 
         # 4. Past brand experience - USE detected_brands
         has_experience = len(brand_mentions) > 0 or len(detected_brands) > 0
@@ -601,7 +607,48 @@ class RankingService:
             engagement_quality = min(engagement_raw / 8.0, 1.0)
         else:
             engagement_quality = 0.3
-        score_components.append(('engagement_quality', engagement_quality, 0.15))
+        score_components.append(('engagement_quality', engagement_quality, 0.05))
+
+        # 6. Creative concept keyword match — use the full free-text campaign idea
+        # to score influencers. Extracts meaningful words from creative_concept and
+        # checks how many appear in the influencer's bio, interests, or content themes.
+        # This captures big narrative ideas ("cultural movement", "brand of a generation")
+        # that don't map neatly to tone or themes alone.
+        if creative_concept:
+            _stopwords = {
+                # Spanish
+                'de', 'la', 'el', 'los', 'las', 'un', 'una', 'que', 'con', 'por',
+                'para', 'del', 'se', 'en', 'es', 'su', 'como', 'pero', 'sin',
+                'sobre', 'entre', 'cuando', 'todo', 'esta', 'este', 'estos', 'estas',
+                'muy', 'hasta', 'donde', 'quien', 'han', 'hay', 'sus', 'ser', 'una',
+                'nos', 'más', 'si', 'ya', 'fue', 'son', 'al', 'lo', 'le', 'me',
+                'yo', 'tu', 'mi', 'nos', 'les', 'esto', 'eso', 'esa', 'ese',
+                # English
+                'the', 'and', 'for', 'with', 'that', 'this', 'from', 'they',
+                'have', 'been', 'will', 'would', 'could', 'should', 'their',
+                'there', 'about', 'which', 'when', 'what', 'want', 'make',
+                'like', 'into', 'over', 'also', 'just', 'some', 'more', 'than',
+                'your', 'our', 'are', 'not', 'was', 'has', 'its', 'all', 'an',
+            }
+            import re as _re
+            concept_words = [
+                w for w in _re.sub(r'[^a-záéíóúñüàèì\w\s]', ' ', creative_concept.lower()).split()
+                if len(w) >= 4 and w not in _stopwords
+            ]
+            if concept_words:
+                # Build a single searchable text from influencer signals
+                detected_theme_text = ' '.join(
+                    content_themes.get('detected_themes', []) if content_themes else []
+                ).lower()
+                searchable = f"{bio_lower} {interests_text} {detected_theme_text}"
+                matches = sum(1 for w in concept_words if w in searchable)
+                concept_score = min(matches / len(concept_words), 1.0)
+            else:
+                concept_score = 0.5
+            score_components.append(('concept', concept_score, 0.20))
+        else:
+            # No creative concept — neutral score so it doesn't affect ranking
+            score_components.append(('concept', 0.5, 0.20))
 
         # Calculate weighted score
         if not score_components:

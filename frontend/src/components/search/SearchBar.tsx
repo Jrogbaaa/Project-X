@@ -8,7 +8,7 @@ import { SearchResponse, FilterConfig } from '@/types/search';
 
 interface SearchBarProps {
   onResults: (results: SearchResponse) => void;
-  filters: FilterConfig;
+  filters?: FilterConfig;
   onLoadingChange: (loading: boolean) => void;
 }
 

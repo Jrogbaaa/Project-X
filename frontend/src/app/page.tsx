@@ -2,25 +2,19 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SearchBar, SearchBarRef } from '@/components/search/SearchBar';
-import { FilterPanel } from '@/components/search/FilterPanel';
 import { ResultsGrid } from '@/components/results/ResultsGrid';
 import { ToastContainer } from '@/components/ui/Toast';
-import { SearchResponse, FilterConfig } from '@/types/search';
+import { SearchResponse } from '@/types/search';
 import { useToast } from '@/hooks/useToast';
-import { SlidersHorizontal, Clock, Bookmark } from 'lucide-react';
+import { Clock, Bookmark } from 'lucide-react';
 import Image from 'next/image';
 
 type LoadingStep = 'parsing' | 'searching' | 'ranking' | null;
 
 export default function Home() {
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
-  const [filters, setFilters] = useState<FilterConfig>({
-    min_credibility_score: 70,
-    min_spain_audience_pct: 60,
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<LoadingStep>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
   const searchBarRef = useRef<SearchBarRef>(null);
@@ -188,30 +182,15 @@ export default function Home() {
             <SearchBar
               ref={searchBarRef}
               onResults={setSearchResults}
-              filters={filters}
               onLoadingChange={setIsLoading}
             />
           </div>
 
-          {/* Filter toggle + examples */}
+          {/* Examples */}
           <div
             className="mt-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 animate-fade-in"
             style={{ animationDelay: '240ms' }}
           >
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all border ${
-                showFilters
-                  ? 'bg-ember-warm/10 text-ember-warm border-ember-warm/30'
-                  : 'bg-dark-secondary text-light-secondary border-dark-border hover:text-light-primary hover:border-ember-warm/20'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filtros
-            </button>
-
-            <div className="hidden sm:block w-px h-5 bg-dark-border/60" />
-
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-light-tertiary/70">Prueba:</span>
               {exampleSearches.map((example, i) => (
@@ -227,13 +206,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-
-          {/* Filter panel */}
-          {showFilters && (
-            <div className="mt-5 animate-slide-down">
-              <FilterPanel filters={filters} onChange={setFilters} />
-            </div>
-          )}
         </div>
       </section>
 

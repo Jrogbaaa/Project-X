@@ -218,6 +218,18 @@ Think creatively about WHO would authentically represent this brand. Our databas
 - Energy drink brand (Celsius, Monster, Red Bull) with fitness positioning → discovery_interests: ["Fitness", "Sports", "Health"], campaign_niche: "fitness"
   Reasoning: "Sports energy drinks need fitness, gym, and sports creators who authentically incorporate the product into an active lifestyle."
 
+**Creative concept / campaign narrative — expand discovery interests accordingly:**
+When a brief describes a big cultural, social, or narrative campaign idea (e.g., "launch of a cultural movement in Spain", "brand of a generation", "celebrating Spanish identity", "democratising X for everyone", "empowerment of women"), you MUST add relevant cultural and lifestyle interest categories to discovery_interests — these narrative campaigns need influencers who have cultural voice, not just product-niche fit.
+
+- Brand aiming to represent a cultural movement or Spanish identity → add: "Entertainment and Music", "Celebrity", "Lifestyle"
+  Reasoning: "Cultural positioning needs creators with cultural weight and community voice — not just product-niche accounts."
+
+- Brand with a social empowerment or generational narrative → add: "Lifestyle", "Family", "Entertainment and Music"
+  Reasoning: "Empowerment campaigns need relatable, authentic voices with engaged communities who can carry a meaningful message."
+
+- Brand wanting an artistic, creative, or youth culture angle → add: "Entertainment and Music", "Lifestyle", "Celebrity"
+  Reasoning: "Art and culture campaigns need creators who genuinely inhabit that space, not just lifestyle creators."
+
 IMPORTANT: discovery_interests MUST always be populated. Every campaign has relevant PrimeTag interest categories — never leave this empty. Even broad lifestyle/food campaigns need at least 2-3 interest categories specified.
 
 Always return valid JSON matching the schema."""
