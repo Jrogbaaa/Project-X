@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { RankedInfluencer } from '@/types/search';
 import { formatNumber, cn, getMatchScoreClass } from '@/lib/utils';
-import { AudienceChart } from './AudienceChart';
 import { ScoreBreakdown } from './ScoreBreakdown';
 
 interface InfluencerCardProps {
@@ -147,8 +146,8 @@ export function InfluencerCard({
                     seguidores
                   </p>
                 )}
-                {engagementRate != null && engagementRate > 0 && (
-                  <span className="text-xs font-mono text-light-secondary">
+                {engagementRate != null && engagementRate > 0.1 && (
+                  <span className="text-sm font-mono font-semibold text-ember-warm">
                     {engagementRate.toFixed(1)}% eng
                   </span>
                 )}
@@ -276,12 +275,6 @@ export function InfluencerCard({
               </div>
             </div>
           )}
-
-          {/* Demographics */}
-          <AudienceChart
-            genders={raw_data.audience_genders}
-            ageDistribution={raw_data.audience_age_distribution}
-          />
 
           {/* Score breakdown */}
           <ScoreBreakdown scores={scores} />

@@ -99,8 +99,8 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
               <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
             </span>
           )}
-          {raw_data.engagement_rate != null && raw_data.engagement_rate > 0 && (
-            <span className="font-mono">
+          {raw_data.engagement_rate != null && raw_data.engagement_rate > 0.1 && (
+            <span className="font-mono font-semibold text-ember-warm text-xs">
               {raw_data.engagement_rate.toFixed(1)}% eng
             </span>
           )}
