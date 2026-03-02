@@ -85,24 +85,14 @@ describe('InfluencerRow', () => {
       expect(screen.getByText('78%')).toBeInTheDocument();
     });
 
-    it('renders credibility score', () => {
+    it('renders engagement rate inline when available', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
-      expect(screen.getByText('82%')).toBeInTheDocument();
+      expect(screen.getByText('2.8% eng')).toBeInTheDocument();
     });
 
-    it('renders engagement rate', () => {
-      render(<InfluencerRow influencer={createMockInfluencer()} />);
-      expect(screen.getByText('2.8%')).toBeInTheDocument();
-    });
-
-    it('renders Spain audience percentage with ES label', () => {
-      render(<InfluencerRow influencer={createMockInfluencer()} />);
-      expect(screen.getByText('68% ES')).toBeInTheDocument();
-    });
-
-    it('renders growth rate', () => {
-      render(<InfluencerRow influencer={createMockInfluencer()} />);
-      expect(screen.getByText('8%')).toBeInTheDocument();
+    it('does not render engagement rate when not available', () => {
+      render(<InfluencerRow influencer={createMockInfluencer({ engagement_rate: undefined })} />);
+      expect(screen.queryByText(/eng$/)).not.toBeInTheDocument();
     });
   });
 
@@ -203,12 +193,10 @@ describe('InfluencerRow', () => {
     it('displays all essential information without requiring expansion', () => {
       render(<InfluencerRow influencer={createMockInfluencer()} />);
       
-      // All these should be visible immediately without any click
       expect(screen.getByText('@rowuser')).toBeVisible();
       expect(screen.getByText('250.0K')).toBeVisible();
-      expect(screen.getByText('78%')).toBeVisible(); // Match score
-      expect(screen.getByText('82%')).toBeVisible(); // Credibility
-      expect(screen.getByText('2.8%')).toBeVisible(); // Engagement
+      expect(screen.getByText('78%')).toBeVisible();
+      expect(screen.getByText('2.8% eng')).toBeVisible();
       expect(screen.getByRole('link', { name: /perfil/i })).toBeVisible();
     });
 
@@ -219,26 +207,14 @@ describe('InfluencerRow', () => {
   });
 
   describe('Handles Missing Data Gracefully', () => {
-    it('shows N/A for missing credibility score', () => {
-      render(<InfluencerRow influencer={createMockInfluencer({ credibility_score: undefined })} />);
-      expect(screen.getByText('N/A')).toBeInTheDocument();
-    });
-
-    it('shows N/A for missing engagement rate', () => {
+    it('hides engagement rate when not available', () => {
       render(<InfluencerRow influencer={createMockInfluencer({ engagement_rate: undefined })} />);
-      const naElements = screen.getAllByText('N/A');
-      expect(naElements.length).toBeGreaterThan(0);
+      expect(screen.queryByText(/eng$/)).not.toBeInTheDocument();
     });
 
-    it('shows N/A for missing growth rate', () => {
-      render(<InfluencerRow influencer={createMockInfluencer({ follower_growth_rate_6m: undefined })} />);
-      const naElements = screen.getAllByText('N/A');
-      expect(naElements.length).toBeGreaterThan(0);
-    });
-
-    it('shows 0% ES for missing Spain audience', () => {
-      render(<InfluencerRow influencer={createMockInfluencer({ audience_geography: {} })} />);
-      expect(screen.getByText('0% ES')).toBeInTheDocument();
+    it('hides follower count when zero', () => {
+      render(<InfluencerRow influencer={createMockInfluencer({ follower_count: 0 })} />);
+      expect(screen.queryByText(/seguidores/)).not.toBeInTheDocument();
     });
   });
 });

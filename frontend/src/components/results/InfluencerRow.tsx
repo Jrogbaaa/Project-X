@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ExternalLink, Users, BadgeCheck, Copy, Check, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { ExternalLink, Users, BadgeCheck, Copy, Check, AlertTriangle } from 'lucide-react';
 import { RankedInfluencer } from '@/types/search';
-import { formatNumber, cn, getMetricClass, getMatchScoreClass } from '@/lib/utils';
+import { formatNumber, cn, getMatchScoreClass } from '@/lib/utils';
 
 interface InfluencerRowProps {
   influencer: RankedInfluencer;
@@ -16,10 +16,6 @@ interface InfluencerRowProps {
 export function InfluencerRow({ influencer, index = 0, isSelected = false, onCopy }: InfluencerRowProps) {
   const [copiedField, setCopiedField] = useState<'username' | 'mediakit' | null>(null);
   const { raw_data, relevance_score, rank_position } = influencer;
-
-  const spainPct = raw_data.audience_geography?.ES || raw_data.audience_geography?.es || 0;
-  const growthRate = raw_data.follower_growth_rate_6m;
-  const GrowthIcon = growthRate && growthRate > 0 ? TrendingUp : TrendingDown;
 
   const handleCopy = async (text: string, field: 'username' | 'mediakit') => {
     try {
@@ -97,9 +93,18 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
             )}
           </button>
         </div>
-        <p className="text-light-tertiary/60 text-[11px]">
-          <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
-        </p>
+        <div className="flex items-center gap-2 text-light-tertiary/60 text-[11px]">
+          {raw_data.follower_count > 0 && (
+            <span>
+              <span className="font-mono">{formatNumber(raw_data.follower_count)}</span> seguidores
+            </span>
+          )}
+          {raw_data.engagement_rate != null && raw_data.engagement_rate > 0 && (
+            <span className="font-mono">
+              {raw_data.engagement_rate.toFixed(1)}% eng
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Match score */}
@@ -108,25 +113,6 @@ export function InfluencerRow({ influencer, index = 0, isSelected = false, onCop
           {(relevance_score * 100).toFixed(0)}%
         </div>
         <div className="text-[9px] text-light-tertiary/50 uppercase tracking-wider">Match</div>
-      </div>
-
-      {/* Compact metrics */}
-      <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-        <div className={cn('px-2 py-1 rounded text-[11px] font-mono', getMetricClass(raw_data.credibility_score, 'credibility'))}>
-          {raw_data.credibility_score ? `${raw_data.credibility_score.toFixed(0)}%` : 'N/A'}
-        </div>
-        <div className={cn('px-2 py-1 rounded text-[11px] font-mono', getMetricClass(raw_data.engagement_rate, 'engagement'))}>
-          {raw_data.engagement_rate ? `${raw_data.engagement_rate.toFixed(1)}%` : 'N/A'}
-        </div>
-        <div className={cn('px-2 py-1 rounded text-[11px] font-mono', getMetricClass(spainPct, 'spain'))}>
-          {spainPct.toFixed(0)}% ES
-        </div>
-        <div className={cn('px-2 py-1 rounded text-[11px] font-mono flex items-center gap-0.5', getMetricClass(growthRate ? growthRate * 100 : null, 'growth'))}>
-          {growthRate !== null && growthRate !== undefined && (
-            <GrowthIcon className="w-2.5 h-2.5" />
-          )}
-          {growthRate ? `${(growthRate * 100).toFixed(0)}%` : 'N/A'}
-        </div>
       </div>
 
       {/* Actions */}
