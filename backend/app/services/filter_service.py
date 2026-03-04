@@ -243,6 +243,27 @@ class FilterService:
             else:
                 logger.info(f"   ✓ Audience gender ({parsed_query.target_audience_gender}): all passed")
 
+        # HARD FILTER: Adult content / OnlyFans accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_adult_content(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Adult content filter: removed {removed}")
+
+        # HARD FILTER: Political / controversial accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_political_content(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Political content filter: removed {removed}")
+
+        # HARD FILTER: Brand / faceless corporate accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_brand_account(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Brand account filter: removed {removed}")
+
         # Filter out competitor ambassadors if brand context provided
         # This is a hard exclusion - known ambassadors of competitor brands are removed
         if parsed_query.brand_handle or parsed_query.brand_name:
@@ -559,3 +580,120 @@ class FilterService:
                         return "male"
 
         return None
+
+    def _get_bio(self, influencer) -> str:
+        """Extract bio from influencer object, lowercased."""
+        if hasattr(influencer, 'bio'):
+            return (influencer.bio or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('bio') or "").lower()
+        return ""
+
+    def _get_display_name(self, influencer) -> str:
+        """Extract display name from influencer object, lowercased."""
+        if hasattr(influencer, 'display_name'):
+            return (influencer.display_name or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('display_name') or "").lower()
+        return ""
+
+    def _get_interests(self, influencer) -> List[str]:
+        """Extract interests list from influencer object."""
+        if hasattr(influencer, 'interests'):
+            return influencer.interests or []
+        if isinstance(influencer, dict):
+            return influencer.get('interests') or []
+        return []
+
+    def _get_primary_niche(self, influencer) -> str:
+        """Extract primary_niche from influencer object, lowercased."""
+        if hasattr(influencer, 'primary_niche'):
+            return (influencer.primary_niche or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('primary_niche') or "").lower()
+        return ""
+
+    # ── Content Safety Filters ──────────────────────────────────────────────
+
+    _ADULT_KEYWORDS = {
+        "onlyfans", "only fans", "of.me", "fans.ly", "fansly",
+        "18+", "+18", "18 +", "+ 18", "18 años +18", "contenido adulto",
+        "adult content", "nsfw", "explicit content",
+    }
+
+    def _is_adult_content(self, influencer) -> bool:
+        """Return True if influencer profile signals adult/OnlyFans content."""
+        text = self._get_bio(influencer) + " " + self._get_display_name(influencer)
+        for kw in self._ADULT_KEYWORDS:
+            if kw in text:
+                logger.debug(f"   Adult filter: {self._get_username(influencer)} matched '{kw}'")
+                return True
+        return False
+
+    _POLITICAL_BIO_KEYWORDS = {
+        "diputado", "diputada", "senador", "senadora",
+        "político", "política", "partido político",
+        "activista política", "activista político",
+        "campaña electoral", "candidato", "candidata",
+        "eurodiputado", "eurodiputada", "congresista",
+        "portavoz del partido", "militante de",
+    }
+
+    def _is_political_content(self, influencer) -> bool:
+        """Return True if influencer has political/controversial positioning."""
+        bio = self._get_bio(influencer)
+        for kw in self._POLITICAL_BIO_KEYWORDS:
+            if kw in bio:
+                logger.debug(f"   Political filter: {self._get_username(influencer)} matched bio '{kw}'")
+                return True
+
+        niche = self._get_primary_niche(influencer)
+        if niche == "politics":
+            logger.debug(f"   Political filter: {self._get_username(influencer)} primary_niche=politics")
+            return True
+
+        interests = [str(i).lower() for i in self._get_interests(influencer)]
+        if "politics" in interests or "política" in interests:
+            logger.debug(f"   Political filter: {self._get_username(influencer)} interest=politics")
+            return True
+
+        return False
+
+    _BRAND_BIO_KEYWORDS = {
+        "cuenta oficial", "canal oficial", "perfil oficial", "official account",
+        "official channel", "official page", "tienda oficial", "official store",
+        "s.a.", " s.l.", "grupo empresarial", "marca oficial",
+    }
+    _BRAND_NAME_SUFFIXES = (
+        " oficial", " official", " españa", " spain", " store", " shop",
+        " brand", " group", " grupo", " tienda",
+    )
+    _PERSONAL_INTEREST_MARKERS = {
+        "fitness", "fashion", "beauty", "food", "travel", "lifestyle",
+        "sports", "music", "comedy", "gaming", "family", "health",
+        "photography", "art", "dance", "wellness", "cooking",
+    }
+
+    def _is_brand_account(self, influencer) -> bool:
+        """Return True if profile appears to be a corporate/brand account rather than an individual creator."""
+        bio = self._get_bio(influencer)
+        for kw in self._BRAND_BIO_KEYWORDS:
+            if kw in bio:
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} matched bio '{kw}'")
+                return True
+
+        display = self._get_display_name(influencer)
+        for suffix in self._BRAND_NAME_SUFFIXES:
+            if display.endswith(suffix):
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} display_name ends with '{suffix}'")
+                return True
+
+        # Accounts whose interests are exclusively corporate/retail with no personal content
+        interests = {str(i).lower() for i in self._get_interests(influencer)}
+        if interests and not interests.intersection(self._PERSONAL_INTEREST_MARKERS):
+            corporate_only = {"retail", "business", "advertising", "marketing", "e-commerce"}
+            if interests.issubset(corporate_only):
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} only corporate interests")
+                return True
+
+        return False
