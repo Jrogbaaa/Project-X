@@ -271,7 +271,7 @@ class ReflectionService:
                 ],
                 response_format=REFLECTION_RESPONSE_FORMAT,
                 temperature=0.2,  # Slightly higher for nuanced evaluation
-                max_tokens=2000,
+                max_completion_tokens=2000,
             )
             
             response_text = completion.choices[0].message.content

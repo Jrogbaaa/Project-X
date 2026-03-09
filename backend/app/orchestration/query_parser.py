@@ -525,7 +525,7 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             ],
             response_format=RESPONSE_FORMAT,
             temperature=0.1,  # Low temperature for consistent parsing
-            max_tokens=1000,
+            max_completion_tokens=1000,
         )
 
         response_text = completion.choices[0].message.content

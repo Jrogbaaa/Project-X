@@ -521,7 +521,7 @@ class IdeaMatchService:
                 ],
                 response_format=_BRAND_EXTRACTION_RESPONSE_FORMAT,
                 temperature=0.2,
-                max_tokens=600,
+                max_completion_tokens=600,
             )
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
@@ -606,7 +606,7 @@ class IdeaMatchService:
             ],
             response_format=response_schema,
             temperature=0.75,  # Slightly higher for creative generation
-            max_tokens=3000,
+            max_completion_tokens=3000,
         )
         content = response.choices[0].message.content or "{}"
         return json.loads(content)

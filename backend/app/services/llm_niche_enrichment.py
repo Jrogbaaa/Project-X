@@ -265,7 +265,7 @@ class LLMNicheEnrichmentPipeline:
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.1,
-                max_tokens=1500,
+                max_completion_tokens=1500,
             )
             self.stats["llm_calls"] += 1
 
