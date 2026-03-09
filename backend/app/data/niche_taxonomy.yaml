@@ -342,14 +342,67 @@ niches:
       - "belleza"
       - "makeup"
       - "maquillaje"
-      - "skincare"
       - "cosmetics"
       - "cosméticos"
       - "tutorial"
+    aliases:
+      - skincare
     related_niches:
       - fashion
       - lifestyle
     conflicting_niches: []
+    parent_category: "fashion_beauty"
+
+  skincare:
+    keywords:
+      - "skincare"
+      - "skin care"
+      - "cuidado de la piel"
+      - "cuidado facial"
+      - "rutina facial"
+      - "serum"
+      - "sérum"
+      - "vitamina c"
+      - "dermatology"
+      - "dermatología"
+      - "dermatologist"
+      - "dermatologa"
+      - "dermatólogo"
+      - "anti-aging"
+      - "antienvejecimiento"
+      - "moisturizer"
+      - "hidratante"
+      - "cleanser"
+      - "limpiador facial"
+      - "spf"
+      - "sunscreen"
+      - "protector solar"
+      - "acne"
+      - "acné"
+      - "piel"
+      - "skin routine"
+      - "night routine"
+      - "morning routine"
+      - "rutina de noche"
+      - "rutina de mañana"
+      - "get ready with me"
+      - "grwm"
+      - "exfoliante"
+      - "retinol"
+      - "niacinamide"
+      - "ácido hialurónico"
+      - "hyaluronic acid"
+      - "colágeno"
+      - "collagen"
+    aliases:
+      - beauty
+    related_niches:
+      - wellness
+      - health
+    conflicting_niches:
+      - tattoo
+      - piercing
+      - nail_art
     parent_category: "fashion_beauty"
 
   # ==================== LIFESTYLE ====================
@@ -450,6 +503,43 @@ niches:
       - entertainment
     conflicting_niches: []
     parent_category: "entertainment"
+
+  # ==================== PETS & ANIMALS ====================
+  pets:
+    keywords:
+      - "pet"
+      - "pets"
+      - "mascota"
+      - "mascotas"
+      - "dog"
+      - "perro"
+      - "perros"
+      - "cat"
+      - "gato"
+      - "gatos"
+      - "puppy"
+      - "cachorro"
+      - "kitten"
+      - "gatito"
+      - "animal"
+      - "animales"
+      - "rescue"
+      - "adopta"
+      - "veterinario"
+      - "vet"
+      - "petlover"
+      - "doglife"
+      - "catlife"
+      - "dogsofinstagram"
+      - "catsofinstagram"
+      - "animallover"
+      - "dogmom"
+      - "catmom"
+      - "petstagram"
+    related_niches:
+      - lifestyle
+    conflicting_niches: []
+    parent_category: "pets_animals"
 
   # ==================== PARENTING & FAMILY ====================
   parenting:
@@ -708,11 +798,12 @@ categories:
       - nutrition
 
   fashion_beauty:
-    description: "Fashion and beauty"
+    description: "Fashion, beauty and skincare"
     niches:
       - fashion
       - luxury
       - beauty
+      - skincare
 
   lifestyle:
     description: "General lifestyle content"
@@ -766,6 +857,11 @@ categories:
     niches:
       - retail
       - ecommerce
+
+  pets_animals:
+    description: "Pets, animals, and animal care"
+    niches:
+      - pets
 
 # Special handling rules
 rules:

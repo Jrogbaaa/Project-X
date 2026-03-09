@@ -50,7 +50,7 @@ The search flow uses a **batch verification architecture** to ensure predictable
 ### Step 1: Brief Parsing (Orchestration Layer)
 **Script:** `backend/app/orchestration/query_parser.py`
 
-Parse the brand brief using GPT-4o to extract:
+Parse the brand brief using GPT-5.4 to extract:
 
 **Basic:**
 - Target count (default: 5)
@@ -137,20 +137,27 @@ Verify **only candidates needing verification** (up to 15 max):
 **Known Issue:** Some profiles return empty `location_by_country` from PrimeTag, causing Spain % to show as 0%. When this happens, the filter service falls back to checking the `country` field for Spanish influencers.
 
 **Verification Result:**
-- Verified candidates proceed to filtering
-- Failed candidates (not found, API error, missing metrics) are discarded
+- Verified candidates (real Gema data fetched) proceed to filtering
+- Failed candidates (not found in PrimeTag) are discarded from the verified pool
 - `VerificationStats` tracks: total_candidates, verified, failed_verification, passed_filters
 
-### Step 5: Strict Filtering (Execution Layer)
+**Graceful Degradation:** If **all** verifications fail (e.g. `401 Expired authentication header`, API outage), the system automatically falls back to prefiltered candidates with lenient mode. This keeps the app functional when PrimeTag credentials expire. A warning is logged:
+```
+⚠ All 15 PrimeTag verifications failed (API may be unavailable or credentials expired).
+Falling back to prefiltered candidates with lenient mode.
+```
+**Action when this happens:** Refresh `PRIMETAG_API_KEY` in `.env`.
+
+### Step 5: Filtering (Execution Layer)
 **Script:** `backend/app/services/filter_service.py`
 
-Apply filters in **strict mode** (`lenient_mode=False`):
-1. Credibility score >= threshold (default 70%) - **must have data**
-2. Spain audience >= threshold (default 60%) - **must have data**
-3. Engagement rate >= threshold (if specified) - **must have data**
+Apply filters with `lenient_mode=True` (lenient for PrimeTag misses, strict for verified data):
+1. Credibility score >= threshold (default 70%) — skip if data is None
+2. Spain audience >= threshold (default 60%) — skip if data is None, fallback to `country` field
+3. Engagement rate >= threshold (if specified) — skip if data is None
 4. Audience gender match (if specified)
 
-**Note:** No lenient mode - candidates without real Primetag data are rejected.
+**Lenient mode rationale:** Influencers not found in PrimeTag (niche markets, TikTok-only) are allowed through rather than silently discarded, preserving coverage. Once PrimeTag data is populated via verification, their Gema metrics are enforced strictly on subsequent searches (cache hit path).
 
 ### Step 6: Ranking (Execution Layer)
 **Script:** `backend/app/services/ranking_service.py`
@@ -167,7 +174,7 @@ score = (
     0.15 × brand_affinity +     # NEW: audience overlap with brand
     0.15 × creative_fit +       # NEW: tone/theme alignment
     0.05 × niche_match          # NEW: content niche match
-) × size_multiplier             # Anti-celebrity bias if size preference specified
+) × size_multiplier             # Anti-celebrity bias + unknown-follower penalty
 ```
 
 **New Scoring Factors:**
@@ -179,8 +186,10 @@ score = (
 | Niche Match | `interests`, `bio` | Boost for `campaign_topics`, penalty for `exclude_niches` |
 
 **Size Multiplier (Anti-Celebrity Bias):**
+- Profiles with 0/null follower counts always get 0.3x-0.4x penalty (unknown reach)
 - If `preferred_follower_max` specified and influencer exceeds it, apply penalty
 - Example: 50M followers with 2M max → multiplier = 0.04
+- Even without size preferences, 0-follower profiles get 0.4x penalty to rank below verified profiles
 
 LLM adjusts weights based on brief context (more brand info → higher brand_affinity weight).
 
@@ -246,7 +255,7 @@ result = await service.execute_search(SearchRequest(
 ### Query Parser (LLM Integration)
 **File:** `backend/app/orchestration/query_parser.py`
 
-Uses GPT-4o with structured JSON response format to extract brand/creative/niche context:
+Uses GPT-5.4 with structured JSON response format to extract brand/creative/niche context:
 ```python
 from app.orchestration.query_parser import parse_search_query
 

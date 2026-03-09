@@ -94,8 +94,12 @@ This is an **Influencer Discovery Tool** for talent agents to find influencers f
 - A **padel equipment brand** should match with **padel/racket sports influencers** (not soccer players)
 
 **Taxonomy-Aware Matching:** The system uses `niche_taxonomy.yaml` which defines relationships between niches:
-- **Related niches**: Similar content areas that are good matches (e.g., padel ↔ tennis ↔ fitness)
+- **Related niches**: Similar content areas that are good matches (e.g., padel ↔ tennis ↔ fitness, skincare ↔ beauty ↔ wellness)
 - **Conflicting niches**: Content areas that should be excluded (e.g., padel ✗ football/soccer)
+- **Distinct niches**: "skincare" is separate from "beauty" — skincare matches wellness/health creators, while beauty catches general makeup/cosmetics. Use "skincare" for serum, SPF, facial routine briefs.
+- **Pets niche**: "pets" matches pet owners, animal care creators. Related to lifestyle/parenting. Use for pet stores (Tiendanimal, Kiwoko) and animal brands (Royal Canin, Purina).
+- **Niche selection rules**: Always prefer the MOST SPECIFIC niche over a broader one: "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle". Use "gaming" for gaming peripherals/esports, "tech" for smartphones/software. Use "home_decor" for furniture/interior design, "lifestyle" only when nothing specific fits.
+- **Exclude-niche safety**: The LLM is instructed to NEVER exclude a niche that is closely related to campaign_niche (e.g., don't exclude "beauty" for a skincare campaign, don't exclude "fitness" for a running campaign). Only genuinely conflicting niches should be excluded.
 
 **Discovery Pipeline:**
 1. LLM extracts `campaign_niche` and `exclude_niches` from the brief
@@ -139,7 +143,7 @@ Each influencer has:
                     ▼               ▼               ▼
             ┌───────────┐   ┌───────────┐   ┌───────────┐
             │ OpenAI    │   │ PrimeTag  │   │ PostgreSQL│
-            │ GPT-4o    │   │ API       │   │ (Neon)    │
+            │ GPT-5.4   │   │ API       │   │ (Neon)    │
             └───────────┘   └───────────┘   └───────────┘
 ```
 
@@ -155,7 +159,7 @@ Each influencer has:
 When a brand is mentioned in a search query:
 
 1. **Database lookup first**: Check `brands` table for known brands
-2. **LLM fallback**: If not found, `brand_lookup_service.py` asks GPT-4o to identify the brand
+2. **LLM fallback**: If not found, `brand_lookup_service.py` asks GPT-5.4 to identify the brand
 3. **Extract context**: Category, niche, competitors, suggested keywords
 4. **Enrich search**: Set `campaign_niche` for taxonomy-aware discovery
 
@@ -167,26 +171,39 @@ This allows the system to handle **any brand** - even ones not in our database (
 |---------|------|---------|
 | PrimeTag Client | `primetag_client.py` | API integration for influencer data with **exponential backoff retry** (3 retries, handles 429/5xx) |
 | Search Service | `search_service.py` | Main search orchestration with **taxonomy-aware niche discovery** |
-| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **competitor ambassador exclusion** |
-| Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match |
+| Filter Service | `filter_service.py` | Configurable filtering (credibility, geography, gender, growth) + **hard follower range filter** + **influencer gender filter** (3-signal inference: audience inverse heuristic, bio keywords, name matching) + **competitor ambassador exclusion**. Treats 0/null follower counts as unknown (allows through; ranking deprioritizes). |
+| Ranking Service | `ranking_service.py` | **8-factor scoring**: credibility, engagement, audience, growth, geography, brand_affinity, creative_fit, niche_match. **Unknown follower penalty**: 0/null followers get 0.3x-0.4x score multiplier so verified profiles always rank above unverified ones. **Gender confidence boost**: when `influencer_gender` filter is active, influencers with a DB-confirmed `influencer_gender` matching the requested gender receive a 1.08x post-score multiplier over runtime-inferred passes — prefers confirmed profiles without excluding inferred ones. Zero effect on non-gender-filtered searches. |
 | **Brand Intelligence** | `brand_intelligence_service.py` | Competitor detection, ambassador tracking, **niche taxonomy helpers** (`get_niche_relationships`, `get_all_excluded_niches`) |
-| **Brand Lookup** | `brand_lookup_service.py` | **LLM-based brand recognition** for unknown brands - extracts category, niche, competitors, keywords via GPT-4o |
+| **Brand Lookup** | `brand_lookup_service.py` | **LLM-based brand recognition** for unknown brands - extracts category, niche, competitors, keywords via GPT-5.4 |
 | Brand Context | `brand_context_service.py` | Database-backed brand context lookup with category keywords |
 | Cache Service | `cache_service.py` | PostgreSQL-based caching + **`find_by_niche()` for taxonomy-aware discovery with hard exclusion** |
 | Export Service | `export_service.py` | CSV/Excel export generation |
 | Instagram Enrichment | `instagram_enrichment.py` | Batch scrape Instagram bios (⚠️ limited for niche data—see directive) |
+| **LLM Niche Enrichment** | `llm_niche_enrichment.py` | **Batch LLM classification** — sends bio + interests + post hashtags to GPT-5.4 and writes `primary_niche`, `niche_confidence`, `content_themes` back to DB. Processes influencers where `primary_niche IS NULL` in batches of 50 (10 per LLM call). `--dry-run` to preview, `--force` to re-classify all. ~$0.01/influencer. |
 | Import Service | `import_influencers.py` | Import enriched CSV into database with **niche/interests parsing** |
+| **Keyword Niche Detector** | `keyword_niche_detector.py` | **Free, instant niche detection** — pattern-matches bio + interests + post hashtags against `niche_taxonomy.yaml` keywords. Assigns `primary_niche` + `niche_confidence` where currently NULL. No LLM cost. Run before LLM enrichment to cover clear-cut cases cheaply. `cd backend && python -m app.services.keyword_niche_detector --confidence-threshold 0.5` |
+| **Tier Computation** | `compute_tiers.py` | Bulk-populate `influencer_tier` (micro/mid/macro/mega) from `follower_count`. Idempotent — safe to re-run. `cd backend && python -m app.services.compute_tiers` |
+| **Gender Computation** | `compute_gender.py` | Pre-compute `influencer_gender` ('male'/'female'/NULL) from display name, bio, and audience signals using expanded Spanish/Catalan/Latin name lists (300+ names). Populates NULL rows by default. `cd backend && python -m app.services.compute_gender` / `--dry-run` to preview / `--force` to re-classify all. Run after importing new influencers. |
+| **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
+| **Match Quality Review** | `match_quality_review.py` | Repeatable human review of matching quality — picks N random briefs (default 4) from a diverse pool of 23, runs each through the full search pipeline in parallel, and prints LLM parsing + discovery funnel + matched influencers table for manual evaluation. No assertions. `cd backend && python -m app.services.match_quality_review` / `--seed 42` / `--brief "custom text"` / `--all` |
+| **Framework Selector** | `framework_selector.py` | Deterministic mapping from brand `growth_goal` + `archetype` → ordered list of Goldenberg creativity templates (extreme consequence, pictorial analogy, competition, interactive experiment, dimensional alteration, replacement) plus repetition-break, visual metaphor, schema congruity, archetype. Used by Idea Match to select which templates guide idea generation. Includes research-backed evidence scores per framework per goal. |
+| **Idea Match Service** | `idea_match_service.py` | 6-layer creative idea generation pipeline: (1) LLM brand attribute extraction, (2) deterministic framework selection, (3) content-based campaign retrieval from `campaign_examples` DB, (4) Goldenberg-template-encoded prompt assembly, (5) GPT-5.4 creative brief generation, (6) scoring + ranking by brand fit/originality/strategic relevance/feasibility. Persists results to `idea_briefs` table. |
+| **Campaign Examples Seed** | `seed_campaign_examples.py` | Seeds `campaign_examples` knowledge base with ~30 curated real-world campaigns (Nike, Dove, Liquid Death, Patagonia, Guinness, Apple, Red Bull, etc.), each tagged with its Goldenberg template, archetype, growth goal, and what made it work. Used as content-based retrieval context for Idea Match. `cd backend && python -m app.services.seed_campaign_examples` / `--clear` to re-seed. |
+| **Starngage Scraper** | `starngage_scraper.py` | Interactive Starngage scrape + DB import (see `directives/starngage-scraper.md`). Three subcommands: `combine` merges batch JSON extracts into CSV; `import` upserts CSV into DB (updates follower_count/display_name/interests/engagement_rate for existing, creates new, preserves all enrichment data); `audit` read-only cross-reference of DB vs CSV to verify import freshness, detect stale/orphan records, and spot-check follower counts. Scraping done via Playwright MCP browser — user logs in, agent uses `browser_evaluate` with `fetch()`. `cd backend && python -m app.services.starngage_scraper import --csv ../starngage_spain_influencers_2026.csv` / `audit --csv ../starngage_spain_influencers_2026.csv` |
+| **Profile Validator** | `validate_profiles.py` | Batch HEAD-checks `instagram.com/{username}` and sets `profile_active=False` for 404 (deleted/renamed) accounts. Excluded from all search results automatically. Rate-limited (1 req/s default). `cd backend && python -m app.services.validate_profiles --dry-run` to preview, then run without flag to apply. Options: `--delay 0.3` (faster), `--since-days 30` (only check profiles not updated in N days). ~77 min for full DB at 1 req/s. |
 
 ### Orchestration Layer (`backend/app/orchestration/`)
 
 | Module | File | Purpose |
 |--------|------|---------|
-| Query Parser | `query_parser.py` | GPT-4o extracts brand, creative concept, tone, themes, niches, size preferences + **creative matching fields** (`discovery_interests`, `exclude_interests`, `influencer_reasoning`) |
+| Query Parser | `query_parser.py` | GPT-5.4 extracts brand, creative concept, tone, themes, niches, size preferences + **creative matching fields** (`discovery_interests`, `exclude_interests`, `influencer_reasoning`) |
+| **Idea Match Service** | `idea_match_service.py` | Top-level orchestrator for the Idea Match tab — calls brand extraction, framework selector, campaign retrieval, prompt builder, and GPT-5.4 generation. See `backend/app/services/idea_match_service.py`. |
 
 ### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| POST | `/idea-match/` | **Idea Match** — generate structured creative brief for a brand. Input: `{brand: string}`. Output: IdeaBrief with archetype, 4-5 framework-driven campaign ideas (each with template badge + scores), and a bold-bet idea. |
 | POST | `/search/` | Execute natural language search |
 | GET | `/search/{id}` | Retrieve previous search with results |
 | POST | `/search/{id}/save` | Save search for later |
@@ -205,7 +222,10 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries (expandable textarea) |
+| IdeaMatchTab | `idea-match/IdeaMatchTab.tsx` | **Idea Match tab** — brand name input, 5-step loading indicator, structured brief output (brand profile card + ranked idea cards + bold bet). |
+| IdeaCard | `idea-match/IdeaCard.tsx` | Individual idea card — expandable. Shows title, framework badge, engagement type, tone, concept preview. Expanded: full concept, template rationale, what to avoid, score bars (brand fit / strategic relevance / originality / engagement potential / feasibility). |
+| BrandProfileCard | `idea-match/BrandProfileCard.tsx` | Brand profile header — archetype badge, brand vertical, brand truth, positioning attributes, tone pills, competitor tags. |
+| SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries. Textarea **auto-resizes** to fit all pasted content (no internal scroll), starting at 58px and expanding dynamically via `scrollHeight`. |
 | FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds (credibility, Spain %, engagement, growth, gender, age brackets) |
 | ResultsGrid | `results/ResultsGrid.tsx` | Grid layout with **card/list view toggle**, sticky header, export/save actions |
 | InfluencerCard | `results/InfluencerCard.tsx` | Individual influencer display with metrics, **quick copy buttons** |
@@ -222,7 +242,7 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 ### Frontend UX Features
 
-**Auto-scroll**: Results section automatically scrolls into view when search completes.
+**Auto-scroll**: Page scrolls to the loading indicator when a search starts, then scrolls to results when the search completes.
 
 **View Modes**: Toggle between card view (detailed) and list view (compact, scannable).
 
@@ -236,6 +256,8 @@ This allows the system to handle **any brand** - even ones not in our database (
 **Quick Copy**: Hover over influencer cards/rows to reveal one-click copy buttons for username and MediaKit URL.
 
 **Toast Notifications**: Visual feedback for copy, save, and export actions.
+
+**Dynamic SearchBar**: Textarea auto-expands to show full pasted brief — no internal scrolling. Shrinks back when cleared.
 
 ### Frontend Testing
 
@@ -256,15 +278,30 @@ Test coverage includes:
 The backend has a comprehensive pytest-based test suite with **LLM reflection** for validating search result quality.
 
 **Test Files:**
-- `backend/tests/test_filter_service.py` - 21 unit tests for filter logic
+- `backend/tests/test_filter_service.py` - 32 unit tests for filter logic (including follower range + influencer gender)
 - `backend/tests/test_ranking_service.py` - 23 unit tests for 8-factor scoring
-- `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-4o reflection
-- `backend/tests/test_briefs.py` - 24 test briefs covering various scenarios (incl. 4 real-world Spanish agency briefs)
+- `backend/tests/test_search_e2e.py` - End-to-end tests with GPT-5.4 reflection
+- `backend/tests/test_pipeline_verification.py` - **Full pipeline + Gema filter audit** — 4 independent test classes (Fashion/ElCorteInglés, Sports Nutrition/Myprotein, Gastro/Glovo, Beer/Estrella Damm), each using a messy Spanish agency email brief. Validates all 5 pipeline steps and prints a per-influencer Gema audit table (Spain%, Gender%, Age%, Credibility, ER). Detects PrimeTag API key expiry automatically.
+- `backend/tests/test_pipeline_diagnostic.py` - **Live pipeline diagnostic** — requires a running server at `localhost:8000`. Marked `@pytest.mark.e2e` so it is excluded from CI (`-m "not e2e"`). Run locally only.
+- `backend/tests/test_briefs.py` - 28 test briefs (24 original + 4 Gema pipeline briefs: `pipeline_gema_fashion`, `pipeline_gema_sports_nutrition`, `pipeline_gema_gastro`, `pipeline_gema_beer_lifestyle`)
 - `backend/tests/reflection_service.py` - LLM-powered result validation
+- `backend/tests/test_result_differentiation.py` - **Result differentiation tests** — 3 unit tests verifying RankingService differentiates by niche + 3 integration tests (marked `@pytest.mark.e2e`) verifying full pipeline produces distinct results for different brand briefs (home_decor vs padel vs fashion: 0% overlap). Validates brand intelligence → campaign_niche extraction and niche discovery relevance.
 
 ```bash
 # Run unit tests (fast, ~0.1s)
 cd backend && pytest tests/test_filter_service.py tests/test_ranking_service.py -v
+
+# Run ranking differentiation unit tests (fast, ~0.1s)
+cd backend && pytest tests/test_result_differentiation.py::TestRankingDifferentiation -v -s
+
+# Run full pipeline differentiation tests (requires DB + OpenAI, ~80s)
+cd backend && pytest tests/test_result_differentiation.py::TestPipelineDifferentiation -v -s -m e2e
+
+# Run pipeline + Gema audit — run each class in parallel (each ~20-80s)
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineFashion -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineSportsNutrition -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineGastro -v -s
+cd backend && pytest tests/test_pipeline_verification.py::TestPipelineBeerLifestyle -v -s
 
 # Run a single E2E test with reflection (~40s due to LLM calls)
 cd backend && pytest tests/test_search_e2e.py::TestNichePrecision::test_padel_excludes_football -v -s
@@ -274,7 +311,7 @@ cd backend && pytest tests/ -v
 ```
 
 **LLM Reflection Service:**
-The reflection service uses GPT-4o to analyze if search results actually match the original brief:
+The reflection service uses GPT-5.4 to analyze if search results actually match the original brief:
 - Evaluates niche alignment, brand fit, and creative fit
 - Identifies excluded niche violations (e.g., football influencers for padel campaign)
 - Detects brand conflicts (e.g., Adidas ambassador for Nike campaign)
@@ -286,16 +323,19 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 3. **Creative Fit** - Documentary style, luxury aesthetic, humorous/casual
 4. **Edge Cases** - Gender splits, micro-influencers, multiple niche exclusions
 5. **Real World** - Real Spanish agency email briefs: Puerto de Indias (spirits/"Tarde con los tuyos"), IKEA Novedades ("primeras veces"), Square (B2B gastro fintech), IKEA GREJSIMOJS (3-phase playful collection)
+6. **Pipeline Verification** - Messy forwarded emails for GEMA filter testing: El Corte Inglés (fashion, female-skewed), Myprotein (fitness, 3M/2F split, football excluded), Glovo (gastro, ER ≥1.5%), Estrella Damm (beer/lifestyle, competitor exclusion)
 
 ### Database Schema
 
 | Table | Purpose |
 |-------|---------|
-| `influencers` | Cached influencer data with JSONB audience fields |
+| `influencers` | Cached influencer data with JSONB audience fields. Key columns: `primary_niche`, `influencer_tier` (micro/mid/macro/mega, indexed), `credibility_score`, `engagement_rate`, `profile_active` (bool, default true — false = Instagram handle confirmed dead, excluded from all searches). As of Feb 2026: 4,645 influencers, 98.6% have primary_niche, 99.9% have follower_count. |
 | `searches` | Search history with parsed queries and filters |
 | `search_results` | Links searches to influencers with ranking scores |
 | `ranking_presets` | Configurable weight presets (Balanced, Engagement Focus, etc.) |
 | `api_audit_log` | Tracks all external API calls |
+| `campaign_examples` | **Idea Match knowledge base** — ~30 curated real campaigns tagged with category, audience, archetype, growth_goal, framework_used, creative_angle, and success_signals. Used for content-based retrieval before LLM generation. Seeded via `seed_campaign_examples.py`. |
+| `idea_briefs` | **Idea Match output history** — persisted generated briefs with brand_attributes (JSONB), frameworks_selected, retrieved_example_ids, and full brief (JSONB). |
 
 ### Environment Variables
 
@@ -374,6 +414,15 @@ npm run test:e2e:ui
 - `health.spec.ts` - App loads, API responds
 - `search.spec.ts` - Search flow works end-to-end
 - `accessibility.spec.ts` - Basic a11y checks
+- `search-differentiation.spec.ts` - **Result differentiation tests** — 5 tests that hit the search API directly (not UI) to verify: (1) different niches return different influencer sets (<50% overlap), (2) brand intelligence extracts correct campaign_niche (or graceful fallback when LLM unavailable), (3) niche_match scores are meaningful, (4) primary_niche data coverage >= 70%, (5) PrimeTag graceful degradation
+
+```bash
+# Run differentiation tests against Vercel
+cd frontend && PLAYWRIGHT_BASE_URL=https://project-x-three-sage.vercel.app npx playwright test e2e/search-differentiation.spec.ts
+
+# Run against local dev
+cd frontend && npx playwright test e2e/search-differentiation.spec.ts
+```
 
 ### Search Filtering
 
@@ -381,11 +430,18 @@ The search pipeline applies these filters in order:
 
 | Filter | Default | Description |
 |--------|---------|-------------|
-| Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers) |
+| **Follower Range** | From brief | **HARD FILTER with graceful fallback** — when the brief specifies a preferred range (e.g., "15K-150K"), influencers outside that range are removed. If range would remove ALL candidates (e.g., requesting micro-influencers when DB only has 100K+), filter is relaxed and ranking's size penalty handles deprioritization instead. 0/null treated as unknown (passes). |
+| **Influencer Gender** | From brief | **HARD FILTER** — when the brief specifies influencer gender (e.g., "female"), uses 3-signal inference: (1) audience_genders inverse heuristic, (2) bio keyword scan for pronouns/gendered words, (3) display_name first-name matching against common Spanish names. Unknown gender passes through. |
+| Min Followers | 100,000 | Minimum follower count (DB sourced from 100K+ profiles). |
+| Max Followers | 2,500,000 | Excludes mega-celebrities (>2.5M followers). 0/null treated as unknown (passes). |
 | Credibility | ≥70% | Audience authenticity score |
 | Spain Audience | ≥60% | Minimum Spanish audience percentage |
 | Engagement Rate | Optional | Minimum interaction rate |
 | Growth Rate | Optional | 6-month follower growth |
+
+**Ranking Weight Tuning (Feb 2026):** Default ranking weights are tuned for current data reality (PrimeTag API unavailable). Niche match (0.50), creative fit (0.30), engagement (0.10), and brand affinity (0.10) carry the weight; credibility/geography/audience_match/growth are zeroed out until PrimeTag is restored. LLM-suggested weights are clamped with two guards: (1) factors with default weight 0.0 stay zeroed regardless of LLM suggestion; (2) `niche_match` can only be boosted, never reduced below its default (0.50) — prevents engagement from overriding niche relevance in sparse-niche scenarios. Additionally, if the LLM suggests near-equal weights for all factors (variance < 0.15, e.g. all 1.0), the system falls back to default weights — this indicates the LLM has no meaningful preference. When PrimeTag comes back, rebalance the `DEFAULT_WEIGHTS` in `ranking_service.py`.
+
+**Query Parsing Safeguards (Feb 2026):** `query_parser.py` applies three post-LLM guards before building the search parameters: (1) **Niche mapping** — food/restaurant brands (`campaign_niche: "food"`), beer/spirits brands (`"alcoholic_beverages"`), energy drinks (`"soft_drinks"` or `"fitness"`). (2) **`exclude_niches` safety** — related niches are stripped from exclusion lists (e.g. `beauty` is never excluded for a skincare campaign; `lifestyle` is never excluded for a food campaign). A brand's own niche is also never self-excluded. (3) **`discovery_interests` fallback** — if the LLM returns an empty array, a `_NICHE_DISCOVERY_FALLBACK` dict maps `campaign_niche` to default PrimeTag interest categories to ensure creative discovery always has interests to work with.
 
 The terminal shows detailed logging during searches with step-by-step progress and filter breakdowns.
 

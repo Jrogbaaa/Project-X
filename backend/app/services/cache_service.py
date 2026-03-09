@@ -45,6 +45,7 @@ class CacheService:
         # Build query conditions
         conditions = [
             Influencer.cache_expires_at > now,  # Not expired
+            Influencer.profile_active.isnot(False),  # Exclude invalidated handles
         ]
 
         # Handle credibility filter - allow NULL for imported data without metrics
@@ -113,6 +114,7 @@ class CacheService:
         conditions = [
             Influencer.cache_expires_at > now,
             Influencer.interests.isnot(None),
+            Influencer.profile_active.isnot(False),  # Exclude invalidated handles
         ]
         
         # Filter by country if specified
@@ -208,6 +210,7 @@ class CacheService:
         primary_conditions = [
             Influencer.cache_expires_at > now,
             Influencer.primary_niche.isnot(None),
+            Influencer.profile_active.isnot(False),  # Exclude invalidated handles
         ]
 
         # Include exact match + related niches
@@ -251,6 +254,7 @@ class CacheService:
                 Influencer.cache_expires_at > now,
                 Influencer.primary_niche.is_(None),
                 Influencer.interests.isnot(None),
+                Influencer.profile_active.isnot(False),  # Exclude invalidated handles
             ]
 
             if country:
@@ -340,8 +344,9 @@ class CacheService:
         
         conditions = [
             Influencer.cache_expires_at > now,
+            Influencer.profile_active.isnot(False),  # Exclude invalidated handles
         ]
-        
+
         # Build keyword search conditions
         keyword_conditions = []
         for keyword in keywords:

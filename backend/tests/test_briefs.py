@@ -559,6 +559,174 @@ REAL_WORLD_BRIEFS = [
 
 
 # ============================================================
+# PIPELINE VERIFICATION BRIEFS
+# These are messy, realistic Spanish agency email briefs designed
+# to stress-test the full pipeline end-to-end, with explicit
+# Gema filter requirements (Spain %, gender, age, credibility, ER).
+# Each brief is a distinct brand/niche to enable parallel testing.
+# ============================================================
+
+PIPELINE_VERIFICATION_BRIEFS = [
+    TestBrief(
+        name="pipeline_gema_fashion",
+        category="pipeline_verification",
+        description="El Corte Inglés fashion campaign — female-skewed, high credibility, ER ≥2%, Spain ≥65%",
+        query="""Buenas! Os mando el brief de El Corte Inglés para la campaña de primavera/verano 2026.
+
+Necesitamos 5 perfiles femeninos (audiencia mayoritariamente femenina, 70%+ mujeres) para colección moda y accesorios. Contenido lifestyle y outfits del día, lookbooks primaverales. Tono cercano, aspiracional pero accesible.
+
+Requisitos MÍNIMOS que debe cumplir cada perfil:
+- Seguidores: entre 50.000 y 500.000 (nada de mega-celebridades)
+- % España: mínimo 65% de audiencia española
+- % Credibilidad (Instagram): mínimo 75% — esto es innegociable
+- % ER: mínimo 2%
+- Franja de edad de audiencia objetivo: principalmente 18-34 años
+- Género audiencia: mayoría femenina
+
+NO queremos perfiles deportes/fitness puro ni gaming. Buscamos chicas fashion, estilo de vida, lifestyle. Moda accesible, no lujo extremo.
+
+Presupuesto total: 30.000€. CPM máximo 15€ por talento.
+Fechas de publicación: marzo-abril 2026.
+
+Gracias!""",
+        expectations=TestBriefExpectations(
+            expected_brand="El Corte Inglés",
+            expected_niche="fashion",
+            expected_topics=["moda", "lifestyle", "outfits"],
+            excluded_niches=["fitness", "sports", "gaming"],
+            expected_tones=["aspiracional", "cercano", "accesible"],
+            target_count=5,
+            target_female_count=5,
+            preferred_follower_min=50000,
+            preferred_follower_max=500000,
+            min_niche_alignment=0.6,
+            min_brand_fit=0.4,
+            min_creative_fit=0.4,
+            min_overall_quality="acceptable",
+        )
+    ),
+
+    TestBrief(
+        name="pipeline_gema_sports_nutrition",
+        category="pipeline_verification",
+        description="Myprotein España fitness campaign — 3M/2F gender split, Spain ≥60%, excludes football",
+        query="""Hola equipo,
+
+Brief para Myprotein España Q1 2026. Suplementos deportivos, campaña de lanzamiento nueva línea de proteínas. Necesitamos 5 perfiles fitness/gym — preferimos 3 chicos y 2 chicas.
+
+Requisitos de audiencia:
+- Followers: entre 100K y 1M
+- Nicho principal: fitness, gym, nutrición deportiva
+- EXCLUIR ABSOLUTAMENTE perfiles de fútbol, fútbol sala, fútbol americano (MMA, boxeo, padel OK si también hacen gym)
+- Audiencia España >60%
+- Credibilidad >70%
+- Género audiencia: masculina preferentemente (>50% hombres)
+- No hay requisito mínimo de ER pero valoramos bien — que la gente interactúe
+
+Que sean perfiles auténticos, que realmente entrenen. Nada de influencers de moda que de repente hacen gym. Rutinas reales, nutrición, suplementación.
+
+Budget total: 45.000€ aprox.""",
+        expectations=TestBriefExpectations(
+            expected_brand="Myprotein",
+            expected_niche="fitness",
+            expected_topics=["gym", "fitness", "nutrición", "suplementos"],
+            excluded_niches=["football", "soccer", "fútbol"],
+            must_not_have_niches=["football", "soccer"],
+            expected_tones=["auténtico", "athletic"],
+            target_count=5,
+            target_male_count=3,
+            target_female_count=2,
+            preferred_follower_min=100000,
+            preferred_follower_max=1000000,
+            min_niche_alignment=0.6,
+            min_brand_fit=0.4,
+            min_creative_fit=0.3,
+            min_overall_quality="acceptable",
+        )
+    ),
+
+    TestBrief(
+        name="pipeline_gema_gastro",
+        category="pipeline_verification",
+        description="Glovo España gastro/urban campaign — young 18-30 audience, ER ≥1.5%, Spain ≥65%, casual tone",
+        query="""Buenos días,
+
+Brief para campaña de Glovo España — pedidos a domicilio, gastronomía urbana. Lanzamiento de nueva categoría de restaurantes premium en la app.
+
+Buscamos 5 creadores de contenido gastronómico o lifestyle urbano con audiencia joven española:
+- Perfiles: mix de géneros, sin restricción específica (no hace falta split exacto)
+- Followers: entre 30.000 y 800.000 — nada de mega-influencers ni celebrities
+- Audiencia: principalmente 18-30 años, España mínimo 65%
+- NO queremos perfiles fitness/deporte puro ni política
+- Gastronomía, restaurantes, comida, urban lifestyle, jóvenes
+
+KPIs mínimos que debe tener cada perfil:
+- % España: 65%+
+- Engagement Rate: mínimo 1,5%
+- Credibilidad: 70%+ mínimo
+- Franja de edad audiencia: 18-30 principalmente
+
+Tono de campaña: casual, divertido, urbano — que se vea natural, no publicidad forzada.
+Formato: stories + 1 reel por perfil.
+Presupuesto por perfil: 3.000-8.000€ según followers y engagement.
+
+Gracias, cualquier duda me decís.""",
+        expectations=TestBriefExpectations(
+            expected_brand="Glovo",
+            expected_niche="food",
+            expected_topics=["gastronomía", "restaurantes", "comida", "lifestyle urbano"],
+            excluded_niches=["fitness", "sports", "politics"],
+            expected_tones=["casual", "divertido", "urbano", "natural"],
+            target_count=5,
+            preferred_follower_min=30000,
+            preferred_follower_max=800000,
+            min_niche_alignment=0.5,
+            min_brand_fit=0.4,
+            min_creative_fit=0.4,
+            min_overall_quality="acceptable",
+        )
+    ),
+
+    TestBrief(
+        name="pipeline_gema_beer_lifestyle",
+        category="pipeline_verification",
+        description="Estrella Damm summer campaign — lifestyle/beach, 8 profiles, competitor exclusion, messy forwarded email",
+        query="""Fwd: Fwd: [URGENTE] Brief Estrella Damm verano 2026
+
+Hola chicos,
+
+Os reenvio el brief de Estrella Damm para la oleada de verano. Necesitamos cerrar casting antes del 15 de marzo (que ya se nos echa encima). El cliente quiere 8 perfiles en total — yo creo que con 6 seria suficiente pero el cliente insiste en 8 para tener margen de negociacion.
+
+Concepto: "Esto es Mediterraneo" — perfiles muy lifestyle, verano, playa, amistad. El tono tiene que ser MUY autentico, nada de product placement obvio. Como si el influencer de verdad estuviera disfrutando un verano en la costa. Nada de gym bros ni fitness please, eso mata el rollo completamente.
+
+IMPRESCINDIBLE: audiencia española minimo 65%. Seguidores entre 80.000 y 800.000 aprox (ni muy pequeños ni celebrity level). Engagement superior al 2%.
+
+Presupuesto cliente: 90.000€ total para toda la oleada. CPM maximo acordado es 18€.
+Plataforma principal: Instagram stories + reels.
+
+P.D. Si teneis perfiles que hayan trabajado con Heineken o Mahou recientemente, mejor descartarlos — conflicto de competencia.""",
+        expectations=TestBriefExpectations(
+            expected_brand="Estrella Damm",
+            expected_niche="alcoholic_beverages",
+            expected_topics=["lifestyle", "verano", "playa"],
+            excluded_niches=["fitness"],
+            must_not_have_niches=["fitness"],
+            must_not_have_brands=["Heineken", "Mahou"],
+            expected_tones=["authentic", "casual", "social"],
+            expected_themes=["verano", "mediterraneo", "amistad"],
+            target_count=8,
+            preferred_follower_min=80000,
+            preferred_follower_max=800000,
+            min_niche_alignment=0.4,
+            min_brand_fit=0.4,
+            min_creative_fit=0.4,
+            min_overall_quality="acceptable",
+        )
+    ),
+]
+
+
+# ============================================================
 # ALL BRIEFS COMBINED
 # ============================================================
 
@@ -567,7 +735,8 @@ ALL_TEST_BRIEFS: List[TestBrief] = (
     BRAND_MATCHING_BRIEFS +
     CREATIVE_FIT_BRIEFS +
     EDGE_CASE_BRIEFS +
-    REAL_WORLD_BRIEFS
+    REAL_WORLD_BRIEFS +
+    PIPELINE_VERIFICATION_BRIEFS
 )
 
 

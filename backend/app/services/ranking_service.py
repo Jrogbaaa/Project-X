@@ -23,15 +23,49 @@ class RankingResult:
 
 # Tone keywords for creative fit matching
 TONE_KEYWORDS = {
-    'authentic': ['real', 'genuine', 'honest', 'raw', 'unfiltered', 'natural'],
-    'luxury': ['premium', 'exclusive', 'elegant', 'sophisticated', 'high-end', 'lujo'],
-    'humorous': ['funny', 'comedy', 'laugh', 'humor', 'fun', 'divertido'],
-    'casual': ['everyday', 'relax', 'chill', 'lifestyle', 'daily', 'cotidiano'],
+    'authentic': ['real', 'genuine', 'honest', 'raw', 'unfiltered', 'natural', 'auténtico', 'verdadero'],
+    'luxury': ['premium', 'exclusive', 'elegant', 'sophisticated', 'high-end', 'lujo', 'exclusivo'],
+    'humorous': ['funny', 'comedy', 'laugh', 'humor', 'fun', 'divertido', 'risa', 'comedia'],
+    'casual': ['everyday', 'relax', 'chill', 'lifestyle', 'daily', 'cotidiano', 'relajado'],
     'documentary': ['story', 'journey', 'behind', 'real', 'making of', 'documental'],
-    'inspirational': ['inspire', 'motivate', 'dream', 'achieve', 'success', 'inspirar'],
+    'inspirational': ['inspire', 'motivate', 'dream', 'achieve', 'success', 'inspirar', 'motivar'],
     'edgy': ['bold', 'daring', 'provocative', 'rebel', 'alternative', 'atrevido'],
     'gritty': ['raw', 'intense', 'real', 'street', 'urban', 'hardcore'],
-    'polished': ['professional', 'clean', 'refined', 'quality', 'premium'],
+    'polished': ['professional', 'clean', 'refined', 'quality', 'premium', 'profesional'],
+    'creative': ['creative', 'art', 'artist', 'design', 'creativo', 'artista', 'diseño', 'original'],
+    'artistic': ['art', 'artist', 'creative', 'gallery', 'arte', 'artista', 'museo', 'pintura'],
+    'warm': ['warm', 'cozy', 'heart', 'love', 'cariño', 'hogar', 'familia', 'acogedor'],
+    'fun': ['fun', 'funny', 'enjoy', 'laugh', 'divertido', 'humor', 'entretenimiento', 'fiesta'],
+    'approachable': ['friendly', 'close', 'relatable', 'everyday', 'cercano', 'accesible', 'normal'],
+    'heartwarming': ['heart', 'love', 'family', 'cute', 'adorable', 'corazón', 'amor', 'ternura'],
+    'playful': ['play', 'fun', 'game', 'colorful', 'juego', 'divertido', 'color', 'alegre'],
+    'bold': ['bold', 'daring', 'strong', 'powerful', 'atrevido', 'fuerte', 'valiente'],
+    'natural': ['natural', 'organic', 'real', 'eco', 'nature', 'naturaleza', 'sostenible'],
+    'professional': ['professional', 'business', 'expert', 'credible', 'profesional', 'experto'],
+    'colorful': ['color', 'colorful', 'vibrant', 'bright', 'colorido', 'vibrante', 'alegre'],
+    'urban': ['urban', 'city', 'street', 'metropolitan', 'urbano', 'ciudad', 'callejero'],
+    'dynamic': ['dynamic', 'energy', 'active', 'fast', 'dinámico', 'energía', 'activo'],
+    'modern': ['modern', 'contemporary', 'trendy', 'current', 'moderno', 'actual', 'tendencia'],
+    'sophisticated': ['sophisticated', 'elegant', 'refined', 'chic', 'sofisticado', 'elegante'],
+    'elegant': ['elegant', 'classy', 'refined', 'grace', 'elegante', 'refinado', 'clase'],
+    'cercano': ['cercano', 'close', 'relatable', 'friendly', 'accesible', 'familiar'],
+    'aspiracional': ['aspirational', 'dream', 'luxury', 'goal', 'aspiracional', 'lujo', 'premium'],
+    'divertido': ['divertido', 'fun', 'funny', 'humor', 'risa', 'entretenimiento'],
+    'social': ['social', 'friends', 'together', 'community', 'amigos', 'juntos', 'comunidad'],
+    'adventurous': ['adventure', 'explore', 'discover', 'travel', 'aventura', 'explorar', 'descubrir', 'viaje'],
+    'luxurious': ['luxury', 'premium', 'exclusive', 'elegant', 'lujo', 'premium', 'exclusivo', 'elegante'],
+    'romantic': ['romantic', 'love', 'couple', 'romance', 'romántico', 'amor', 'pareja', 'corazón'],
+    'feminine': ['feminine', 'woman', 'girl', 'beauty', 'femenino', 'mujer', 'chica', 'belleza'],
+    'masculine': ['masculine', 'man', 'strong', 'power', 'masculino', 'hombre', 'fuerza'],
+    'trendy': ['trendy', 'trend', 'viral', 'hot', 'tendencia', 'moda', 'viral'],
+    'minimalist': ['minimal', 'minimalist', 'simple', 'clean', 'minimalista', 'sencillo', 'limpio'],
+    'sporty': ['sport', 'athletic', 'active', 'fitness', 'deportivo', 'atlético', 'activo'],
+    'rebellious': ['rebel', 'alternative', 'punk', 'counter-culture', 'rebelde', 'alternativo'],
+    'cozy': ['cozy', 'warm', 'home', 'comfort', 'acogedor', 'cálido', 'hogar', 'confort'],
+    'auténtico': ['auténtico', 'real', 'genuine', 'natural', 'verdadero', 'honesto'],
+    'eco-conscious': ['eco', 'sustainable', 'green', 'environment', 'sostenible', 'ecológico', 'reciclaje'],
+    'sustainable': ['sustainable', 'eco', 'green', 'recycl', 'sostenible', 'ecológico', 'reciclaje'],
+    'funny': ['funny', 'comedy', 'humor', 'laugh', 'fun', 'divertido', 'risa', 'comedia', 'gracioso'],
 }
 
 
@@ -47,17 +81,21 @@ class RankingService:
     AFTER initial matching and are used for display/filtering, not ranking.
     """
 
-    # Simplified weights focusing on data we have (from Apify scrape)
-    # Other factors (credibility, engagement, etc.) will be populated by PrimeTag later
+    # Balanced weights: niche/creative remain dominant, PrimeTag signals now active
+    # PrimeTag factors (credibility, engagement, geography) contribute where data exists;
+    # their scores default to neutral (0.5) when not yet fetched, so they don't harm
+    # influencers that haven't been verified yet.
+    # Weights tuned for current data reality (no PrimeTag API).
+    # When PrimeTag is restored, rebalance credibility/geography/audience_match.
     DEFAULT_WEIGHTS = RankingWeights(
-        credibility=0.00,      # From PrimeTag (not used in initial ranking)
-        engagement=0.00,       # From PrimeTag (not used in initial ranking)
-        audience_match=0.00,   # From PrimeTag (not used in initial ranking)
-        growth=0.00,           # From PrimeTag (not used in initial ranking)
-        geography=0.00,        # All influencers are Spanish (not useful)
-        brand_affinity=0.25,   # Uses detected_brands from scrape
-        creative_fit=0.35,     # Uses content_themes from scrape
-        niche_match=0.40       # Uses primary_niche from scrape
+        credibility=0.00,      # PrimeTag: 0.4% coverage — zeroed until API restored
+        engagement=0.10,       # Starngage: 98.6% coverage — reduced to prevent ER outliers dominating
+        audience_match=0.00,   # PrimeTag: 0.4% coverage — zeroed until API restored
+        growth=0.00,           # PrimeTag: 0.4% coverage — zeroed until API restored
+        geography=0.00,        # PrimeTag: 0.0% coverage — zeroed until API restored
+        brand_affinity=0.10,   # Apify: 3.4% coverage — mostly neutral, helps when present
+        creative_fit=0.30,     # Apify+LLM: 50.3% coverage — key differentiator
+        niche_match=0.50,      # LLM+keyword: 98.6% coverage — dominant signal (boosted from 0.45)
     )
 
     def __init__(self, weights: RankingWeights = None):
@@ -107,6 +145,18 @@ class RankingService:
             if follower_range:
                 size_multiplier = self._calculate_size_penalty(inf, follower_range)
                 relevance_score *= size_multiplier
+            else:
+                # Even without a range preference, penalize profiles with
+                # unknown (0/null) follower counts — we can't verify their reach.
+                followers = self._get_value(inf, 'follower_count', 0)
+                if not followers or followers == 0:
+                    relevance_score *= 0.4
+
+            # Gender confidence boost: prefer DB-confirmed gender over runtime-inferred.
+            # Only activates when a gender filter is specified; zero impact on general searches.
+            if parsed_query.influencer_gender and parsed_query.influencer_gender != GenderFilter.ANY:
+                gender_multiplier = self._calculate_gender_confidence_multiplier(inf, parsed_query.influencer_gender)
+                relevance_score *= gender_multiplier
 
             # Get raw data dict
             if hasattr(inf, 'to_dict'):
@@ -180,11 +230,34 @@ class RankingService:
 
         if parsed_query.suggested_ranking_weights:
             suggested = parsed_query.suggested_ranking_weights
-            # Clamp values to [0, 1] before creating RankingWeights
-            # The LLM may return relative weights > 1, which will be normalized
-            def clamp(val, default):
-                v = suggested.get(val, default)
-                return max(0, min(1, v)) if v is not None else default
+
+            # If the LLM suggests equal (or near-equal) weights for all factors,
+            # it has no meaningful preference — fall back to system defaults.
+            # This happens when the LLM hedges (e.g. all 1.0 or all 0.5), and
+            # applying equal weights collapses niche_match's 0.50 dominance.
+            _weight_keys = ['credibility', 'engagement', 'audience_match', 'growth',
+                            'geography', 'brand_affinity', 'creative_fit', 'niche_match']
+            _vals = [suggested.get(k) for k in _weight_keys if suggested.get(k) is not None]
+            if _vals and (max(_vals) - min(_vals)) < 0.15:
+                return self.weights  # Equal-ish weights → ignore, use defaults
+
+            def clamp(key, default):
+                # If the default weight is zero (data source unavailable),
+                # keep it zero regardless of LLM suggestion
+                if default == 0.0:
+                    return 0.0
+                v = suggested.get(key, default)
+                result = max(0, min(1, v)) if v is not None else default
+                # niche_match and creative_fit are the primary quality signals —
+                # never let the LLM reduce them below the system default.
+                # They can be boosted but not weakened.
+                if key in ('niche_match', 'creative_fit'):
+                    result = max(result, default)
+                # Engagement is a secondary signal — cap it to prevent high-ER
+                # off-niche influencers from overtaking better-matched ones.
+                if key == 'engagement':
+                    result = min(result, 0.20)
+                return result
 
             weights = RankingWeights(
                 credibility=clamp('credibility', self.DEFAULT_WEIGHTS.credibility),
@@ -256,7 +329,8 @@ class RankingService:
             influencer,
             parsed_query.creative_tone,
             parsed_query.creative_themes,
-            getattr(parsed_query, 'creative_format', None)
+            getattr(parsed_query, 'creative_format', None),
+            getattr(parsed_query, 'creative_concept', None)
         )
 
         # Niche Match: content niche alignment with campaign topics
@@ -412,7 +486,8 @@ class RankingService:
         influencer: Any,
         creative_tone: List[str],
         creative_themes: List[str],
-        creative_format: Optional[str] = None
+        creative_format: Optional[str] = None,
+        creative_concept: Optional[str] = None
     ) -> float:
         """
         Calculate how well influencer matches the creative concept.
@@ -422,11 +497,15 @@ class RankingService:
         - content_themes.narrative_style: "storytelling", "casual", "promotional"
         - content_themes.format_preference: Post formats used (Reel, Sidecar, etc.)
 
+        Also uses creative_concept (free-text campaign idea) directly as a
+        keyword source — so big narrative ideas ("cultural movement", "brand of a
+        generation") influence scoring even when not captured by tone/themes alone.
+
         Returns:
             Score from 0-1 (0.5 = neutral/no creative context)
         """
-        # Return neutral if no creative context
-        if not creative_tone and not creative_themes and not creative_format:
+        # Return neutral if no creative context at all
+        if not creative_tone and not creative_themes and not creative_format and not creative_concept:
             return 0.5
 
         score_components = []
@@ -468,14 +547,14 @@ class RankingService:
                         theme_matches += 1
                         
             theme_score = theme_matches / len(creative_themes) if creative_themes else 0
-            score_components.append(('theme', theme_score, 0.35))
+            score_components.append(('theme', theme_score, 0.25))
 
         # 2. Narrative style / format alignment - USE content_themes.narrative_style
         format_score = 0.5  # Neutral default
         if content_themes:
             narrative_style = content_themes.get('narrative_style', '')
             format_preference = content_themes.get('format_preference', [])
-            
+
             # Match creative format to narrative style
             if creative_format:
                 format_map = {
@@ -494,12 +573,12 @@ class RankingService:
                     format_score = 0.85
                 elif narrative_style != 'promotional' and creative_format != 'testimonial':
                     format_score = 0.6
-            
+
             # Boost for Reels if challenge/tutorial format
             if creative_format in ['challenge', 'tutorial'] and 'Reel' in format_preference:
                 format_score = min(format_score + 0.15, 1.0)
-                
-        score_components.append(('format', format_score, 0.30))
+
+        score_components.append(('format', format_score, 0.25))
 
         # 3. Tone alignment using keyword matching
         if creative_tone:
@@ -517,12 +596,64 @@ class RankingService:
                     elif tone_lower in ['polished', 'luxury'] and narrative == 'promotional':
                         tone_matches += 0.3
             tone_score = min(tone_matches / len(creative_tone), 1.0) if creative_tone else 0
-            score_components.append(('tone', tone_score, 0.20))
+            score_components.append(('tone', tone_score, 0.15))
 
         # 4. Past brand experience - USE detected_brands
         has_experience = len(brand_mentions) > 0 or len(detected_brands) > 0
         experience_score = 0.7 if has_experience else 0.5
-        score_components.append(('experience', experience_score, 0.15))
+        score_components.append(('experience', experience_score, 0.10))
+
+        # 5. Engagement as creative quality proxy — high engagement indicates
+        # content that resonates with audiences, a signal of creative competence
+        engagement_raw = self._get_value(influencer, 'engagement_rate', 0)
+        if engagement_raw and engagement_raw < 1:
+            engagement_raw = engagement_raw * 100
+        if engagement_raw and engagement_raw > 0:
+            engagement_quality = min(engagement_raw / 8.0, 1.0)
+        else:
+            engagement_quality = 0.3
+        score_components.append(('engagement_quality', engagement_quality, 0.05))
+
+        # 6. Creative concept keyword match — use the full free-text campaign idea
+        # to score influencers. Extracts meaningful words from creative_concept and
+        # checks how many appear in the influencer's bio, interests, or content themes.
+        # This captures big narrative ideas ("cultural movement", "brand of a generation")
+        # that don't map neatly to tone or themes alone.
+        if creative_concept:
+            _stopwords = {
+                # Spanish
+                'de', 'la', 'el', 'los', 'las', 'un', 'una', 'que', 'con', 'por',
+                'para', 'del', 'se', 'en', 'es', 'su', 'como', 'pero', 'sin',
+                'sobre', 'entre', 'cuando', 'todo', 'esta', 'este', 'estos', 'estas',
+                'muy', 'hasta', 'donde', 'quien', 'han', 'hay', 'sus', 'ser', 'una',
+                'nos', 'más', 'si', 'ya', 'fue', 'son', 'al', 'lo', 'le', 'me',
+                'yo', 'tu', 'mi', 'nos', 'les', 'esto', 'eso', 'esa', 'ese',
+                # English
+                'the', 'and', 'for', 'with', 'that', 'this', 'from', 'they',
+                'have', 'been', 'will', 'would', 'could', 'should', 'their',
+                'there', 'about', 'which', 'when', 'what', 'want', 'make',
+                'like', 'into', 'over', 'also', 'just', 'some', 'more', 'than',
+                'your', 'our', 'are', 'not', 'was', 'has', 'its', 'all', 'an',
+            }
+            import re as _re
+            concept_words = [
+                w for w in _re.sub(r'[^a-záéíóúñüàèì\w\s]', ' ', creative_concept.lower()).split()
+                if len(w) >= 4 and w not in _stopwords
+            ]
+            if concept_words:
+                # Build a single searchable text from influencer signals
+                detected_theme_text = ' '.join(
+                    content_themes.get('detected_themes', []) if content_themes else []
+                ).lower()
+                searchable = f"{bio_lower} {interests_text} {detected_theme_text}"
+                matches = sum(1 for w in concept_words if w in searchable)
+                concept_score = min(matches / len(concept_words), 1.0)
+            else:
+                concept_score = 0.5
+            score_components.append(('concept', concept_score, 0.20))
+        else:
+            # No creative concept — neutral score so it doesn't affect ranking
+            score_components.append(('concept', 0.5, 0.20))
 
         # Calculate weighted score
         if not score_components:
@@ -583,11 +714,16 @@ class RankingService:
                 niche_info = brand_intel.get_niche(campaign_niche_lower)
                 
                 if niche_info:
+                    # Check for alias (scored same as exact match)
+                    if primary_niche_lower in [n.lower() for n in niche_info.aliases]:
+                        final_score = 0.95 * niche_confidence
+                        return min(final_score, 1.0), None
+
                     # Check for related niche
                     if primary_niche_lower in [n.lower() for n in niche_info.related_niches]:
                         final_score = 0.70 * niche_confidence
                         return final_score, None
-                    
+
                     # Check for conflicting niche
                     if primary_niche_lower in [n.lower() for n in niche_info.conflicting_niches]:
                         warning = f"Conflicting niche: {primary_niche} conflicts with {campaign_niche}"
@@ -696,6 +832,18 @@ class RankingService:
 
         return 0.0
 
+    def _calculate_gender_confidence_multiplier(self, influencer: Any, requested_gender: GenderFilter) -> float:
+        """Small boost for influencers with DB-confirmed gender vs runtime-inferred.
+
+        Returns 1.08 if the stored influencer_gender matches the requested gender.
+        Returns 1.00 for inferred/unknown profiles (they passed the hard filter,
+        just no DB confirmation). Never penalizes — all passing influencers appear in results.
+        """
+        stored = self._get_value(influencer, 'influencer_gender', None)
+        if stored and stored == requested_gender.value:
+            return 1.08
+        return 1.0
+
     def _calculate_size_penalty(
         self,
         influencer: Any,
@@ -705,6 +853,8 @@ class RankingService:
         Calculate size multiplier based on preferred follower range.
 
         For anti-celebrity bias - penalize influencers outside the preferred range.
+        Profiles with 0/null follower counts are heavily penalized (0.3x) since
+        we can't verify they match the brief's size requirements.
 
         Args:
             influencer: Influencer data
@@ -716,11 +866,13 @@ class RankingService:
         followers = self._get_value(influencer, 'follower_count', 0)
         min_f, max_f = preferred_range
 
+        if not followers or followers == 0:
+            return 0.3  # Unknown follower count — can't verify size match
+
         if min_f <= followers <= max_f:
             return 1.0  # Perfect range
 
         if followers < min_f:
-            # Too small - scale down
             if min_f == 0:
                 return 1.0
             return max(0.5, followers / min_f)
@@ -729,5 +881,4 @@ class RankingService:
         if max_f == 0:
             return 1.0
         overage_ratio = followers / max_f
-        # Diminishing returns - larger = worse
         return max(0.3, 1.0 / overage_ratio)

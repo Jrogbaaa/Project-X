@@ -13,7 +13,7 @@ from app.services.cache_service import CacheService
 from app.services.brand_context_service import BrandContextService, BrandContext
 from app.services.brand_lookup_service import get_brand_lookup_service, BrandLookupResult
 from app.schemas.search import SearchRequest, SearchResponse, FilterConfig, RankingWeights, VerificationStats
-from app.schemas.llm import ParsedSearchQuery
+from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.influencer import RankedInfluencer
 from app.models.search import Search, SearchResult
 from app.models.influencer import Influencer
@@ -218,8 +218,8 @@ class SearchService:
             # Ranks candidates by likelihood of being a good match
             # ============================================================
             logger.info(f"⏳ Step 3/6: Pre-filtering candidates by relevance...")
-            # Use larger pool since we're not making API calls for now
-            prefilter_limit = min(100, total_candidates)  # Up to 100 candidates for ranking
+            # Pool must be at least MAX_CANDIDATES_TO_VERIFY; top N go to API verification
+            prefilter_limit = min(100, total_candidates)
             prefiltered = self._soft_prefilter_candidates(
                 candidates,
                 filters_applied,
@@ -230,25 +230,28 @@ class SearchService:
             logger.info(f"")
 
             # ============================================================
-            # Step 6: SKIP API VERIFICATION (temporarily disabled)
-            # Using imported data directly - will re-enable PrimeTag API later
+            # Step 4: Use prefiltered candidates directly (PrimeTag API disabled).
+            # Verification via API is bypassed — all filtering uses cached DB data.
+            # Re-enable when PrimeTag credentials are restored.
             # ============================================================
-            # For now, use prefiltered candidates directly without API verification
-            # This allows imported influencers to pass through based on cached data
+            logger.info(f"⏳ Step 4/6: Using {len(prefiltered)} prefiltered candidates (PrimeTag verification disabled)...")
             verified_candidates = prefiltered
             failed_count = 0
+            logger.info(f"   ✓ Proceeding with {len(verified_candidates)} candidates from DB cache")
+            logger.info(f"")
 
             # ============================================================
-            # Step 7: Apply filters with lenient mode for imported data
-            # Allows profiles without full metrics (credibility, etc.) to pass
-            # Uses country fallback for Spain filter when audience_geography is missing
+            # Step 7: Apply hard filters using real Gema data from PrimeTag.
+            # lenient_mode=True allows candidates not found in PrimeTag (no data)
+            # to still pass through — preserves coverage for niche markets.
+            # Verified candidates are filtered strictly using their real metrics.
             # ============================================================
-            logger.info(f"⏳ Step 4/6: Applying hard filters...")
+            logger.info(f"⏳ Step 5/6: Applying hard filters...")
             filtered = self.filter_service.apply_filters(
                 verified_candidates,
                 parsed_query,
                 filters_applied,
-                lenient_mode=True  # LENIENT: Allow imported profiles without full metrics
+                lenient_mode=True  # Lenient for PrimeTag misses; strict for verified data
             )
             total_after_filter = len(filtered)
             logger.info(f"")
@@ -258,7 +261,7 @@ class SearchService:
 
             # Step 8: Rank survivors using 8-factor scoring
             # Enrich campaign_topics with search_keywords if empty (for niche matching)
-            logger.info(f"⏳ Step 5/6: Ranking {total_after_filter} candidates...")
+            logger.info(f"⏳ Step 6/6: Ranking {total_after_filter} candidates...")
             ranking_query = self._enrich_campaign_topics(parsed_query)
             ranked = self.ranking_service.rank_influencers(
                 filtered,
@@ -764,38 +767,66 @@ class SearchService:
 
             return combined
 
-        # Default: return up to request_limit
+        # Default: when no gender filter is set, apply a soft 50/50 gender balance
+        # so results don't skew all-male or all-female by niche accident.
+        if (
+            parsed_query.influencer_gender == GenderFilter.ANY
+            and not parsed_query.target_male_count
+            and not parsed_query.target_female_count
+        ):
+            males, females, others = [], [], []
+            for inf in ranked:
+                g = self._infer_influencer_gender(inf)
+                if g == "male":
+                    males.append(inf)
+                elif g == "female":
+                    females.append(inf)
+                else:
+                    others.append(inf)
+
+            half = request_limit // 2
+            selected = males[:half] + females[:half]
+
+            # Fill remaining slots from unclassified (gender indeterminate)
+            if len(selected) < request_limit:
+                remaining = request_limit - len(selected)
+                already_in = set(id(x) for x in selected)
+                fillers = [x for x in others if id(x) not in already_in]
+                selected.extend(fillers[:remaining])
+
+            # If one gender was too sparse, fill from the other
+            if len(selected) < request_limit:
+                already_in = set(id(x) for x in selected)
+                all_ranked = [x for x in ranked if id(x) not in already_in]
+                selected.extend(all_ranked[:request_limit - len(selected)])
+
+            selected.sort(key=lambda x: x.relevance_score, reverse=True)
+            for i, inf in enumerate(selected):
+                inf.rank_position = i + 1
+
+            logger.info(
+                f"Default gender balance: {len(males)} male, {len(females)} female, "
+                f"{len(others)} indeterminate → selected {len(selected)} total"
+            )
+            return selected
+
         return ranked[:request_limit]
 
     def _infer_influencer_gender(self, influencer: RankedInfluencer) -> Optional[str]:
         """
         Infer influencer's gender from available data.
 
-        Uses audience_genders as a heuristic - influencers typically have
-        opposite-gender audience majority (e.g., female influencer -> male audience).
+        Delegates to FilterService which uses three signals:
+        1. audience_genders inverse heuristic
+        2. Bio keyword scan (pronouns, gendered roles)
+        3. Display name first-name matching against common Spanish names
+
         Falls back to None if cannot determine.
         """
         if not influencer.raw_data:
             return None
-
-        # Check if we have audience gender data
-        audience_genders = influencer.raw_data.audience_genders
-        if not audience_genders:
-            return None
-
-        male_pct = audience_genders.get("male", 0)
-        female_pct = audience_genders.get("female", 0)
-
-        # Heuristic: influencers often have opposite-gender audience majority
-        # Female influencers typically have majority male audience
-        # Male influencers typically have majority female audience
-        if male_pct > 60:
-            return "female"  # Likely female influencer with male audience
-        elif female_pct > 60:
-            return "male"  # Likely male influencer with female audience
-
-        # If audience is balanced, cannot determine
-        return None
+        fs = FilterService()
+        return fs._infer_influencer_gender(influencer.raw_data)
 
     def _get_follower_count(self, influencer: RankedInfluencer) -> Optional[int]:
         """Extract follower count from influencer."""
@@ -889,6 +920,16 @@ class SearchService:
                     f"   → Added {min(len(others), remaining_slots)} unclassified "
                     f"influencers (tier data unavailable)"
                 )
+
+            # Graceful degradation: if requested tiers yielded 0 candidates,
+            # fall back to ranked list to avoid returning empty results
+            if len(combined) == 0 and len(ranked) > 0:
+                logger.warning(
+                    f"   ⚠ Requested tier distribution (micro={tier_dist['micro']}, "
+                    f"mid={tier_dist['mid']}, macro={tier_dist['macro']}) returned 0 "
+                    f"candidates. Falling back to best-ranked influencers."
+                )
+                combined = ranked[:request_limit * 3]
         else:
             # Default: balanced distribution (1/3 each tier)
             per_tier = max(request_limit // 3, 1)

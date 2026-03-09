@@ -1,10 +1,81 @@
 import logging
-from typing import List, Any, Optional
+import re
+import unicodedata
+from typing import List, Any, Optional, Tuple
 from app.schemas.llm import ParsedSearchQuery, GenderFilter
 from app.schemas.search import FilterConfig
 from app.services.brand_intelligence_service import get_brand_intelligence_service
 
 logger = logging.getLogger(__name__)
+
+# Common Spanish/international female and male first-name signals for gender inference.
+# These are checked against the FIRST word of display_name and bio keywords.
+_FEMALE_NAMES = {
+    "maria", "maría", "ana", "elena", "lucia", "lucía", "carmen", "laura",
+    "marta", "sara", "paula", "claudia", "andrea", "irene", "alba", "nuria",
+    "silvia", "rosa", "isabel", "cristina", "patricia", "eva", "pilar",
+    "raquel", "monica", "mónica", "blanca", "beatriz", "sandra", "ines",
+    "inés", "julia", "natalia", "alicia", "diana", "carolina", "lola",
+    "rocio", "rocío", "marina", "olga", "sonia", "angeles", "ángeles",
+    "vanessa", "veronica", "verónica", "susana", "belén", "belen",
+    "esther", "teresa", "begoña", "concepcion", "concepción", "jannys",
+    "águeda", "agueda", "mariona", "jimena",
+    # Additional common names missed from initial list
+    "clara", "salma", "ingrid", "claudia", "daniela", "valeria", "paola",
+    "valentina", "camila", "gabriela", "martina", "sofía", "sofia",
+    "lorena", "noelia", "tamara", "carla", "celia", "judith", "gemma",
+    "aitana", "laia", "mireia", "anna", "noa", "nerea", "amaia", "ane",
+    "maider", "june", "izaskun", "ainara", "ainhoa", "leire",
+    "rebeca", "berta", "macarena", "inmaculada", "adriana", "fernanda",
+    "rebeka", "meritxell", "greta", "kira", "sara", "nadia", "lidia",
+    "olga", "vera", "lea", "victoria", "claudia", "emma", "luna",
+    "ariadna", "miriam", "helen", "helena", "isabela", "isabella",
+    "sofía", "alejandra", "daniela", "luciana", "valeria",
+    # Common short forms / nicknames
+    "jenni", "jenny", "vicky", "naty", "bea", "susi", "cris", "isa",
+    # Further omissions found during live testing
+    "lara", "angie", "kira", "candela", "arabella", "nieves",
+    "yerlina", "alba", "nuria", "nadina", "sandrita", "michelle",
+}
+_MALE_NAMES = {
+    "carlos", "david", "javier", "daniel", "jose", "josé", "miguel",
+    "antonio", "francisco", "manuel", "pedro", "alejandro", "rafael",
+    "fernando", "pablo", "sergio", "jorge", "alberto", "angel", "ángel",
+    "luis", "ramon", "ramón", "juan", "diego", "victor", "víctor",
+    "enrique", "roberto", "marcos", "mario", "ivan", "iván", "adrian",
+    "adrián", "oscar", "óscar", "santiago", "andres", "andrés", "raul",
+    "raúl", "hugo", "alejo", "facundo", "israel", "caio", "ren",
+    # Common male names found missing in live testing
+    "cristian", "cristián", "mariano", "gonzalo", "jaime", "ignacio",
+    "nicolas", "nicolás", "emilio", "alfonso", "arturo", "gustavo",
+    "rodrigo", "ruben", "rubén", "arnau", "marc", "joel", "pol",
+    "gerard", "eric", "pau", "guillem", "xavi", "xavier", "dani",
+    "paco", "nacho", "rafa", "toni", "tomas", "tomás", "mateo",
+    "leo", "lucas", "luca", "aitor", "mikel", "unai", "iker",
+    "oier", "asier", "gorka", "gaizka", "txema", "jesus", "jesús",
+    "jose", "josué", "josue", "jordi", "santi", "fran", "roque",
+    "biel", "aritz", "kepa", "andoni", "alex", "borja", "edu",
+    "juanma", "juanjo", "juanfran", "paquito", "pachu", "dario",
+    "darío", "esteban", "evaristo", "felix", "félix", "ferran",
+    "ferrán", "german", "germán", "guilherme", "hector", "héctor",
+    "ismael", "joao", "joãn", "jon", "jonatan", "jonathan",
+    "kevin", "kike", "kobi", "leo", "leonel", "lionel", "lorenzo",
+    "lucas", "maxi", "maximiliano", "miguel", "miquel", "nacho",
+    "nil", "oriol", "pau", "richard", "ricky", "roberto", "ronaldo",
+    "ruben", "saúl", "saul", "sebas", "sebastian", "sebastián",
+    "sergi", "sergio", "txemi", "valentín", "valentin", "willy",
+}
+_FEMALE_BIO_SIGNALS = {
+    "she/her", "ella", "mamá", "madre", "actriz", "escritora",
+    "maquilladora", "creadora", "influencer mujer", "blogger",
+    "fotógrafa", "diseñadora", "periodista", "profesora",
+    "enfermera", "psicóloga", "nutricionista",
+}
+_MALE_BIO_SIGNALS = {
+    "he/him", "él", "papá", "padre", "actor", "escritor",
+    "creador", "fotógrafo", "diseñador", "periodista",
+    "profesor", "enfermero", "psicólogo", "nutricionista",
+}
 
 
 class FilterService:
@@ -38,6 +109,46 @@ class FilterService:
         logger.info(f"🔍 FILTERING {initial_count} candidates")
         logger.info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
+        # HARD FILTER: Preferred follower range from brief (e.g. "15K-150K")
+        # Falls back to soft penalty (via ranking) if filter would remove ALL candidates
+        follower_range = parsed_query.get_follower_range()
+        if follower_range:
+            pref_min, pref_max = follower_range
+            before_count = len(filtered)
+            range_filtered = [
+                inf for inf in filtered
+                if self._passes_follower_range(inf, pref_min, pref_max)
+            ]
+            removed = before_count - len(range_filtered)
+            min_str = f"{pref_min/1000:.0f}K" if pref_min else "0"
+            max_str = f"{pref_max/1000:.0f}K" if pref_max < 999_999_999 else "∞"
+
+            if len(range_filtered) == 0 and before_count > 0:
+                logger.warning(
+                    f"   ⚠ Follower range ({min_str}–{max_str}) would remove ALL {before_count} candidates. "
+                    f"Relaxing filter — ranking will still penalize out-of-range profiles."
+                )
+            else:
+                filtered = range_filtered
+                if removed > 0:
+                    logger.info(f"   ❌ Follower range ({min_str}–{max_str}): removed {removed}")
+                else:
+                    logger.info(f"   ✓ Follower range ({min_str}–{max_str}): all passed")
+
+        # Filter by min follower count - HARD FILTER
+        min_followers = getattr(config, 'min_follower_count', 100_000)
+        if min_followers and min_followers > 0:
+            before_count = len(filtered)
+            filtered = [
+                inf for inf in filtered
+                if self._passes_min_followers(inf, min_followers)
+            ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Min followers (>={min_followers:,}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Min followers (>={min_followers:,}): all passed")
+
         # Filter by max follower count (exclude mega-celebrities) - HARD FILTER
         max_followers = config.max_follower_count
         before_count = len(filtered)
@@ -50,6 +161,19 @@ class FilterService:
             logger.info(f"   ❌ Max followers (<{max_followers:,}): removed {removed} mega-celebrities")
         else:
             logger.info(f"   ✓ Max followers (<{max_followers:,}): all passed")
+
+        # HARD FILTER: Influencer gender (the creator's own gender, not audience)
+        if parsed_query.influencer_gender and parsed_query.influencer_gender != GenderFilter.ANY:
+            before_count = len(filtered)
+            filtered = [
+                inf for inf in filtered
+                if self._passes_influencer_gender(inf, parsed_query.influencer_gender)
+            ]
+            removed = before_count - len(filtered)
+            if removed > 0:
+                logger.info(f"   ❌ Influencer gender ({parsed_query.influencer_gender.value}): removed {removed}")
+            else:
+                logger.info(f"   ✓ Influencer gender ({parsed_query.influencer_gender.value}): all passed")
 
         # Filter by credibility (allow None in lenient mode)
         min_credibility = parsed_query.min_credibility_score or config.min_credibility_score
@@ -119,6 +243,27 @@ class FilterService:
             else:
                 logger.info(f"   ✓ Audience gender ({parsed_query.target_audience_gender}): all passed")
 
+        # HARD FILTER: Adult content / OnlyFans accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_adult_content(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Adult content filter: removed {removed}")
+
+        # HARD FILTER: Political / controversial accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_political_content(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Political content filter: removed {removed}")
+
+        # HARD FILTER: Brand / faceless corporate accounts
+        before_count = len(filtered)
+        filtered = [inf for inf in filtered if not self._is_brand_account(inf)]
+        removed = before_count - len(filtered)
+        if removed > 0:
+            logger.info(f"   ❌ Brand account filter: removed {removed}")
+
         # Filter out competitor ambassadors if brand context provided
         # This is a hard exclusion - known ambassadors of competitor brands are removed
         if parsed_query.brand_handle or parsed_query.brand_name:
@@ -142,11 +287,21 @@ class FilterService:
 
         return filtered
     
-    def _passes_max_followers(self, influencer, max_val: int) -> bool:
-        """Check if influencer is under max follower count."""
+    def _passes_min_followers(self, influencer, min_val: int) -> bool:
+        """Check if influencer meets minimum follower count."""
         count = self._get_follower_count(influencer)
-        if count is None:
-            return True  # Allow if unknown
+        if count is None or count == 0:
+            return False
+        return count >= min_val
+
+    def _passes_max_followers(self, influencer, max_val: int) -> bool:
+        """Check if influencer is under max follower count.
+        
+        Treats None/0 as unknown — allows through (ranking will deprioritize).
+        """
+        count = self._get_follower_count(influencer)
+        if count is None or count == 0:
+            return True  # Allow if unknown; ranking applies size penalty
         return count <= max_val
     
     def _get_follower_count(self, influencer) -> Optional[int]:
@@ -311,3 +466,234 @@ class FilterService:
         if isinstance(influencer, dict):
             return influencer.get('brand_mentions', []) or []
         return []
+
+    def _passes_follower_range(self, influencer, min_followers: int, max_followers: int) -> bool:
+        """Hard filter: reject influencers outside the brief's preferred follower range.
+        
+        Treats None/0 as unknown — allows through (ranking will deprioritize).
+        """
+        count = self._get_follower_count(influencer)
+        if count is None or count == 0:
+            return True
+        if min_followers and count < min_followers:
+            return False
+        if max_followers < 999_999_999 and count > max_followers:
+            return False
+        return True
+
+    def _passes_influencer_gender(self, influencer, target_gender: GenderFilter) -> bool:
+        """Filter by the influencer's own gender (not audience gender).
+        
+        Uses three signals in priority order:
+        1. audience_genders inverse heuristic (female influencers → male-heavy audience)
+        2. Bio keyword scan for pronouns/gendered words
+        3. Display name first-name matching against common Spanish names
+        
+        Returns True (passes) if gender matches OR cannot be determined.
+        """
+        inferred = self._infer_influencer_gender(influencer)
+        if inferred is None:
+            return True
+        return inferred == target_gender.value
+
+    def _infer_influencer_gender(self, influencer) -> Optional[str]:
+        """Infer the influencer's own gender from available profile data.
+
+        Checks pre-computed stored value first (set by compute_gender.py), then
+        falls back to the 3-signal runtime heuristic.
+        Returns 'male', 'female', or None if indeterminate.
+        """
+        # Signal 0: use pre-computed stored value if available
+        stored = (
+            getattr(influencer, "influencer_gender", None)
+            if not isinstance(influencer, dict)
+            else influencer.get("influencer_gender")
+        )
+        if stored in ("male", "female"):
+            return stored
+
+        # Signal 1: audience_genders inverse heuristic
+        genders = self._get_genders(influencer)
+        if genders:
+            male_pct = genders.get("male", genders.get("Male", 0))
+            female_pct = genders.get("female", genders.get("Female", 0))
+            if male_pct > 65:
+                return "female"
+            if female_pct > 65:
+                return "male"
+
+        # Signal 2: bio keyword scan
+        bio = ""
+        if hasattr(influencer, 'bio'):
+            bio = (influencer.bio or "").lower()
+        elif isinstance(influencer, dict):
+            bio = (influencer.get('bio') or "").lower()
+
+        if bio:
+            for signal in _FEMALE_BIO_SIGNALS:
+                if signal in bio:
+                    return "female"
+            for signal in _MALE_BIO_SIGNALS:
+                if signal in bio:
+                    return "male"
+
+        # Signal 3: display name first-name matching
+        display_name = ""
+        if hasattr(influencer, 'display_name'):
+            display_name = (influencer.display_name or "").strip()
+        elif isinstance(influencer, dict):
+            display_name = (influencer.get('display_name') or "").strip()
+
+        if display_name:
+            # Normalize Unicode fancy fonts (mathematical bold/italic/monospace etc.)
+            # so that "𝙻𝚞𝚌𝚒𝚊" matches "lucia" in the name set.
+            display_name = unicodedata.normalize('NFKC', display_name)
+            first_word = re.split(r'[\s|·•\-_]+', display_name)[0].lower()
+            first_word = first_word.strip('✖️💀🧸☠️👑🌸🌺💫✨🔥')
+            if first_word in _FEMALE_NAMES:
+                return "female"
+            if first_word in _MALE_NAMES:
+                return "male"
+
+        # Signal 3b: username first segment (split by _ or digits) as fallback
+        username = ""
+        if hasattr(influencer, 'username'):
+            username = (influencer.username or "").strip()
+        elif isinstance(influencer, dict):
+            username = (influencer.get('username') or "").strip()
+
+        if username:
+            # Strip leading/trailing underscores before splitting
+            cleaned = username.strip('_')
+            first_seg = re.split(r'[_\d]', cleaned)[0].lower()
+            if len(first_seg) >= 3:
+                if first_seg in _FEMALE_NAMES:
+                    return "female"
+                if first_seg in _MALE_NAMES:
+                    return "male"
+                # Prefix match: "kirahuberman" → startswith "kira"
+                for name in _FEMALE_NAMES:
+                    if len(name) >= 4 and first_seg.startswith(name):
+                        return "female"
+                for name in _MALE_NAMES:
+                    if len(name) >= 4 and first_seg.startswith(name):
+                        return "male"
+
+        return None
+
+    def _get_bio(self, influencer) -> str:
+        """Extract bio from influencer object, lowercased."""
+        if hasattr(influencer, 'bio'):
+            return (influencer.bio or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('bio') or "").lower()
+        return ""
+
+    def _get_display_name(self, influencer) -> str:
+        """Extract display name from influencer object, lowercased."""
+        if hasattr(influencer, 'display_name'):
+            return (influencer.display_name or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('display_name') or "").lower()
+        return ""
+
+    def _get_interests(self, influencer) -> List[str]:
+        """Extract interests list from influencer object."""
+        if hasattr(influencer, 'interests'):
+            return influencer.interests or []
+        if isinstance(influencer, dict):
+            return influencer.get('interests') or []
+        return []
+
+    def _get_primary_niche(self, influencer) -> str:
+        """Extract primary_niche from influencer object, lowercased."""
+        if hasattr(influencer, 'primary_niche'):
+            return (influencer.primary_niche or "").lower()
+        if isinstance(influencer, dict):
+            return (influencer.get('primary_niche') or "").lower()
+        return ""
+
+    # ── Content Safety Filters ──────────────────────────────────────────────
+
+    _ADULT_KEYWORDS = {
+        "onlyfans", "only fans", "of.me", "fans.ly", "fansly",
+        "18+", "+18", "18 +", "+ 18", "18 años +18", "contenido adulto",
+        "adult content", "nsfw", "explicit content",
+    }
+
+    def _is_adult_content(self, influencer) -> bool:
+        """Return True if influencer profile signals adult/OnlyFans content."""
+        text = self._get_bio(influencer) + " " + self._get_display_name(influencer)
+        for kw in self._ADULT_KEYWORDS:
+            if kw in text:
+                logger.debug(f"   Adult filter: {self._get_username(influencer)} matched '{kw}'")
+                return True
+        return False
+
+    _POLITICAL_BIO_KEYWORDS = {
+        "diputado", "diputada", "senador", "senadora",
+        "político", "política", "partido político",
+        "activista política", "activista político",
+        "campaña electoral", "candidato", "candidata",
+        "eurodiputado", "eurodiputada", "congresista",
+        "portavoz del partido", "militante de",
+    }
+
+    def _is_political_content(self, influencer) -> bool:
+        """Return True if influencer has political/controversial positioning."""
+        bio = self._get_bio(influencer)
+        for kw in self._POLITICAL_BIO_KEYWORDS:
+            if kw in bio:
+                logger.debug(f"   Political filter: {self._get_username(influencer)} matched bio '{kw}'")
+                return True
+
+        niche = self._get_primary_niche(influencer)
+        if niche == "politics":
+            logger.debug(f"   Political filter: {self._get_username(influencer)} primary_niche=politics")
+            return True
+
+        interests = [str(i).lower() for i in self._get_interests(influencer)]
+        if "politics" in interests or "política" in interests:
+            logger.debug(f"   Political filter: {self._get_username(influencer)} interest=politics")
+            return True
+
+        return False
+
+    _BRAND_BIO_KEYWORDS = {
+        "cuenta oficial", "canal oficial", "perfil oficial", "official account",
+        "official channel", "official page", "tienda oficial", "official store",
+        "s.a.", " s.l.", "grupo empresarial", "marca oficial",
+    }
+    _BRAND_NAME_SUFFIXES = (
+        " oficial", " official", " españa", " spain", " store", " shop",
+        " brand", " group", " grupo", " tienda",
+    )
+    _PERSONAL_INTEREST_MARKERS = {
+        "fitness", "fashion", "beauty", "food", "travel", "lifestyle",
+        "sports", "music", "comedy", "gaming", "family", "health",
+        "photography", "art", "dance", "wellness", "cooking",
+    }
+
+    def _is_brand_account(self, influencer) -> bool:
+        """Return True if profile appears to be a corporate/brand account rather than an individual creator."""
+        bio = self._get_bio(influencer)
+        for kw in self._BRAND_BIO_KEYWORDS:
+            if kw in bio:
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} matched bio '{kw}'")
+                return True
+
+        display = self._get_display_name(influencer)
+        for suffix in self._BRAND_NAME_SUFFIXES:
+            if display.endswith(suffix):
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} display_name ends with '{suffix}'")
+                return True
+
+        # Accounts whose interests are exclusively corporate/retail with no personal content
+        interests = {str(i).lower() for i in self._get_interests(influencer)}
+        if interests and not interests.intersection(self._PERSONAL_INTEREST_MARKERS):
+            corporate_only = {"retail", "business", "advertising", "marketing", "e-commerce"}
+            if interests.issubset(corporate_only):
+                logger.debug(f"   Brand filter: {self._get_username(influencer)} only corporate interests")
+                return True
+
+        return False

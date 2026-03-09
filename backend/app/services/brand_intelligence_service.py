@@ -35,6 +35,7 @@ class NicheInfo:
     """Structured niche information."""
     key: str
     keywords: List[str]
+    aliases: List[str]
     related_niches: List[str]
     conflicting_niches: List[str]
     parent_category: str
@@ -347,6 +348,7 @@ class BrandIntelligenceService:
             return NicheInfo(
                 key=niche_key.lower(),
                 keywords=niche_data.get('keywords', []),
+                aliases=niche_data.get('aliases', []),
                 related_niches=niche_data.get('related_niches', []),
                 conflicting_niches=niche_data.get('conflicting_niches', []),
                 parent_category=niche_data.get('parent_category', '')
@@ -593,8 +595,9 @@ class BrandIntelligenceService:
 
         result.matched_keywords = matched_keywords
 
-        # Check for exact match
-        if influencer_niche == campaign_niche_info.key:
+        # Check for exact match or alias (aliases scored identically to exact)
+        is_alias = influencer_niche and influencer_niche in campaign_niche_info.aliases
+        if influencer_niche == campaign_niche_info.key or is_alias:
             # Higher score with post data (more confident)
             base_score = rules.get('exact_match_score', 0.95)
             if has_post_data and confidence > 0.5:
@@ -602,7 +605,7 @@ class BrandIntelligenceService:
             else:
                 result.score = base_score
             result.match_type = "exact"
-            result.details = f"Exact niche match: {influencer_niche}"
+            result.details = f"{'Alias' if is_alias else 'Exact'} niche match: {influencer_niche}"
             if has_post_data:
                 result.details += " (confirmed by post content)"
             return result

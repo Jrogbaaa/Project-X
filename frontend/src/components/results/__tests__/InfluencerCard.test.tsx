@@ -97,28 +97,14 @@ describe('InfluencerCard', () => {
       expect(screen.getByText('85')).toBeInTheDocument();
     });
 
-    it('renders credibility score', () => {
+    it('renders engagement rate inline when available', () => {
       render(<InfluencerCard influencer={createMockInfluencer()} />);
-      // Multiple elements may show this percentage, just verify it's in the document
-      const credElements = screen.getAllByText('85%');
-      expect(credElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('3.5% eng')).toBeInTheDocument();
     });
 
-    it('renders engagement rate', () => {
-      render(<InfluencerCard influencer={createMockInfluencer()} />);
-      expect(screen.getByText('3.5%')).toBeInTheDocument();
-    });
-
-    it('renders Spain audience percentage', () => {
-      render(<InfluencerCard influencer={createMockInfluencer()} />);
-      // Multiple elements may show this percentage, just verify it's in the document
-      const spainPctElements = screen.getAllByText('75%');
-      expect(spainPctElements.length).toBeGreaterThan(0);
-    });
-
-    it('renders growth rate', () => {
-      render(<InfluencerCard influencer={createMockInfluencer()} />);
-      expect(screen.getByText('12%')).toBeInTheDocument();
+    it('does not render engagement rate when not available', () => {
+      render(<InfluencerCard influencer={createMockInfluencer({ engagement_rate: undefined })} />);
+      expect(screen.queryByText(/eng$/)).not.toBeInTheDocument();
     });
   });
 
@@ -227,23 +213,6 @@ describe('InfluencerCard', () => {
       await waitFor(() => {
         expect(screen.getByText(/ver detalles/i)).toBeInTheDocument();
       });
-    });
-  });
-
-  describe('Footer Stats', () => {
-    it('renders average likes', () => {
-      render(<InfluencerCard influencer={createMockInfluencer()} />);
-      expect(screen.getByText('5.0K')).toBeInTheDocument();
-    });
-
-    it('renders average comments', () => {
-      render(<InfluencerCard influencer={createMockInfluencer()} />);
-      // The footer contains "likes" for avg_likes
-      const footer = screen.getByText(/likes/);
-      expect(footer).toBeInTheDocument();
-      // Comments value is 150, check it's in the document
-      const commentCount = screen.getAllByText(/150/)[0];
-      expect(commentCount).toBeInTheDocument();
     });
   });
 

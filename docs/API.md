@@ -2,13 +2,14 @@
 
 Base URL: `http://localhost:8000` (local) | `https://project-x-three-sage.vercel.app/api` (production)
 
-> **Last Updated:** February 19, 2026
+> **Last Updated:** March 9, 2026
 
 ## Overview
 
 This API powers an intelligent influencer discovery platform. Users can paste brand briefs in natural language, and the system extracts brand context, creative concepts, and campaign requirements to find and score matching influencers.
 
 ### Key Features
+- **Idea Match**: Enter a brand name → AI extracts positioning → selects Goldenberg creativity templates → generates structured campaign ideas with scores. See `POST /idea-match/`.
 - **Natural Language Input**: Paste entire brand briefs or campaign descriptions
 - **Niche Matching**: Match influencers based on their content niche (what they post about) - this is one of the most important factors for brand alignment
 - **8-Factor Scoring**: Credibility, engagement, audience match, growth, geography, brand affinity, creative fit, niche match
@@ -22,7 +23,7 @@ This API powers an intelligent influencer discovery platform. Users can paste br
 
 The frontend interface is fully localized in **Spanish** for the Spanish market. Key UI elements include:
 
-- **Descubrimiento de Influencers**: Main header
+- **Look After You**: Logo in main header
 - **Perfiles verificados**: Trust badge showing all influencers are vetted
 - **Filtros**: Filter panel with credibility, Spain audience %, engagement, growth filters
 - **Resultados**: Results display with match scores and detailed breakdowns
@@ -43,8 +44,20 @@ An influencer's **niche** is what they post about - their content category. This
 | Fintech/payment tech (Square) | Food entrepreneurs, Business, Gastronomy |
 | Perfume/fragrance (Halloween) | Beauty, Lifestyle |
 | Banking app (imagin) | Fintech, Lifestyle, Entertainment |
+| Pet store (Tiendanimal, Kiwoko) | Pets, Lifestyle, Family |
+| Skincare brand (CeraVe, The Ordinary) | Skincare, Beauty, Wellness |
 
 Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
+
+## Infrastructure
+
+| Service | Role |
+|---------|------|
+| **Vercel** | Hosts the frontend (Next.js via `@vercel/next`) and the Python API (via `@vercel/python`). Production: `https://project-x-three-sage.vercel.app`. Config: `vercel.json`. |
+| **OpenAI** | Powers all LLM steps: query parsing, brand lookup, niche enrichment, and idea generation. API key set via `OPENAI_API_KEY`. Model configurable via `openai_model` in `backend/app/config.py`. |
+| **ChatGPT / GPT-5.4** | Current model in use (`gpt-5.4`, released March 2026). Key tasks: extracting `campaign_niche` from briefs, brand attribute extraction, LLM niche classification, creative idea generation. |
+
+---
 
 ## Authentication
 
@@ -53,6 +66,109 @@ Currently no authentication required for local development.
 ---
 
 ## Endpoints
+
+### Idea Match
+
+#### Generate Creative Brief
+`POST /idea-match/`
+
+Generate a structured creative advertising brief for a brand using Goldenberg creativity templates and content-based retrieval.
+
+**How it works:**
+1. Extracts brand attributes (category, archetype, positioning, growth goal) via GPT-5.4
+2. Deterministically selects Goldenberg templates based on growth goal + archetype
+3. Retrieves analogous real campaigns from the knowledge base (content-based filtering)
+4. Generates 4-5 framework-driven campaign ideas + one bold-bet idea via GPT-5.4
+5. Scores and ranks each idea by brand fit, strategic relevance, originality, feasibility
+
+**Request Body:**
+```json
+{
+  "brand": "Nike"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "uuid-string",
+  "brand_vertical": "Performance sportswear brand in the premium segment, synonymous with athletic achievement and aspiration.",
+  "brand_summary": "Nike exists to enable every athlete — defined as anyone with a body — to reach their peak potential.",
+  "archetype": "hero",
+  "archetype_rationale": "Nike's entire identity is built around the hero's journey...",
+  "ideas": [
+    {
+      "title": "The Last Attempt",
+      "concept": "Three athletes fail. Three athletes get up. Third time — they succeed...",
+      "format": "short_film",
+      "platforms": ["youtube", "instagram"],
+      "tone": ["inspirational", "gritty"],
+      "framework_used": "repetition_break",
+      "framework_rationale": "Repetition-break generates the highest engagement scores (0.90) for engagement-goal campaigns...",
+      "avoid": "Avoid polished, glamorous athlete lifestyle — must feel raw and real.",
+      "engagement_type": "engagement",
+      "score": {
+        "brand_fit": 9.3,
+        "originality": 8.0,
+        "strategic_relevance": 9.0,
+        "feasibility": 7.0,
+        "engagement_potential": 9.0,
+        "total": 8.7
+      }
+    }
+  ],
+  "bold_bet": { "...same structure..." },
+  "brand_attributes": {
+    "brand_name": "Nike",
+    "category": "sports_apparel",
+    "audience": "young_broad",
+    "positioning": "performance",
+    "tone": ["inspirational", "bold", "gritty"],
+    "growth_goal": "engagement",
+    "archetype": "hero",
+    "price_tier": "premium",
+    "confidence": 0.98
+  },
+  "frameworks_selected": ["repetition_break", "goldenberg_interactive_experiment", "archetype", "goldenberg_extreme_consequence"],
+  "retrieved_examples_count": 5
+}
+```
+
+**Goldenberg Template Keys** (framework_used values):
+- `goldenberg_extreme_consequence` — visceral consequence of product absence or presence
+- `goldenberg_pictorial_analogy` — visual metaphor for the product benefit
+- `goldenberg_competition` — superiority contrast against an alternative
+- `goldenberg_interactive_experiment` — audience participation IS the ad
+- `goldenberg_dimensional_alteration` — magnify/distort a product dimension
+- `goldenberg_replacement` — product replaces a familiar object unexpectedly
+- `repetition_break` — pattern → pattern → twist narrative
+- `visual_metaphor` — synthesise product with a conceptually similar object
+- `schema_congruity` — moderate expectation violation
+- `archetype` — position through a classic brand archetype (hero, explorer, caregiver, etc.)
+
+**Framework Selection Logic (deterministic):**
+
+| Growth Goal | Primary Frameworks |
+|-------------|-------------------|
+| awareness | extreme_consequence, dimensional_alteration, competition |
+| engagement | repetition_break, interactive_experiment, archetype |
+| persuasion | visual_metaphor, schema_congruity, replacement |
+| brand_personality | archetype, pictorial_analogy, repetition_break |
+
+**Score Dimensions (each 0-10, weighted composite):**
+- `brand_fit` (30%) — idea's engagement type matches brand's growth goal
+- `strategic_relevance` (25%) — research-backed framework effectiveness for this goal
+- `originality` (20%) — penalised if multiple ideas use same template
+- `engagement_potential` (15%) — framework evidence score for the idea's own type
+- `feasibility` (10%) — production format (ugc > stunt > documentary)
+
+```bash
+curl -X POST http://localhost:8000/api/idea-match \
+  -H "Content-Type: application/json" \
+  -d '{"brand": "Nike"}'
+```
+
+---
 
 ### Search
 
@@ -77,14 +193,14 @@ Execute an influencer search by pasting a brand brief or natural language query.
     "exclude_competitor_ambassadors": true
   },
   "ranking_weights": {
-    "credibility": 0.15,
-    "engagement": 0.20,
-    "audience_match": 0.15,
-    "growth": 0.05,
-    "geography": 0.10,
-    "brand_affinity": 0.15,
-    "creative_fit": 0.15,
-    "niche_match": 0.05
+    "credibility": 0.00,
+    "engagement": 0.10,
+    "audience_match": 0.00,
+    "growth": 0.00,
+    "geography": 0.00,
+    "brand_affinity": 0.10,
+    "creative_fit": 0.30,
+    "niche_match": 0.50
   }
 }
 ```
@@ -307,6 +423,10 @@ Get detailed information about a cached influencer.
   "interests": ["fitness", "lifestyle"],
   "brand_mentions": ["nike", "head"],
   "country": "Spain",
+  "primary_niche": "fitness",
+  "niche_confidence": 0.92,
+  "influencer_gender": "female",
+  "profile_active": true,
   "cached_at": "2025-01-20T12:00:00Z",
   "cache_expires_at": "2025-01-21T12:00:00Z"
 }
@@ -584,19 +704,21 @@ All endpoints return errors in the following format:
 ### RankingWeights
 ```typescript
 {
-  // Original 5 factors
-  credibility: number;    // default 0.15
-  engagement: number;     // default 0.20
-  audience_match: number; // default 0.15
-  growth: number;         // default 0.05
-  geography: number;      // default 0.10
-  
-  // New brand/creative factors
-  brand_affinity: number; // default 0.15 - audience overlap with brand
-  creative_fit: number;   // default 0.15 - alignment with creative concept
-  niche_match: number;    // default 0.05 - content niche alignment
+  // PrimeTag factors (zeroed until API restored — low/no data coverage)
+  credibility: number;    // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  audience_match: number; // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  growth: number;         // default 0.00 — zeroed, PrimeTag 0.4% coverage
+  geography: number;      // default 0.00 — zeroed, PrimeTag 0.0% coverage
+
+  // Active factors (where data exists)
+  engagement: number;     // default 0.10 — Starngage 98.6% coverage
+  brand_affinity: number; // default 0.10 — Apify 3.4% coverage, helps when present
+  creative_fit: number;   // default 0.30 — Apify+LLM 50.3% coverage, key differentiator
+  niche_match: number;    // default 0.50 — LLM+keyword 98.6% coverage, dominant signal
 }
 // Note: All weights must sum to 1.0
+// LLM-suggested weights are clamped: factors with default 0.0 stay zeroed.
+// When PrimeTag is restored, rebalance credibility/geography/audience_match.
 ```
 
 ### ScoreComponents
@@ -639,6 +761,11 @@ All endpoints return errors in the following format:
   target_female_count?: number;   // Specific number of female influencers requested
   // When set, returns 3x the requested count per gender (e.g., 3 male + 3 female = 18 results)
   
+  // Tier-specific counts
+  target_micro_count?: number;    // Micro influencers (1K-50K) requested
+  target_mid_count?: number;      // Mid-tier influencers (50K-500K) requested
+  target_macro_count?: number;    // Macro influencers (500K-2.5M) requested
+  
   // Brand context
   brand_name?: string;            // e.g., "Adidas"
   brand_handle?: string;          // e.g., "@adidas" for audience overlap
@@ -646,13 +773,20 @@ All endpoints return errors in the following format:
   
   // Creative concept
   creative_concept?: string;      // The campaign creative brief
+  creative_format?: string;       // "documentary", "day_in_the_life", "tutorial", "challenge", "testimonial", "storytelling", "lifestyle"
   creative_tone: string[];        // e.g., ["authentic", "documentary"]
   creative_themes: string[];      // e.g., ["dedication", "rising stars"]
   
   // Niche targeting
+  campaign_niche?: string;        // PRIMARY niche (single): "padel", "fitness", "beauty", "pets", etc.
   campaign_topics: string[];      // e.g., ["padel", "tennis"]
-  exclude_niches: string[];       // e.g., ["soccer"] - avoid these niches
+  exclude_niches: string[];       // e.g., ["soccer"] - avoid these niches (never exclude related niches)
   content_themes: string[];       // Related content themes
+  
+  // Creative discovery (PrimeTag interest mapping)
+  discovery_interests: string[];  // PrimeTag interest categories for discovery, e.g., ["Sports", "Tennis", "Fitness"]
+  exclude_interests: string[];    // PrimeTag interest categories to AVOID, e.g., ["Soccer"]
+  influencer_reasoning: string;   // LLM reasoning about what types of influencers fit
   
   // Size preferences (anti-celebrity bias)
   preferred_follower_min?: number; // e.g., 100000
@@ -717,17 +851,18 @@ curl -X POST http://localhost:8000/search/ \
   -d '{
     "query": "Nike running campaign, gritty black-and-white documentary style, everyday athletes pushing limits",
     "ranking_weights": {
-      "credibility": 0.10,
-      "engagement": 0.15,
-      "audience_match": 0.10,
-      "growth": 0.05,
-      "geography": 0.10,
-      "brand_affinity": 0.15,
-      "creative_fit": 0.25,
-      "niche_match": 0.10
+      "credibility": 0.00,
+      "engagement": 0.10,
+      "audience_match": 0.00,
+      "growth": 0.00,
+      "geography": 0.00,
+      "brand_affinity": 0.10,
+      "creative_fit": 0.40,
+      "niche_match": 0.40
     }
   }'
 ```
+> **Note:** PrimeTag-dependent factors (credibility, audience_match, growth, geography) are currently zeroed due to API unavailability. LLM-suggested weights for these factors are clamped to 0 automatically.
 
 ### Gender-Split Search
 Request specific counts of male and female influencers:
@@ -756,12 +891,29 @@ curl -O http://localhost:8000/exports/{search_id}/excel
 
 ### Local-First Discovery
 The search service prioritizes the local database for candidate discovery:
-1. **Step 1**: Search local cache by interests/niches matching the brief
-2. **Step 2**: Search local cache by keywords in bio/interests
-3. **Step 3**: Fall back to generic cache query if needed
-4. **Step 4**: Verify ALL candidates via PrimeTag API to fetch fresh metrics
+1. **Step 1**: Parse query with LLM — extract brand, niche, creative concept, filters
+2. **Step 2**: Search local DB by taxonomy-aware niche matching (exact → related → interests)
+3. **Step 3**: Expand via creative discovery interests if niche matches are sparse
+4. **Step 4**: Pre-filter and verify top candidates via PrimeTag API for fresh metrics
+5. **Step 5**: Apply hard filters (Spain %, credibility, ER, follower range, gender)
+6. **Step 6**: Rank survivors using 8-factor weighted scoring
 
-PrimeTag API is used **only for verification** (fetching Spain %, credibility, engagement rate, demographics) - not for discovering new influencers. This ensures fast searches and reduces API costs.
+PrimeTag API is used **only for verification** — not for discovering new influencers. When PrimeTag is unavailable, the system falls back gracefully to cached data with lenient filtering.
+
+### Niche Selection Rules
+The LLM follows specificity rules when selecting campaign_niche:
+- **"skincare"** (not "beauty") for skincare products, serums, facial routines
+- **"gaming"** (not "tech") for gaming peripherals, headsets, esports, streaming
+- **"home_decor"** (not "lifestyle") for furniture, mattresses, home appliances
+- **"pets"** for pet stores and animal brands
+- Most specific niche always preferred: "padel" > "sports", "running" > "fitness"
+- `exclude_niches` never contains niches related to `campaign_niche` (e.g., never exclude "beauty" for a skincare campaign)
+
+### Graceful Fallbacks
+The system avoids returning empty results through cascading fallbacks:
+- **Follower range**: If the requested range (e.g., 10K-80K) would remove ALL candidates, the filter relaxes and ranking's size penalty handles deprioritization
+- **Tier distribution**: If requested tiers (e.g., micro only) have 0 candidates, falls back to best-ranked from any tier
+- **PrimeTag unavailable**: Falls back to cached data with lenient mode filters
 
 ### Default Result Limit
 - Default: **20 results** returned

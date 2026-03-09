@@ -1,4 +1,5 @@
 import json
+import re
 from openai import AsyncOpenAI
 from typing import Optional
 
@@ -20,11 +21,35 @@ Queries may be in English or Spanish, and often arrive as messy forwarded email 
 2. Infer brand_handle - the brand's social media handle (e.g., "@adidas", "@nike", "@ikea")
 3. Infer brand_category from the brand name
 
+CRITICAL - ALWAYS extract brand_name when the brief follows Spanish agency patterns:
+- "Os paso el brief de X" → brand = X
+- "Brief para X" / "brief de X" → brand = X
+- "Campaña de X" / "campaña para X" → brand = X
+- "Para la campaña de X" → brand = X
+- "Brief para campaña de X" → brand = X
+- "Reenvío el brief de X" / "FW: Brief X" → brand = X
+Even if X is also a common word (e.g. "Mango" is a fashion brand, "Camper" is a shoe brand,
+"Aire" could be a spa brand, "Flora" could be a margarine brand). In a campaign brief context,
+the word following these Spanish patterns is always a brand name.
+
+Known Spanish/international brands that are also common words — always treat as brands in brief context:
+- Mango → Spanish fast-fashion brand (not the fruit)
+- Camper → Spanish footwear brand (not camping)
+- Cupra → SEAT's performance car brand
+- Aire → Spanish spa/wellness brand
+- Flex → Spanish mattress brand
+- Bimbo → Mexican bread/bakery brand sold in Spain
+- Flora → margarine/food brand
+- Estrella → Estrella Damm (beer) or Estrella Galicia (beer)
+- Alhambra → Cervezas Alhambra (craft beer brand)
+- Silence → Spanish electric scooter brand
+
 Brand category mappings:
 - IKEA, furniture stores -> home_furniture
 - Zara, H&M, fashion brands -> fashion
 - Nike, Adidas, Puma -> sports_apparel
-- L'Oreal, beauty brands -> beauty
+- L'Oreal, general beauty/makeup brands -> beauty
+- Skincare brands (CeraVe, The Ordinary, La Roche-Posay, vitamin C serums, natural skincare) -> skincare
 - Perfume, fragrance brands (Halloween, Loewe Perfumes, Carolina Herrera) -> beauty
 - Tech companies -> technology
 - Food/restaurant brands -> food_lifestyle
@@ -33,6 +58,7 @@ Brand category mappings:
 - Spirits, gin, whisky, beer brands (Puerto de Indias, Mahou, Estrella, Hendrick's) -> alcoholic_beverages
 - Fintech, payment technology brands (Square, iZettle, SumUp) -> fintech
 - Banking apps, digital finance (imagin, BBVA, Revolut) -> fintech
+- Pet stores, animal brands (Tiendanimal, Royal Canin, Purina) -> pets
 
 ### Creative Concept Extraction
 Extract the creative/campaign concept if described:
@@ -52,23 +78,45 @@ Extract the creative/campaign concept if described:
 ### Niche/Topic Targeting
 1. campaign_niche: The PRIMARY niche for this campaign (SINGLE value, most important one). Choose from the taxonomy:
    - Sports: "padel", "tennis", "football", "basketball", "golf", "running", "cycling", "swimming", "triathlon", "motorsport", "fitness", "crossfit"
-   - Lifestyle: "fashion", "beauty", "luxury", "lifestyle", "travel", "food"
+   - Fashion & Beauty: "fashion", "beauty", "skincare", "luxury"
+   - Lifestyle: "lifestyle", "travel", "food"
    - Wellness: "yoga", "wellness", "nutrition"
-   - Entertainment: "music", "gaming", "comedy", "nightlife"
+   - Entertainment: "music", "comedy", "nightlife"
+   - Gaming & Tech: "gaming", "tech"
+   - Pets & Animals: "pets"
    - Family: "parenting"
-   - Business: "tech", "business", "finance", "ecommerce"
+   - Business: "business", "finance", "ecommerce"
    - Home & Living: "home_decor", "diy"
    - Food & Beverages: "alcoholic_beverages", "soft_drinks"
    - Retail: "retail", "ecommerce"
    - Automotive: "automotive"
+   IMPORTANT NICHE SELECTION RULES:
+   - Use "skincare" (not "beauty") when the brief is specifically about skincare products, serums, facial routines, dermatology, SPF, etc. Use "beauty" only for general beauty/makeup/cosmetics.
+   - Use "gaming" (not "tech") when the brief is about gaming peripherals, headsets, consoles, video games, esports, Twitch, streaming gear. Use "tech" only for smartphones, general gadgets, software, SaaS, or B2B tech.
+   - Use "home_decor" (not "lifestyle") when the brief is about furniture, mattresses, bedding, home appliances, interior design, or any product used in the home. Use "lifestyle" only when nothing more specific fits.
+   - Use "food" (not "lifestyle") for restaurant chains (VIPS, McDonald's, TGI Friday's), food delivery (Telepizza, Domino's, Glovo), food manufacturers (Campofrío, Nestlé, Danone), grocery brands. Food is more specific than lifestyle.
+   - Use "alcoholic_beverages" (not "lifestyle") for beer brands (Estrella Damm, Mahou, San Miguel, Heineken), gin/spirits (Puerto de Indias, Hendrick's), wine brands. Always use the specific beverage niche.
+   - Use "soft_drinks" for energy drinks (Celsius, Monster, Relentless) unless the brand positioning is clearly fitness/sports — in that case "fitness" is acceptable.
+   - Always prefer the MOST SPECIFIC niche over a broader one. "gaming" > "tech", "padel" > "sports", "skincare" > "beauty", "running" > "fitness", "home_decor" > "lifestyle", "food" > "lifestyle", "alcoholic_beverages" > "lifestyle".
    This will be matched against influencers' primary_niche column.
 2. campaign_topics: Additional specific topics relevant to the campaign (array)
 3. exclude_niches: Niches to AVOID - important for precision (e.g., for a padel campaign, exclude "soccer", "football" to avoid famous soccer players)
+   CRITICAL: NEVER exclude a niche that is closely RELATED to campaign_niche. Related niches are valuable fallbacks when exact matches are scarce.
+   - skincare campaign → do NOT exclude "beauty" (beauty influencers often do skincare content)
+   - running campaign → do NOT exclude "fitness" (fitness includes runners)
+   - gaming campaign → do NOT exclude "tech" (tech and gaming overlap)
+   - Only exclude genuinely CONFLICTING niches (e.g., football for padel, fitness for beer/spirits)
+   CRITICAL: NEVER add the brand's OWN niche to exclude_niches. If the campaign is FOR a beer brand, "alcoholic_beverages" is the campaign_niche — do NOT put it in exclude_niches. Competitor brand mentions like "no Mahou, no Heineken, no San Miguel" mean exclude those specific brand ambassadors — use exclude_interests with the competitor brand names (e.g., ["Mahou", "Heineken", "San Miguel"]), NOT a niche exclusion.
 
 ### Size Preferences (Anti-Celebrity Bias)
 If the brief indicates preference for mid-tier influencers or avoiding mega-celebrities:
 - preferred_follower_min: Minimum follower count (e.g., 100000 for "100K+")
 - preferred_follower_max: Maximum follower count (e.g., 2000000 to avoid mega-celebrities)
+
+### Influencer Gender Filter
+When the brief restricts to a single gender (e.g., "only women", "solo hombres", "female influencers only"):
+- influencer_gender: Set to "male" or "female" when the brief clearly restricts to one gender. Default "any".
+- Spanish gender terms: "hombres"/"hombre" = male, "mujeres"/"mujer" = female, "masculino" = male, "femenino" = female, "solo hombres" = male only, "solo mujeres" = female only, "chicos" = male, "chicas" = female, "varones" = male.
 
 ### Gender-Specific Counts
 When the brief specifies separate male and female requirements (e.g., "3 male, 3 female influencers" or "we need 5 women and 5 men"):
@@ -92,9 +140,9 @@ Only set these if EXPLICIT tier counts are mentioned. Do NOT set if just "10 inf
 If the brief just says "micro-influencers" without a count, set target_count to the total and set target_micro_count to that same number.
 
 ### Default Settings
-1. Default to Spanish audience focus (min 60% Spain audience)
+1. Default to Spanish audience focus (min 60% Spain audience) UNLESS the brief explicitly targets a non-Spanish market (e.g., Argentina, Colombia, Chile, Mexico, LATAM, US, UK, etc.) — in that case set min_spain_audience_pct=0 to disable the Spain filter. Note: our database contains Spanish influencers; for non-Spain briefs we return the best niche/content matches available.
 2. Default credibility threshold is 70%
-3. If no count is specified, default to 5 influencers
+3. If no count is specified, default to 20 influencers
 
 ### Ranking Weight Suggestions
 Consider the context when suggesting ranking weights:
@@ -149,8 +197,40 @@ Think creatively about WHO would authentically represent this brand. Our databas
 - B2B fintech / payment tech brand targeting restaurant and bar owners (e.g. Square) → discovery_interests: ["Lifestyle", "Family"], campaign_niche: "food", search_keywords: ["restaurante", "gastronomia", "chef", "emprendedor"]
   Reasoning: "B2B event campaigns need credible entrepreneur voices with real business audiences. Gastro entrepreneurs spread across Spanish cities (Madrid, Barcelona, Sevilla, Valencia) are ideal. Geographic spread matters as much as follower size."
 
+- Pet store brand (Tiendanimal, Kiwoko) → discovery_interests: ["Lifestyle", "Family"], campaign_niche: "pets", search_keywords: ["mascota", "perro", "gato", "pet", "dog", "cat"]
+  Reasoning: "Pet store campaigns need authentic pet owners who post daily about their animals. Lifestyle and family creators who are also pet lovers connect best."
+
 - Home/retail brand amplifying a youth social cause or competition (e.g. IKEA + Museo Picasso housing competition) → discovery_interests: ["Lifestyle", "Parenting", "Family"], campaign_niche: "lifestyle"
   Reasoning: "Social cause campaigns targeting young people (18-35) need accessible, authentic voices. Lifestyle creators who care about youth issues and housing connect best — not interior design specialists."
+
+- Casual restaurant chain (VIPS, McDonald's, TGI Friday's, Foster's Hollywood) → discovery_interests: ["Lifestyle", "Family", "Entertainment and Music"], campaign_niche: "food"
+  Reasoning: "Casual dining appeals to social, family-oriented, and entertainment creators who authentically share meals, outings, and gatherings. Food is the right niche — lifestyle alone is too broad."
+
+- Food brand / humour campaign (Campofrío, El Pozo, Argal) → discovery_interests: ["Lifestyle", "Family", "Entertainment and Music"], campaign_niche: "food"
+  Reasoning: "Food manufacturers with a humorous or family tone need relatable, everyday creators. Family, lifestyle, and entertainment creators connect best with this warmth."
+
+- Beer or lifestyle beverage brand (Estrella Damm, Mahou, San Miguel) → discovery_interests: ["Lifestyle", "Entertainment and Music", "Family"], campaign_niche: "alcoholic_beverages"
+  Reasoning: "Beer brands need lifestyle and entertainment creators who show authentic social moments — friends, summer, music. Note: campaign_niche is 'alcoholic_beverages' so beer/bartender creators will get exact-match scores. DO NOT put 'alcoholic_beverages' in exclude_niches."
+
+- Food delivery (Telepizza, Glovo, Just Eat, Uber Eats) → discovery_interests: ["Lifestyle", "Entertainment and Music", "Family"], campaign_niche: "food"
+  Reasoning: "Food delivery brands are fundamentally about food and social occasions. Food influencers and lifestyle/entertainment creators who share casual evenings, gaming nights, or friend gatherings are ideal."
+
+- Energy drink brand (Celsius, Monster, Red Bull) with fitness positioning → discovery_interests: ["Fitness", "Sports", "Health"], campaign_niche: "fitness"
+  Reasoning: "Sports energy drinks need fitness, gym, and sports creators who authentically incorporate the product into an active lifestyle."
+
+**Creative concept / campaign narrative — expand discovery interests accordingly:**
+When a brief describes a big cultural, social, or narrative campaign idea (e.g., "launch of a cultural movement in Spain", "brand of a generation", "celebrating Spanish identity", "democratising X for everyone", "empowerment of women"), you MUST add relevant cultural and lifestyle interest categories to discovery_interests — these narrative campaigns need influencers who have cultural voice, not just product-niche fit.
+
+- Brand aiming to represent a cultural movement or Spanish identity → add: "Entertainment and Music", "Celebrity", "Lifestyle"
+  Reasoning: "Cultural positioning needs creators with cultural weight and community voice — not just product-niche accounts."
+
+- Brand with a social empowerment or generational narrative → add: "Lifestyle", "Family", "Entertainment and Music"
+  Reasoning: "Empowerment campaigns need relatable, authentic voices with engaged communities who can carry a meaningful message."
+
+- Brand wanting an artistic, creative, or youth culture angle → add: "Entertainment and Music", "Lifestyle", "Celebrity"
+  Reasoning: "Art and culture campaigns need creators who genuinely inhabit that space, not just lifestyle creators."
+
+IMPORTANT: discovery_interests MUST always be populated. Every campaign has relevant PrimeTag interest categories — never leave this empty. Even broad lifestyle/food campaigns need at least 2-3 interest categories specified.
 
 Always return valid JSON matching the schema."""
 
@@ -371,17 +451,77 @@ RESPONSE_FORMAT = {
 }
 
 
+# Fallback: campaign_niche → PrimeTag interest categories when LLM returns empty discovery_interests.
+# These map to the interests field stored on influencers (coarse PrimeTag categories).
+_NICHE_DISCOVERY_FALLBACK: dict[str, list[str]] = {
+    "food":                ["Lifestyle", "Family", "Entertainment and Music"],
+    "alcoholic_beverages": ["Lifestyle", "Entertainment and Music", "Family"],
+    "soft_drinks":         ["Lifestyle", "Sports", "Entertainment and Music"],
+    "fitness":             ["Fitness", "Sports", "Health"],
+    "wellness":            ["Health", "Fitness", "Lifestyle"],
+    "nutrition":           ["Health", "Fitness", "Lifestyle"],
+    "running":             ["Sports", "Fitness", "Health"],
+    "cycling":             ["Sports", "Fitness"],
+    "yoga":                ["Health", "Fitness", "Lifestyle"],
+    "crossfit":            ["Fitness", "Sports"],
+    "fashion":             ["Fashion", "Lifestyle", "Clothes Shoes Handbags & Accessories"],
+    "beauty":              ["Beauty", "Lifestyle", "Fashion"],
+    "skincare":            ["Beauty", "Health", "Lifestyle"],
+    "luxury":              ["Luxury Goods", "Fashion", "Jewellery & Watches"],
+    "lifestyle":           ["Lifestyle", "Entertainment and Music", "Family"],
+    "travel":              ["Lifestyle", "Entertainment and Music", "Family"],
+    "home_decor":          ["Lifestyle", "Family", "Parenting"],
+    "diy":                 ["Lifestyle", "Family"],
+    "pets":                ["Lifestyle", "Family"],
+    "parenting":           ["Parenting", "Family", "Lifestyle"],
+    "music":               ["Entertainment and Music", "Lifestyle", "Celebrity"],
+    "comedy":              ["Entertainment and Music", "Lifestyle", "Family"],
+    "nightlife":           ["Entertainment and Music", "Lifestyle"],
+    "gaming":              ["Entertainment and Music"],
+    "tech":                ["Entertainment and Music", "Lifestyle"],
+    "padel":               ["Sports", "Tennis", "Fitness"],
+    "tennis":              ["Sports", "Tennis", "Fitness"],
+    "football":            ["Sports", "Soccer", "Entertainment and Music"],
+    "basketball":          ["Sports", "Entertainment and Music"],
+    "golf":                ["Sports", "Golf", "Lifestyle"],
+    "motorsport":          ["Sports", "Cars & Motorbikes"],
+    "automotive":          ["Cars & Motorbikes", "Lifestyle"],
+    "business":            ["Lifestyle", "Entertainment and Music"],
+    "finance":             ["Lifestyle"],
+    "retail":              ["Fashion", "Lifestyle", "Entertainment and Music"],
+    "ecommerce":           ["Lifestyle", "Fashion"],
+}
+
+
+def _normalize_spanish_numbers(text: str) -> str:
+    """
+    Normalize Spanish-format numbers (periods as thousands separators) to plain integers.
+    E.g. '100.000' → '100000', '1.500.000' → '1500000'.
+    Only converts unambiguous thousands-separator patterns (groups of exactly 3 digits).
+    Decimal numbers like '3.5' or '0.7' are left untouched.
+    """
+    return re.sub(
+        r'\b(\d{1,3})(\.\d{3})+\b',
+        lambda m: m.group(0).replace('.', ''),
+        text
+    )
+
+
 async def parse_search_query(query: str) -> ParsedSearchQuery:
-    """Parse natural language query into structured search parameters using GPT-4o."""
+    """Parse natural language query into structured search parameters using GPT-5.4."""
     settings = get_settings()
     client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    # Normalize Spanish number format before sending to LLM so follower ranges
+    # like "100.000 y 300.000" are correctly interpreted as 100000 and 300000.
+    normalized_query = _normalize_spanish_numbers(query)
 
     try:
         completion = await client.chat.completions.create(
             model=settings.openai_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": query}
+                {"role": "user", "content": normalized_query}
             ],
             response_format=RESPONSE_FORMAT,
             temperature=0.1,  # Low temperature for consistent parsing
@@ -394,6 +534,34 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
 
         # Parse the JSON response
         parsed_data = json.loads(response_text)
+
+        # --- Safety guards applied before building the Pydantic model ---
+
+        # Guard 1: Strip related niches from exclude_niches.
+        # The LLM sometimes excludes niches that are closely related to campaign_niche
+        # (e.g. excludes "beauty" for a skincare campaign). These are hard-excluded at DB
+        # level, which destroys the candidate pool. Remove any such exclusions here.
+        _PROTECTED_RELATED: dict[str, set[str]] = {
+            "skincare":            {"beauty", "wellness", "health"},
+            "food":                {"lifestyle", "nutrition"},
+            "fitness":             {"sports", "wellness", "health", "nutrition", "running",
+                                    "yoga", "crossfit"},
+            "padel":               {"tennis", "fitness", "sports", "racket_sports"},
+            "running":             {"fitness", "sports", "triathlon"},
+            "travel":              {"lifestyle"},
+            "fashion":             {"beauty", "luxury", "lifestyle"},
+            "gaming":              {"tech", "entertainment"},
+            "home_decor":          {"lifestyle", "diy"},
+            "yoga":                {"wellness", "fitness", "health"},
+            "alcoholic_beverages": {"alcoholic_beverages", "food", "lifestyle", "nightlife"},
+        }
+        raw_campaign_niche = (parsed_data.get("campaign_niche") or "").lower()
+        raw_exclude_niches = parsed_data.get("exclude_niches") or []
+        protected_set = _PROTECTED_RELATED.get(raw_campaign_niche, set())
+        safe_exclude_niches = [n for n in raw_exclude_niches if n.lower() not in protected_set]
+
+        # Guard 2: Never put the brand's own niche in exclude_niches.
+        safe_exclude_niches = [n for n in safe_exclude_niches if n.lower() != raw_campaign_niche]
 
         # Convert to Pydantic model with validation
         return ParsedSearchQuery(
@@ -425,11 +593,15 @@ async def parse_search_query(query: str) -> ParsedSearchQuery:
             # Niche targeting
             campaign_niche=parsed_data.get("campaign_niche"),
             campaign_topics=parsed_data.get("campaign_topics", []),
-            exclude_niches=parsed_data.get("exclude_niches", []),
+            exclude_niches=safe_exclude_niches,
             content_themes=parsed_data.get("content_themes", []),
 
             # Creative discovery (PrimeTag interest mapping)
-            discovery_interests=parsed_data.get("discovery_interests", []),
+            # If LLM returned empty discovery_interests, fall back to niche-based defaults
+            discovery_interests=(
+                parsed_data.get("discovery_interests")
+                or _NICHE_DISCOVERY_FALLBACK.get(parsed_data.get("campaign_niche") or "", [])
+            ),
             exclude_interests=parsed_data.get("exclude_interests", []),
             influencer_reasoning=parsed_data.get("influencer_reasoning", ""),
 
@@ -468,7 +640,7 @@ def _fallback_parse(query: str, error_reason: str) -> ParsedSearchQuery:
     query_lower = query.lower()
 
     # Try to extract count
-    target_count = 5
+    target_count = 20
     for word in query.split():
         if word.isdigit():
             count = int(word)
@@ -476,11 +648,13 @@ def _fallback_parse(query: str, error_reason: str) -> ParsedSearchQuery:
                 target_count = count
                 break
 
-    # Try to extract gender
+    # Try to extract gender (English + Spanish terms)
     influencer_gender = GenderFilter.ANY
-    if "female" in query_lower or "woman" in query_lower or "women" in query_lower:
+    _female_terms = {"female", "woman", "women", "mujeres", "mujer", "femenino", "chicas"}
+    _male_terms = {"male", "man", "men", "hombres", "hombre", "masculino", "chicos", "varones"}
+    if any(t in query_lower for t in _female_terms):
         influencer_gender = GenderFilter.FEMALE
-    elif "male" in query_lower or "man" in query_lower or "men" in query_lower:
+    elif any(t in query_lower for t in _male_terms):
         influencer_gender = GenderFilter.MALE
 
     # Extract keywords (non-common words)

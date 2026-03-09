@@ -8,7 +8,6 @@ import {
 import { SearchResponse } from '@/types/search';
 import { InfluencerCard } from './InfluencerCard';
 import { InfluencerRow } from './InfluencerRow';
-import { GemaRequirementsBanner } from './GemaRequirementsBanner';
 import { downloadExport, saveSearch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -206,14 +205,6 @@ export const ResultsGrid = forwardRef<HTMLDivElement, ResultsGridProps>(function
           Cada influencer ha sido analizado para garantizar métricas reales y audiencias auténticas.
         </p>
       </div>
-
-      {/* ── GEMA requirements banner ─────────────────────────── */}
-      {searchResponse.results.length > 0 && (
-        <GemaRequirementsBanner
-          filters={searchResponse.filters_applied}
-          results={searchResponse.results}
-        />
-      )}
 
       {/* ── Results ───────────────────────────────────────────── */}
       {searchResponse.results.length > 0 ? (

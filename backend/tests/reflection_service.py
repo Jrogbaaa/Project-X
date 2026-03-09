@@ -1,7 +1,7 @@
 """
 LLM Reflection Service for validating search results against brand briefs.
 
-Uses GPT-4o to analyze whether returned influencers actually match the 
+Uses GPT-5.4 to analyze whether returned influencers actually match the 
 original brief's requirements (niche, brand fit, creative concept).
 """
 import json
@@ -244,7 +244,7 @@ class ReflectionService:
         max_results_to_evaluate: int = 10
     ) -> ReflectionVerdict:
         """
-        Analyze search results against the original brief using GPT-4o.
+        Analyze search results against the original brief using the LLM.
         
         Args:
             original_brief: The raw natural language brief

@@ -2,7 +2,7 @@
 End-to-end search tests with LLM reflection validation.
 
 These tests execute full search queries through the pipeline and use
-GPT-4o reflection to validate whether results actually match the brief.
+GPT-5.4 reflection to validate whether results actually match the brief.
 """
 import pytest
 import logging

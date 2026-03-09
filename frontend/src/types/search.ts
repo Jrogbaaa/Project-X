@@ -97,6 +97,9 @@ export interface InfluencerData {
 
   // MediaKit URL for PrimeTag data
   mediakit_url?: string | null;
+
+  // Profile validity — false when Instagram handle resolves to 404
+  profile_active?: boolean | null;
 }
 
 export interface RankedInfluencer {

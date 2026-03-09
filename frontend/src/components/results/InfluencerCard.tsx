@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import {
-  ExternalLink, Users, TrendingUp, TrendingDown,
-  BadgeCheck, ChevronDown, Copy, Check,
+  ExternalLink, Users,
+  BadgeCheck, ChevronDown, Copy, Check, AlertTriangle,
 } from 'lucide-react';
 import { RankedInfluencer } from '@/types/search';
-import { formatNumber, formatPercentage, cn, getMetricClass, getMatchScoreClass } from '@/lib/utils';
-import { AudienceChart } from './AudienceChart';
+import { formatNumber, cn, getMatchScoreClass } from '@/lib/utils';
 import { ScoreBreakdown } from './ScoreBreakdown';
 
 interface InfluencerCardProps {
@@ -17,25 +16,6 @@ interface InfluencerCardProps {
   isSelected?: boolean;
   onCopy?: (message: string) => void;
   onExpand?: () => void;
-}
-
-interface MetricPillProps {
-  label: string;
-  value: string;
-  metricClass: string;
-  icon?: React.ReactNode;
-}
-
-function MetricPill({ label, value, metricClass, icon }: MetricPillProps) {
-  return (
-    <div className={cn('px-2.5 py-2 rounded-lg text-center', metricClass)}>
-      <div className="text-[9px] font-medium uppercase tracking-wider opacity-70 mb-0.5 flex items-center justify-center gap-0.5">
-        {label}
-        {icon}
-      </div>
-      <div className="font-mono font-semibold text-[0.8rem]">{value}</div>
-    </div>
-  );
 }
 
 export function InfluencerCard({
@@ -65,11 +45,7 @@ export function InfluencerCard({
     if (!isExpanded) onExpand?.();
   };
 
-  const hasAudienceGeo = raw_data.audience_geography && Object.keys(raw_data.audience_geography).length > 0;
-  const spainPct = hasAudienceGeo ? (raw_data.audience_geography?.ES || raw_data.audience_geography?.es || 0) : null;
-  const growthRate = raw_data.follower_growth_rate_6m;
   const engagementRate = raw_data.engagement_rate;
-  const GrowthIcon = growthRate && growthRate > 0 ? TrendingUp : TrendingDown;
 
   return (
     <div
@@ -136,6 +112,15 @@ export function InfluencerCard({
                 {raw_data.is_verified && (
                   <BadgeCheck className="h-4 w-4 text-ice-bright flex-shrink-0" />
                 )}
+                {raw_data.profile_active === false && (
+                  <span
+                    title="Este perfil puede no existir en Instagram"
+                    className="flex items-center gap-0.5 text-[10px] font-medium text-amber-400/80 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded"
+                  >
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    No verificado
+                  </span>
+                )}
                 <button
                   onClick={() => handleCopy(`@${raw_data.username}`, 'username')}
                   className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-dark-ash transition-all"
@@ -152,12 +137,21 @@ export function InfluencerCard({
               {raw_data.display_name && (
                 <p className="text-light-secondary text-xs truncate mt-0.5">{raw_data.display_name}</p>
               )}
-              <p className="text-light-tertiary text-xs mt-0.5">
-                <span className="font-mono text-light-secondary">
-                  {raw_data.follower_count > 0 ? formatNumber(raw_data.follower_count) : 'N/A'}
-                </span>{' '}
-                seguidores
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                {raw_data.follower_count > 0 && (
+                  <p className="text-light-tertiary text-xs">
+                    <span className="font-mono text-light-secondary">
+                      {formatNumber(raw_data.follower_count)}
+                    </span>{' '}
+                    seguidores
+                  </p>
+                )}
+                {engagementRate != null && engagementRate > 0.1 && (
+                  <span className="text-sm font-mono font-semibold text-ember-warm">
+                    {engagementRate.toFixed(1)}% eng
+                  </span>
+                )}
+              </div>
 
               {/* Interest tags */}
               {raw_data.interests && raw_data.interests.length > 0 && (
@@ -192,31 +186,46 @@ export function InfluencerCard({
           </div>
         </div>
 
-        {/* Metrics row */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          <MetricPill
-            label="Cred"
-            value={raw_data.credibility_score ? `${raw_data.credibility_score.toFixed(0)}%` : 'N/A'}
-            metricClass={getMetricClass(raw_data.credibility_score, 'credibility')}
-          />
-          <MetricPill
-            label="Eng"
-            value={formatPercentage(engagementRate, 1)}
-            metricClass={getMetricClass(engagementRate, 'engagement')}
-          />
-          <MetricPill
-            label="España"
-            value={spainPct !== null ? `${spainPct.toFixed(0)}%` : 'N/A'}
-            metricClass={getMetricClass(spainPct, 'spain')}
-          />
-          <MetricPill
-            label="Crec."
-            value={growthRate ? `${(growthRate * 100).toFixed(0)}%` : 'N/A'}
-            metricClass={getMetricClass(growthRate ? growthRate * 100 : null, 'growth')}
-            icon={growthRate !== null && growthRate !== undefined && (
-              <GrowthIcon className="w-2.5 h-2.5" />
-            )}
-          />
+        {/* Links row */}
+        <div className="flex items-center gap-3 mb-3">
+          <a
+            href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-ember-warm hover:text-ember-hot text-xs font-medium transition-colors"
+            aria-label={`Perfil de ${raw_data.username}`}
+            tabIndex={0}
+          >
+            Perfil
+            <ExternalLink className="h-3 w-3" />
+          </a>
+          {raw_data.mediakit_url && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleCopy(raw_data.mediakit_url!, 'mediakit')}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-dark-ash transition-all"
+                aria-label="Copiar URL MediaKit"
+                tabIndex={0}
+              >
+                {copiedField === 'mediakit' ? (
+                  <Check className="w-3 h-3 text-metric-excellent" />
+                ) : (
+                  <Copy className="w-3 h-3 text-light-tertiary" />
+                )}
+              </button>
+              <a
+                href={raw_data.mediakit_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-light-secondary hover:text-light-primary text-xs font-medium transition-colors"
+                aria-label={`MediaKit de ${raw_data.username}`}
+                tabIndex={0}
+              >
+                MediaKit
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Expand toggle */}
@@ -267,66 +276,11 @@ export function InfluencerCard({
             </div>
           )}
 
-          {/* Demographics */}
-          <AudienceChart
-            genders={raw_data.audience_genders}
-            ageDistribution={raw_data.audience_age_distribution}
-          />
-
           {/* Score breakdown */}
           <ScoreBreakdown scores={scores} />
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <div className="px-5 py-3 bg-dark-tertiary/40 border-t border-dark-border/30 flex items-center justify-between">
-        <p className="text-xs text-light-tertiary/60">
-          <span className="font-mono text-light-secondary">{raw_data.avg_likes > 0 ? formatNumber(raw_data.avg_likes) : 'N/A'}</span>{' '}
-          likes ·{' '}
-          <span className="font-mono text-light-secondary">{raw_data.avg_comments > 0 ? formatNumber(raw_data.avg_comments) : 'N/A'}</span>{' '}
-          comentarios
-        </p>
-        <div className="flex items-center gap-3">
-          {raw_data.mediakit_url && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleCopy(raw_data.mediakit_url!, 'mediakit')}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-dark-ash transition-all"
-                aria-label="Copiar URL MediaKit"
-                tabIndex={0}
-              >
-                {copiedField === 'mediakit' ? (
-                  <Check className="w-3 h-3 text-metric-excellent" />
-                ) : (
-                  <Copy className="w-3 h-3 text-light-tertiary" />
-                )}
-              </button>
-              <a
-                href={raw_data.mediakit_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-light-secondary hover:text-light-primary text-xs font-medium transition-colors"
-                aria-label={`MediaKit de ${raw_data.username}`}
-                tabIndex={0}
-              >
-                MediaKit
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          )}
-          <a
-            href={raw_data.profile_url || `https://instagram.com/${raw_data.username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-ember-warm hover:text-ember-hot text-xs font-medium transition-colors"
-            aria-label={`Perfil de ${raw_data.username}`}
-            tabIndex={0}
-          >
-            Perfil
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-      </div>
     </div>
   );
 }
