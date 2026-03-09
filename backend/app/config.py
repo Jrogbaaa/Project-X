@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     # OpenAI
     openai_api_key: str = Field(..., validation_alias="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4o-2024-08-06")
+    openai_model: str = Field(default="gpt-5.4")
 
     # Apify API (Instagram content scraping)
     apify_api_token: str = Field(default="", validation_alias="APIFY_API_TOKEN")

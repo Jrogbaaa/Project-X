@@ -2,13 +2,14 @@
 
 Base URL: `http://localhost:8000` (local) | `https://project-x-three-sage.vercel.app/api` (production)
 
-> **Last Updated:** February 24, 2026
+> **Last Updated:** March 9, 2026
 
 ## Overview
 
 This API powers an intelligent influencer discovery platform. Users can paste brand briefs in natural language, and the system extracts brand context, creative concepts, and campaign requirements to find and score matching influencers.
 
 ### Key Features
+- **Idea Match**: Enter a brand name → AI extracts positioning → selects Goldenberg creativity templates → generates structured campaign ideas with scores. See `POST /idea-match/`.
 - **Natural Language Input**: Paste entire brand briefs or campaign descriptions
 - **Niche Matching**: Match influencers based on their content niche (what they post about) - this is one of the most important factors for brand alignment
 - **8-Factor Scoring**: Credibility, engagement, audience match, growth, geography, brand affinity, creative fit, niche match
@@ -48,6 +49,16 @@ An influencer's **niche** is what they post about - their content category. This
 
 Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
 
+## Infrastructure
+
+| Service | Role |
+|---------|------|
+| **Vercel** | Hosts the frontend (Next.js via `@vercel/next`) and the Python API (via `@vercel/python`). Production: `https://project-x-three-sage.vercel.app`. Config: `vercel.json`. |
+| **OpenAI** | Powers all LLM steps: query parsing, brand lookup, niche enrichment, and idea generation. API key set via `OPENAI_API_KEY`. Model configurable via `openai_model` in `backend/app/config.py`. |
+| **ChatGPT / GPT-5.4** | Current model in use (`gpt-5.4`, released March 2026). Key tasks: extracting `campaign_niche` from briefs, brand attribute extraction, LLM niche classification, creative idea generation. |
+
+---
+
 ## Authentication
 
 Currently no authentication required for local development.
@@ -55,6 +66,109 @@ Currently no authentication required for local development.
 ---
 
 ## Endpoints
+
+### Idea Match
+
+#### Generate Creative Brief
+`POST /idea-match/`
+
+Generate a structured creative advertising brief for a brand using Goldenberg creativity templates and content-based retrieval.
+
+**How it works:**
+1. Extracts brand attributes (category, archetype, positioning, growth goal) via GPT-5.4
+2. Deterministically selects Goldenberg templates based on growth goal + archetype
+3. Retrieves analogous real campaigns from the knowledge base (content-based filtering)
+4. Generates 4-5 framework-driven campaign ideas + one bold-bet idea via GPT-5.4
+5. Scores and ranks each idea by brand fit, strategic relevance, originality, feasibility
+
+**Request Body:**
+```json
+{
+  "brand": "Nike"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "uuid-string",
+  "brand_vertical": "Performance sportswear brand in the premium segment, synonymous with athletic achievement and aspiration.",
+  "brand_summary": "Nike exists to enable every athlete — defined as anyone with a body — to reach their peak potential.",
+  "archetype": "hero",
+  "archetype_rationale": "Nike's entire identity is built around the hero's journey...",
+  "ideas": [
+    {
+      "title": "The Last Attempt",
+      "concept": "Three athletes fail. Three athletes get up. Third time — they succeed...",
+      "format": "short_film",
+      "platforms": ["youtube", "instagram"],
+      "tone": ["inspirational", "gritty"],
+      "framework_used": "repetition_break",
+      "framework_rationale": "Repetition-break generates the highest engagement scores (0.90) for engagement-goal campaigns...",
+      "avoid": "Avoid polished, glamorous athlete lifestyle — must feel raw and real.",
+      "engagement_type": "engagement",
+      "score": {
+        "brand_fit": 9.3,
+        "originality": 8.0,
+        "strategic_relevance": 9.0,
+        "feasibility": 7.0,
+        "engagement_potential": 9.0,
+        "total": 8.7
+      }
+    }
+  ],
+  "bold_bet": { "...same structure..." },
+  "brand_attributes": {
+    "brand_name": "Nike",
+    "category": "sports_apparel",
+    "audience": "young_broad",
+    "positioning": "performance",
+    "tone": ["inspirational", "bold", "gritty"],
+    "growth_goal": "engagement",
+    "archetype": "hero",
+    "price_tier": "premium",
+    "confidence": 0.98
+  },
+  "frameworks_selected": ["repetition_break", "goldenberg_interactive_experiment", "archetype", "goldenberg_extreme_consequence"],
+  "retrieved_examples_count": 5
+}
+```
+
+**Goldenberg Template Keys** (framework_used values):
+- `goldenberg_extreme_consequence` — visceral consequence of product absence or presence
+- `goldenberg_pictorial_analogy` — visual metaphor for the product benefit
+- `goldenberg_competition` — superiority contrast against an alternative
+- `goldenberg_interactive_experiment` — audience participation IS the ad
+- `goldenberg_dimensional_alteration` — magnify/distort a product dimension
+- `goldenberg_replacement` — product replaces a familiar object unexpectedly
+- `repetition_break` — pattern → pattern → twist narrative
+- `visual_metaphor` — synthesise product with a conceptually similar object
+- `schema_congruity` — moderate expectation violation
+- `archetype` — position through a classic brand archetype (hero, explorer, caregiver, etc.)
+
+**Framework Selection Logic (deterministic):**
+
+| Growth Goal | Primary Frameworks |
+|-------------|-------------------|
+| awareness | extreme_consequence, dimensional_alteration, competition |
+| engagement | repetition_break, interactive_experiment, archetype |
+| persuasion | visual_metaphor, schema_congruity, replacement |
+| brand_personality | archetype, pictorial_analogy, repetition_break |
+
+**Score Dimensions (each 0-10, weighted composite):**
+- `brand_fit` (30%) — idea's engagement type matches brand's growth goal
+- `strategic_relevance` (25%) — research-backed framework effectiveness for this goal
+- `originality` (20%) — penalised if multiple ideas use same template
+- `engagement_potential` (15%) — framework evidence score for the idea's own type
+- `feasibility` (10%) — production format (ugc > stunt > documentary)
+
+```bash
+curl -X POST http://localhost:8000/api/idea-match \
+  -H "Content-Type: application/json" \
+  -d '{"brand": "Nike"}'
+```
+
+---
 
 ### Search
 

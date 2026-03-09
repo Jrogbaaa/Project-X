@@ -2,7 +2,7 @@
 LLM Niche + Theme Enrichment Pipeline
 
 Batch-processes influencers where primary_niche is NULL.
-For each influencer, sends bio + interests + post_content_aggregated to GPT-4o
+For each influencer, sends bio + interests + post_content_aggregated to GPT-5.4
 and gets back primary_niche, niche_confidence, and content_themes.
 
 Writes results back to DB in batches of 50.
@@ -252,7 +252,7 @@ class LLMNicheEnrichmentPipeline:
 
     async def call_llm(self, influencer_subset: List[Dict]) -> List[Dict]:
         """
-        Send a sub-batch of influencers to GPT-4o.
+        Send a sub-batch of influencers to the LLM.
         Returns list of result dicts (may be empty on failure).
         """
         prompt = build_user_prompt(influencer_subset)
@@ -269,7 +269,7 @@ class LLMNicheEnrichmentPipeline:
             )
             self.stats["llm_calls"] += 1
 
-            # Rough token cost estimate (GPT-4o pricing)
+            # Rough token cost estimate (GPT-5.4 pricing)
             usage = response.usage
             if usage:
                 input_cost = (usage.prompt_tokens / 1000) * 0.0025
