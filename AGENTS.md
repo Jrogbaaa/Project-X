@@ -186,6 +186,9 @@ This allows the system to handle **any brand** - even ones not in our database (
 | **Gender Computation** | `compute_gender.py` | Pre-compute `influencer_gender` ('male'/'female'/NULL) from display name, bio, and audience signals using expanded Spanish/Catalan/Latin name lists (300+ names). Populates NULL rows by default. `cd backend && python -m app.services.compute_gender` / `--dry-run` to preview / `--force` to re-classify all. Run after importing new influencers. |
 | **DB Audit** | `db_audit.py` | Read-only diagnostic — prints field coverage %, niche distribution, interests breakdown, follower tier split, and a matching-quality health summary. `cd backend && python -m app.services.db_audit` |
 | **Match Quality Review** | `match_quality_review.py` | Repeatable human review of matching quality — picks N random briefs (default 4) from a diverse pool of 23, runs each through the full search pipeline in parallel, and prints LLM parsing + discovery funnel + matched influencers table for manual evaluation. No assertions. `cd backend && python -m app.services.match_quality_review` / `--seed 42` / `--brief "custom text"` / `--all` |
+| **Framework Selector** | `framework_selector.py` | Deterministic mapping from brand `growth_goal` + `archetype` → ordered list of Goldenberg creativity templates (extreme consequence, pictorial analogy, competition, interactive experiment, dimensional alteration, replacement) plus repetition-break, visual metaphor, schema congruity, archetype. Used by Idea Match to select which templates guide idea generation. Includes research-backed evidence scores per framework per goal. |
+| **Idea Match Service** | `idea_match_service.py` | 6-layer creative idea generation pipeline: (1) LLM brand attribute extraction, (2) deterministic framework selection, (3) content-based campaign retrieval from `campaign_examples` DB, (4) Goldenberg-template-encoded prompt assembly, (5) GPT-4o creative brief generation, (6) scoring + ranking by brand fit/originality/strategic relevance/feasibility. Persists results to `idea_briefs` table. |
+| **Campaign Examples Seed** | `seed_campaign_examples.py` | Seeds `campaign_examples` knowledge base with ~30 curated real-world campaigns (Nike, Dove, Liquid Death, Patagonia, Guinness, Apple, Red Bull, etc.), each tagged with its Goldenberg template, archetype, growth goal, and what made it work. Used as content-based retrieval context for Idea Match. `cd backend && python -m app.services.seed_campaign_examples` / `--clear` to re-seed. |
 | **Starngage Scraper** | `starngage_scraper.py` | Interactive Starngage scrape + DB import (see `directives/starngage-scraper.md`). Three subcommands: `combine` merges batch JSON extracts into CSV; `import` upserts CSV into DB (updates follower_count/display_name/interests/engagement_rate for existing, creates new, preserves all enrichment data); `audit` read-only cross-reference of DB vs CSV to verify import freshness, detect stale/orphan records, and spot-check follower counts. Scraping done via Playwright MCP browser — user logs in, agent uses `browser_evaluate` with `fetch()`. `cd backend && python -m app.services.starngage_scraper import --csv ../starngage_spain_influencers_2026.csv` / `audit --csv ../starngage_spain_influencers_2026.csv` |
 | **Profile Validator** | `validate_profiles.py` | Batch HEAD-checks `instagram.com/{username}` and sets `profile_active=False` for 404 (deleted/renamed) accounts. Excluded from all search results automatically. Rate-limited (1 req/s default). `cd backend && python -m app.services.validate_profiles --dry-run` to preview, then run without flag to apply. Options: `--delay 0.3` (faster), `--since-days 30` (only check profiles not updated in N days). ~77 min for full DB at 1 req/s. |
 
@@ -194,11 +197,13 @@ This allows the system to handle **any brand** - even ones not in our database (
 | Module | File | Purpose |
 |--------|------|---------|
 | Query Parser | `query_parser.py` | GPT-4o extracts brand, creative concept, tone, themes, niches, size preferences + **creative matching fields** (`discovery_interests`, `exclude_interests`, `influencer_reasoning`) |
+| **Idea Match Service** | `idea_match_service.py` | Top-level orchestrator for the Idea Match tab — calls brand extraction, framework selector, campaign retrieval, prompt builder, and GPT-4o generation. See `backend/app/services/idea_match_service.py`. |
 
 ### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| POST | `/idea-match/` | **Idea Match** — generate structured creative brief for a brand. Input: `{brand: string}`. Output: IdeaBrief with archetype, 4-5 framework-driven campaign ideas (each with template badge + scores), and a bold-bet idea. |
 | POST | `/search/` | Execute natural language search |
 | GET | `/search/{id}` | Retrieve previous search with results |
 | POST | `/search/{id}/save` | Save search for later |
@@ -217,6 +222,9 @@ This allows the system to handle **any brand** - even ones not in our database (
 
 | Component | Path | Purpose |
 |-----------|------|---------|
+| IdeaMatchTab | `idea-match/IdeaMatchTab.tsx` | **Idea Match tab** — brand name input, 5-step loading indicator, structured brief output (brand profile card + ranked idea cards + bold bet). |
+| IdeaCard | `idea-match/IdeaCard.tsx` | Individual idea card — expandable. Shows title, framework badge, engagement type, tone, concept preview. Expanded: full concept, template rationale, what to avoid, score bars (brand fit / strategic relevance / originality / engagement potential / feasibility). |
+| BrandProfileCard | `idea-match/BrandProfileCard.tsx` | Brand profile header — archetype badge, brand vertical, brand truth, positioning attributes, tone pills, competitor tags. |
 | SearchBar | `search/SearchBar.tsx` | **Paste brand briefs** or natural language queries. Textarea **auto-resizes** to fit all pasted content (no internal scroll), starting at 58px and expanding dynamically via `scrollHeight`. |
 | FilterPanel | `search/FilterPanel.tsx` | Sliders for configurable thresholds (credibility, Spain %, engagement, growth, gender, age brackets) |
 | ResultsGrid | `results/ResultsGrid.tsx` | Grid layout with **card/list view toggle**, sticky header, export/save actions |
@@ -326,6 +334,8 @@ The reflection service uses GPT-4o to analyze if search results actually match t
 | `search_results` | Links searches to influencers with ranking scores |
 | `ranking_presets` | Configurable weight presets (Balanced, Engagement Focus, etc.) |
 | `api_audit_log` | Tracks all external API calls |
+| `campaign_examples` | **Idea Match knowledge base** — ~30 curated real campaigns tagged with category, audience, archetype, growth_goal, framework_used, creative_angle, and success_signals. Used for content-based retrieval before LLM generation. Seeded via `seed_campaign_examples.py`. |
+| `idea_briefs` | **Idea Match output history** — persisted generated briefs with brand_attributes (JSONB), frameworks_selected, retrieved_example_ids, and full brief (JSONB). |
 
 ### Environment Variables
 

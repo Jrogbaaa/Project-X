@@ -1,0 +1,311 @@
+
+CREATIVE ADVERTISING FRAMEWORKS RESEARCH SUMMARY
+================================================
+
+Research Question
+-----------------
+What framework or methodology most effectively generates creative advertising ideas that increase brand awareness and consumer engagement for a specific product category?
+
+Key Finding
+-----------
+Template-based approaches, particularly the Templates method, generate the most effective creative advertising ideas by balancing originality with strategic focus better than alternative frameworks. However, no single framework universally optimizes creative advertising ideation across all contexts. The optimal framework depends on the marketing objective (awareness vs engagement), product familiarity, audience attributes, and available resources.
+
+--------------------------------------------------
+ABSTRACT SUMMARY
+--------------------------------------------------
+
+Template-based approaches show the strongest evidence for balancing originality and strategic alignment in advertising development. Studies show template-structured advertisements represent about 50% of award‑winning ads compared with only 2.5% of nonwinning advertisements.
+
+However, effectiveness depends heavily on context:
+
+• Repetition‑break plot structures improve engagement, brand attitudes, and purchase intentions but are weaker for brand recognition and recall.
+• Creative execution techniques (humor, endorsers, strong divergence) operate through threshold effects — insufficient creativity produces little impact.
+• Visual metaphor frameworks succeed when conceptually similar objects are synthesized but fail when dissimilar objects are forced together.
+• Archetype frameworks increase emotional engagement when aligned with audience identity and values.
+
+Organizations should match creative frameworks to the specific marketing objective rather than applying a universal method.
+
+--------------------------------------------------
+DATASET AND STUDY OVERVIEW
+--------------------------------------------------
+
+10 studies were analyzed from an initial pool of 50 papers using nine screening criteria. Each study was reviewed across eight evaluation dimensions related to creative idea generation effectiveness.
+
+Study Categories
+----------------
+
+Goldenberg et al. (1999)
+Framework: Creativity Templates
+Method: Observational and experimental
+Sample: 200 award‑winning ads, 200 nonwinning ads
+Product categories: shampoo, diet products, sneakers
+Metrics: creativity, brand attitudes, recall
+
+Loewenstein et al. (2011)
+Framework: Repetition‑Break Plot Structure
+Method: corpus analysis + experiment
+Sample: 957 TV advertisements
+Product categories: apparel, automotive, beverages, electronics
+Metrics: brand attitudes, engagement, purchase intentions
+
+Tevi et al. (2024)
+Framework: Templates Method
+Method: experiment with professional creatives
+Sample: 94 creatives (study 1), 60 creatives (study 2)
+Product category: automotive trucks
+Metrics: originality and strategic alignment
+
+Smith et al. (2008)
+Framework: Hierarchy‑of‑Effects with Divergence and Relevance
+Method: experimental
+Metrics: brand awareness, brand liking
+
+Jansen et al. (2023)
+Framework: AI‑driven marketing image generation
+Method: experimental multi‑method
+Metrics: brand engagement and purchase funnel performance
+
+Huhmann et al. (2020)
+Framework: Creative Execution Corollary
+Method: experimental
+Metrics: attention, processing depth, recall
+
+Gkiouzepas et al. (2011)
+Framework: Visual Metaphor Framework
+Metrics: elaboration and consumer attitudes
+
+Wansink et al. (1996)
+Framework: Schema Congruity Advertising
+Metrics: usage attitudes and brand usage
+
+Toubia (2006)
+Framework: Incentive‑based ideation
+Metrics: flexibility, originality, elaboration
+
+Kreicbergs et al. (2022)
+Framework: Archetype‑based branding
+Sample: 2,400 YouTube comments
+Metrics: emotional response and engagement
+
+--------------------------------------------------
+KEY ADVERTISING IDEA GENERATION FRAMEWORKS
+--------------------------------------------------
+
+1. TEMPLATE‑BASED CREATIVE FRAMEWORKS
+------------------------------------
+
+These frameworks identify structural patterns found in highly successful advertising campaigns.
+
+Goldenberg's research identified six major creativity templates present in the majority of award‑winning advertisements.
+
+Core advantages:
+• Provides structured creativity
+• Reduces cognitive load during ideation
+• Maintains alignment with strategic objectives
+• Improves recall and brand attitudes
+
+Evidence shows:
+• 89% of award‑winning advertisements followed one of the templates
+• Only 2.5% of nonwinning advertisements used template structures
+
+Templates are particularly effective in professional advertising environments where both originality and strategy must be balanced.
+
+--------------------------------------------------
+
+2. REPETITION‑BREAK STORY STRUCTURE
+-----------------------------------
+
+Narrative format:
+
+Step 1: Establish a pattern
+Step 2: Repeat the pattern
+Step 3: Break the pattern with a surprising twist
+
+Effects observed:
+• Higher brand attitudes
+• Higher purchase intentions
+• Strong engagement and persuasion
+
+Limitations:
+• Lower brand recognition
+• Lower recall compared to simpler formats
+
+Best use case:
+Engagement‑driven campaigns rather than awareness campaigns.
+
+--------------------------------------------------
+
+3. CREATIVE EXECUTION APPROACH
+------------------------------
+
+Creative execution focuses on the intensity and form of creative elements such as:
+
+• humor
+• celebrity or athlete endorsers
+• unexpected divergence
+• surprising presentation
+
+Research shows a threshold effect:
+
+Low creativity → no measurable improvement
+
+Sufficient creativity → improved attention, deeper processing, stronger recall
+
+This is especially important for familiar product categories where consumers already possess strong product knowledge.
+
+--------------------------------------------------
+
+4. VISUAL METAPHOR FRAMEWORK
+----------------------------
+
+Visual metaphors connect a product attribute with another concept visually.
+
+Example:
+Battery life → marathon runner
+Insurance → safety net
+
+Effectiveness depends on conceptual similarity.
+
+Synthesizing similar objects → positive effect
+
+Synthesizing very dissimilar objects → confusion and reduced persuasion.
+
+--------------------------------------------------
+
+5. ARCHETYPE‑BASED ADVERTISING
+------------------------------
+
+Brands can position themselves using classic archetypes such as:
+
+• Hero
+• Lover
+• Caregiver
+• Ruler
+• Explorer
+• Everyman
+• Creator
+
+Research findings:
+Advertisements using emotionally resonant archetypes generated stronger consumer discourse and engagement.
+
+Example finding:
+Traditional masculinity ads produced 56% positive sentiment versus 46% for modern masculinity messaging.
+
+--------------------------------------------------
+
+6. SCHEMA CONGRUITY FRAMEWORK
+-----------------------------
+
+Advertising messages are effective when they partially match existing consumer expectations but introduce slight novelty.
+
+Too predictable → boring
+
+Too incongruent → confusing
+
+Moderate incongruity → highest persuasion.
+
+--------------------------------------------------
+
+7. INCENTIVE‑BASED IDEATION SYSTEMS
+----------------------------------
+
+Creativity can be improved by carefully designed incentive structures.
+
+Gamified ideation systems can increase:
+
+• idea flexibility
+• originality
+• elaboration
+
+However, empirical testing was limited due to small sample sizes.
+
+--------------------------------------------------
+
+8. AI‑ASSISTED CREATIVE GENERATION
+----------------------------------
+
+AI tools can generate marketing imagery optimized for brand personality and funnel stages.
+
+Results show:
+AI‑generated marketing visuals can outperform traditional brand content in engagement metrics.
+
+However:
+
+Consumers may react negatively if they perceive marketing as fully automated.
+
+Best approach:
+Human‑AI collaboration.
+
+--------------------------------------------------
+MECHANISMS BEHIND CREATIVE AD EFFECTIVENESS
+--------------------------------------------------
+
+Several psychological mechanisms explain the effectiveness of creative advertising frameworks.
+
+1. Cognitive load reduction
+Templates simplify the ideation process while maintaining originality.
+
+2. Expectation violation
+Repetition‑break structures generate surprise and attention.
+
+3. Processing fluency
+Conceptually similar metaphors are easier to interpret.
+
+4. Motivational activation
+Creative executions motivate familiar consumers to re‑engage with known products.
+
+--------------------------------------------------
+KEY PRACTICAL INSIGHTS
+--------------------------------------------------
+
+1. There is no universal framework for all advertising contexts.
+
+2. Templates are the strongest general framework for generating creative advertising concepts.
+
+3. Narrative pattern breaking is best for engagement campaigns.
+
+4. Creative intensity must cross a threshold to influence attention and recall.
+
+5. Visual metaphors work only when conceptually coherent.
+
+6. Archetypes improve emotional engagement when aligned with audience identity.
+
+--------------------------------------------------
+FRAMEWORK SELECTION GUIDE
+--------------------------------------------------
+
+Goal: Brand Awareness
+Recommended frameworks:
+• Templates
+• Divergence + relevance creative execution
+
+Goal: Consumer Engagement
+Recommended frameworks:
+• Repetition‑break structure
+• Archetype storytelling
+
+Goal: Product persuasion
+Recommended frameworks:
+• Visual metaphor synthesis
+• schema congruity
+
+Goal: Brand personality communication
+Recommended frameworks:
+• Archetype frameworks
+
+--------------------------------------------------
+FINAL CONCLUSION
+--------------------------------------------------
+
+Creative advertising effectiveness depends on matching frameworks to specific marketing conditions.
+
+Templates provide the most consistent performance across contexts because they maintain both originality and strategic focus.
+
+However, organizations should select frameworks based on:
+
+• marketing objective
+• product category familiarity
+• target audience characteristics
+• creative resources available
+
+The strongest advertising systems combine multiple frameworks rather than relying on a single creative methodology.

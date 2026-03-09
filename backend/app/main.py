@@ -40,7 +40,7 @@ def create_app() -> FastAPI:
     # Import here to avoid circular imports and module-level execution issues
     from app.config import get_settings
     from app.core.database import init_db
-    from app.api.routes import search_router, influencers_router, exports_router, health_router, brands_router
+    from app.api.routes import search_router, influencers_router, exports_router, health_router, brands_router, idea_match_router
     
     settings = get_settings()
     is_vercel = os.environ.get("VERCEL", False)
@@ -95,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(influencers_router, prefix="/api")
     app.include_router(exports_router, prefix="/api")
     app.include_router(brands_router, prefix="/api")
+    app.include_router(idea_match_router, prefix="/api")
 
     return app
 

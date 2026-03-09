@@ -4,6 +4,7 @@ from app.api.routes.influencers import router as influencers_router
 from app.api.routes.exports import router as exports_router
 from app.api.routes.health import router as health_router
 from app.api.routes.brands import router as brands_router
+from app.api.routes.idea_match import router as idea_match_router
 
 __all__ = [
     "search_router",
@@ -11,4 +12,5 @@ __all__ = [
     "exports_router",
     "health_router",
     "brands_router",
+    "idea_match_router",
 ]

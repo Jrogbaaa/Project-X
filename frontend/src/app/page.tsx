@@ -4,14 +4,17 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { SearchBar, SearchBarRef } from '@/components/search/SearchBar';
 import { ResultsGrid } from '@/components/results/ResultsGrid';
 import { ToastContainer } from '@/components/ui/Toast';
+import { IdeaMatchTab } from '@/components/idea-match/IdeaMatchTab';
 import { SearchResponse } from '@/types/search';
 import { useToast } from '@/hooks/useToast';
-import { Clock, Bookmark } from 'lucide-react';
+import { Clock, Bookmark, Search, Lightbulb } from 'lucide-react';
 import Image from 'next/image';
 
 type LoadingStep = 'parsing' | 'searching' | 'ranking' | null;
+type ActiveTab = 'search' | 'idea-match';
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('search');
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<LoadingStep>(null);
@@ -142,7 +145,33 @@ export default function Home() {
             />
 
             {/* Nav */}
-            <nav className="flex items-center gap-5">
+            <nav className="flex items-center gap-2">
+              {/* Tab switcher */}
+              <div className="flex items-center rounded-lg border border-dark-border/60 bg-dark-secondary p-0.5 mr-3">
+                <button
+                  onClick={() => setActiveTab('search')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
+                    activeTab === 'search'
+                      ? 'bg-dark-primary text-light-primary shadow-sm'
+                      : 'text-light-tertiary hover:text-light-secondary'
+                  }`}
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Buscar</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('idea-match')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
+                    activeTab === 'idea-match'
+                      ? 'bg-dark-primary text-light-primary shadow-sm'
+                      : 'text-light-tertiary hover:text-light-secondary'
+                  }`}
+                >
+                  <Lightbulb className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Idea Match</span>
+                </button>
+              </div>
+
               <button className="flex items-center gap-1.5 text-light-tertiary hover:text-light-secondary transition-colors text-sm group">
                 <Clock className="w-3.5 h-3.5 group-hover:text-ember-warm transition-colors" />
                 <span className="hidden sm:inline">Historial</span>
@@ -155,6 +184,12 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* ─── Idea Match tab ───────────────────────────────────────── */}
+      {activeTab === 'idea-match' && <IdeaMatchTab />}
+
+      {/* ─── Search tab ───────────────────────────────────────────── */}
+      {activeTab === 'search' && <>
 
       {/* ─── Hero ────────────────────────────────────────────────── */}
       <section className="relative pt-14 pb-10 sm:pt-20 sm:pb-14">
@@ -295,6 +330,8 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      </> /* end search tab */}
 
       {/* ─── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-dark-border/40 py-5">
