@@ -26,7 +26,7 @@ async def generate_idea_brief(
     1. Extract structured brand attributes (category, archetype, growth goal, etc.)
     2. Deterministically select creative frameworks based on goal + archetype
     3. Retrieve analogous campaigns from the knowledge base (content-based filtering)
-    4. Generate framework-driven creative ideas via GPT-4o
+    4. Generate framework-driven creative ideas via GPT-5.4
     5. Score and rank each idea by brand fit, originality, strategic relevance, feasibility
 
     Output: Structured IdeaBrief with 4-5 scored campaign ideas + one bold bet idea.

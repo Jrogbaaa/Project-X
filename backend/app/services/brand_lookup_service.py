@@ -3,7 +3,7 @@ Brand Lookup Service
 
 Uses LLM to understand brands that aren't in our database.
 When a search query mentions a brand we don't know, this service
-asks GPT-4o to provide context about the brand.
+asks GPT-5.4 to provide context about the brand.
 """
 
 import json

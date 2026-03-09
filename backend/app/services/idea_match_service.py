@@ -7,7 +7,7 @@ Orchestrates the full pipeline for generating structured creative advertising id
   Layer 2 — Framework Selection: deterministic mapping from growth_goal + archetype
   Layer 3 — Retrieval: content-based filtering of campaign_examples knowledge base
   Layer 4 — Prompt Construction: assemble brand attrs + frameworks + retrieved examples
-  Layer 5 — Idea Generation: GPT-4o generates structured creative brief
+  Layer 5 — Idea Generation: GPT-5.4 generates structured creative brief
   Layer 6 — Ranking: score each idea and sort by weighted composite
 
 Design notes:
@@ -179,6 +179,17 @@ Every idea must trace back to a named template with a clear structural logic.
 
 {_GOLDENBERG_BLOCK}
 
+SOCIAL MEDIA CONSTRAINT — THIS IS NON-NEGOTIABLE:
+ALL ideas must be designed for social media or YouTube. Think:
+- TikTok / Instagram Reels (15-60 seconds)
+- YouTube Shorts (up to 60 seconds) or YouTube mid-roll (30-90 seconds max)
+- Instagram carousels (swipeable images/frames)
+- Stories (vertical, ephemeral)
+- UGC / creator briefs
+
+Do NOT generate TV commercials, brand films, documentaries, or long-form productions.
+These are influencer/social campaigns. Every concept should be describable in one vertical video or one swipe-through carousel.
+
 FRAMEWORK SELECTION FOR THIS BRIEF:
 The following frameworks have been selected based on the brand's growth goal and archetype.
 {selection.rationale}
@@ -233,14 +244,15 @@ Generate a structured creative brief with:
 4. archetype_rationale: 2-3 sentences on why this archetype fits and what it unlocks creatively
 5. ideas: array of 4-5 campaign ideas. Each idea MUST use one of the primary frameworks and include:
    - title: punchy campaign name (3-7 words)
-   - concept: 4-5 sentences — specific enough to brief a director or creator. Describe what the viewer sees/experiences, not just the theme.
-   - format: one of documentary | challenge | testimonial | stunt | ugc | social_experiment | short_film | ooh | interactive
+   - concept: 4-5 sentences — specific enough to brief a social media creator or content studio. Describe: (1) what happens in the first 3 seconds to stop the scroll, (2) the visual mechanics of the template in action, (3) the CTA or ending beat. Think vertical video or swipeable carousel, not a film narrative.
+   - format: one of reel | tiktok_video | youtube_short | carousel | ugc | challenge | story | social_experiment | stunt | interactive
    - platforms: array of best platforms for this idea
    - tone: array of 2-3 tone descriptors for this specific idea
    - framework_used: the exact framework key (e.g. "goldenberg_extreme_consequence")
    - framework_rationale: 1-2 sentences on why THIS template is the right structure for THIS brand
    - avoid: what would make this idea fail (1-2 sentences — be specific)
    - engagement_type: one of awareness | engagement | persuasion | brand_personality
+   IMPORTANT: Each idea must demonstrate a specific, non-obvious application of its template to THIS brand. Generic "show the product being used" is NOT a valid template application. The template's structural logic must be clearly visible in the concept.
 6. bold_bet: one additional idea that is higher risk, higher originality — uses {brand_attrs.get('archetype', 'an unexpected')} archetype in a subversive way or applies a template in a non-obvious category application. Same structure as ideas array items.
 
 The concepts should feel like they came from a real creative pitch — specific, visual, and grounded in a strategic truth about the brand."""
@@ -249,15 +261,21 @@ The concepts should feel like they came from a real creative pitch — specific,
 # ── Ranking ───────────────────────────────────────────────────────────────────
 
 _FORMAT_FEASIBILITY: dict[str, float] = {
+    "reel": 0.95,
     "ugc": 0.95,
-    "challenge": 0.90,
-    "social_experiment": 0.85,
+    "tiktok_video": 0.93,
+    "youtube_short": 0.90,
+    "story": 0.90,
+    "carousel": 0.88,
+    "challenge": 0.88,
     "testimonial": 0.85,
-    "short_film": 0.70,
-    "documentary": 0.65,
-    "stunt": 0.60,
-    "interactive": 0.60,
-    "ooh": 0.55,
+    "social_experiment": 0.80,
+    "stunt": 0.65,
+    "interactive": 0.65,
+    # Legacy fallback — penalise if LLM ignores the social media constraint
+    "short_film": 0.35,
+    "documentary": 0.25,
+    "ooh": 0.30,
 }
 
 
@@ -459,7 +477,7 @@ class IdeaMatchService:
         logger.info(f"[IdeaMatch] Retrieved {len(retrieved)} campaign examples")
 
         # ── Layer 4 + 5: Build prompt + generate ideas ────────────────────────
-        logger.info("[IdeaMatch] Layers 4-5: Generating creative brief via GPT-4o...")
+        logger.info("[IdeaMatch] Layers 4-5: Generating creative brief via LLM...")
         system_prompt = _build_generation_system_prompt(selection)
         user_prompt = _build_generation_user_prompt(brand_attrs, retrieved)
 
@@ -493,7 +511,7 @@ class IdeaMatchService:
         return ranked_brief
 
     async def _extract_brand_attributes(self, brand_input: str) -> Dict[str, Any]:
-        """Call GPT-4o to extract structured brand attributes from raw input."""
+        """Call LLM to extract structured brand attributes from raw input."""
         try:
             response = await self.client.chat.completions.create(
                 model=self.settings.openai_model,
@@ -530,7 +548,7 @@ class IdeaMatchService:
     async def _call_llm_generation(
         self, system_prompt: str, user_prompt: str
     ) -> Dict[str, Any]:
-        """Call GPT-4o to generate the structured creative brief."""
+        """Call LLM to generate the structured creative brief."""
         response_schema = {
             "type": "json_schema",
             "json_schema": {

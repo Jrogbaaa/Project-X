@@ -508,7 +508,7 @@ def _normalize_spanish_numbers(text: str) -> str:
 
 
 async def parse_search_query(query: str) -> ParsedSearchQuery:
-    """Parse natural language query into structured search parameters using GPT-4o."""
+    """Parse natural language query into structured search parameters using GPT-5.4."""
     settings = get_settings()
     client = AsyncOpenAI(api_key=settings.openai_api_key)
 

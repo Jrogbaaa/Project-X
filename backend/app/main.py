@@ -61,7 +61,7 @@ def create_app() -> FastAPI:
         influencer matches for brand partnerships.
 
         ## Features
-        - Natural language search powered by GPT-4o
+        - Natural language search powered by GPT-5.4
         - Configurable filtering (credibility, engagement, geography)
         - Multi-factor ranking algorithm
         - Export to CSV/Excel

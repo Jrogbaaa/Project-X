@@ -141,7 +141,7 @@ export function IdeaMatchTab() {
                   <StepIndicator label="Extracting brand attributes..." isActive={loadingStep === 'extracting'} isComplete={['selecting','retrieving','generating','ranking'].includes(loadingStep || '')} />
                   <StepIndicator label="Selecting creative frameworks..." isActive={loadingStep === 'selecting'} isComplete={['retrieving','generating','ranking'].includes(loadingStep || '')} />
                   <StepIndicator label="Retrieving analogous campaigns..." isActive={loadingStep === 'retrieving'} isComplete={['generating','ranking'].includes(loadingStep || '')} />
-                  <StepIndicator label="Generating ideas via GPT-4o..." isActive={loadingStep === 'generating'} isComplete={loadingStep === 'ranking'} />
+                  <StepIndicator label="Generating ideas via GPT-5.4..." isActive={loadingStep === 'generating'} isComplete={loadingStep === 'ranking'} />
                   <StepIndicator label="Scoring and ranking..." isActive={loadingStep === 'ranking'} isComplete={false} />
                 </div>
               </div>
@@ -251,7 +251,7 @@ export function IdeaMatchTab() {
                     </li>
                     <li className="flex gap-2">
                       <span className="text-[var(--clay)] font-medium shrink-0">5.</span>
-                      GPT-4o generates structured ideas, each traceable to a template
+                      GPT-5.4 generates structured ideas, each traceable to a template
                     </li>
                     <li className="flex gap-2">
                       <span className="text-[var(--clay)] font-medium shrink-0">6.</span>

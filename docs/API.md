@@ -49,6 +49,16 @@ An influencer's **niche** is what they post about - their content category. This
 
 Each influencer in the database has an `interests` field containing their content niches. The ranking algorithm scores how well these niches align with the brand's category and campaign topics.
 
+## Infrastructure
+
+| Service | Role |
+|---------|------|
+| **Vercel** | Hosts the frontend (Next.js via `@vercel/next`) and the Python API (via `@vercel/python`). Production: `https://project-x-three-sage.vercel.app`. Config: `vercel.json`. |
+| **OpenAI** | Powers all LLM steps: query parsing, brand lookup, niche enrichment, and idea generation. API key set via `OPENAI_API_KEY`. Model configurable via `openai_model` in `backend/app/config.py`. |
+| **ChatGPT / GPT-5.4** | Current model in use (`gpt-5.4`, released March 2026). Key tasks: extracting `campaign_niche` from briefs, brand attribute extraction, LLM niche classification, creative idea generation. |
+
+---
+
 ## Authentication
 
 Currently no authentication required for local development.
@@ -65,10 +75,10 @@ Currently no authentication required for local development.
 Generate a structured creative advertising brief for a brand using Goldenberg creativity templates and content-based retrieval.
 
 **How it works:**
-1. Extracts brand attributes (category, archetype, positioning, growth goal) via GPT-4o
+1. Extracts brand attributes (category, archetype, positioning, growth goal) via GPT-5.4
 2. Deterministically selects Goldenberg templates based on growth goal + archetype
 3. Retrieves analogous real campaigns from the knowledge base (content-based filtering)
-4. Generates 4-5 framework-driven campaign ideas + one bold-bet idea via GPT-4o
+4. Generates 4-5 framework-driven campaign ideas + one bold-bet idea via GPT-5.4
 5. Scores and ranks each idea by brand fit, strategic relevance, originality, feasibility
 
 **Request Body:**

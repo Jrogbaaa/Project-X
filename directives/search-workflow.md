@@ -50,7 +50,7 @@ The search flow uses a **batch verification architecture** to ensure predictable
 ### Step 1: Brief Parsing (Orchestration Layer)
 **Script:** `backend/app/orchestration/query_parser.py`
 
-Parse the brand brief using GPT-4o to extract:
+Parse the brand brief using GPT-5.4 to extract:
 
 **Basic:**
 - Target count (default: 5)
@@ -255,7 +255,7 @@ result = await service.execute_search(SearchRequest(
 ### Query Parser (LLM Integration)
 **File:** `backend/app/orchestration/query_parser.py`
 
-Uses GPT-4o with structured JSON response format to extract brand/creative/niche context:
+Uses GPT-5.4 with structured JSON response format to extract brand/creative/niche context:
 ```python
 from app.orchestration.query_parser import parse_search_query
 
